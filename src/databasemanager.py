@@ -15,7 +15,6 @@ except ImportError:  # Python 3
 from tkinter import filedialog
 
 # Standard Modules
-import pickle
 
 # Project Modules
 from default_engines import DBManagerEngine
@@ -32,32 +31,38 @@ class DBManager(tk.Frame):
         if str(engine) == "default":
             self.engine = DBManagerEngine()
         else:
-            self.engine = engine         
+            self.engine = engine    
             
+        self.config_key = "dbmanager_config"    
         if config:
-            self.engine.set_build_config(raw_config = config)  
+            self.engine.set_build_config(raw_config = config[self.config_key])
                         
         self.time_created = self.engine.time_str()
-        self.href = self.engine.get_header_ref()
         self.online_loaded = tk.IntVar(value=0)
         
         self.db_panel_packs = []
         self._build_top_frame()
         self._build_middle_frame()
         self._build_bottom_frame()
-        
-        if self.engine.get_auto_load_db():
-            self._load_offline_dbs(file_loc=self.engine.get_auto_load_loc())      
-        
-    def get_dbsdata(self):
-        return self.engine.get_dbsdata()
 
+        if self.engine.get_cfg_val("loaddb_on_load"):
+            self._load_offline_dbs(file_loc=self.engine.get_cfg_val("loaddb_loc"))
+ 
+#   API       
+    def get_dbvar(self):
+        return self.engine.get_dbvar()
+    
+    def set_cfgvar(self,new_cfgvar):
+        self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
+        
+#   UX EVENT HANDLERS AND HELPERS   
     def _reset_and_gen_all_new_dbs(self):
         print("Resetting All DBs.")
         dir_loc = filedialog.askdirectory()
         self.engine.reset_and_gen_all_dbs(dir_loc)
         self.gen_db_status_value["text"] = "Generated new DBs at " + self.engine.time_str()
         self._update_statuses()
+        self.controller.propagate_db_var_change(self.get_dbvar())
         print("Completed Generated New Dbs")
         
     def _reset_and_gen(self,db_str,dir_loc = None):
@@ -132,16 +137,16 @@ class DBManager(tk.Frame):
 
     def _export_db_csv(self, db_str):
         print("Export_DB")
-        if self.engine.should_auto_name_export():
+        if self.engine.get_cfg_val("auto_name_export"):
             fullname = self.engine.get_export_full_name(db_str)
         else:
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".xlsx"
-        self.engine.get_dbsdata()[db_str].to_excel(fullname)
+        self.engine.get_dbvar()[db_str].to_excel(fullname)
 
     def _export_db_sqlite(self, db_str):
         print("Export DB to SQlite")
-        if self.engine.should_auto_name_export():
+        if self.engine.get_cfg_val("auto_name_export"):
             fullname = self.engine.get_export_full_name(db_str,ftype="sqlite")
         else:
             dir_loc = filedialog.asksaveasfilename()
@@ -158,7 +163,7 @@ class DBManager(tk.Frame):
         for db_pack in self.db_panel_packs:
             # (curr_db, db_title,db_status,db_export_csv,db_export_sqlite)
             try:
-                specific_db = self.engine.get_dbsdata()[db_pack[0]]
+                specific_db = self.engine.get_dbvar()[db_pack[0]]
             except KeyError:
                 db_pack[1]["text"] = "Database is Missing!"
                 db_pack[1]["fg"] = "red"
@@ -192,6 +197,7 @@ class DBManager(tk.Frame):
             db_pack[1]["text"] = line1 + line2
             db_pack[1]["fg"] = "green"
 
+#   BUILD FUNCTIONS
     def _build_top_frame(self):
         self.top_frame = ttk.LabelFrame(self, text="General")
         self.top_frame.grid(row=0, column=0, sticky="wne",columnspan=2)
@@ -222,9 +228,8 @@ class DBManager(tk.Frame):
         self.status_header.grid(
             row=row_c, column=2, columnspan=2)
 
-        for db_str in self.engine.get_db_ref():
+        for db_str,curr_db in self.engine.get_cfg_val("db_build_config").items():
             row_c += 1
-            curr_db = self.engine.get_db_ref()[db_str]
             ttk.Label(self.middle_frame, text=curr_db["proper_title"]).grid(row=row_c, column=0, sticky="w", padx=15,pady=(5,20))
 
             db_status = tk.Label(self.middle_frame, text="Default")
@@ -299,13 +304,10 @@ class DBManager(tk.Frame):
 
         self.save_db_status_value = ttk.Label(self.bottom_frame, text=" - ")
         self.save_db_status_value.grid(row=3, column=1, sticky="e", padx=15)
-
-
-
     
 if __name__ == "__main__":
     import config2
-    dbcfg = config2.backend_settings["dbmanager_config"]
+    dbcfg = config2.backend_settings
     app = tk.Tk()
     test_widget = DBManager(app, config=dbcfg)
     test_widget.grid(padx=20)

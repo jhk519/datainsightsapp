@@ -15,113 +15,149 @@ import sqlite3
 import pandas as pd
 import PIL
 import requests
+import copy
 
 import queries
 import exceltodataframe as etdf
 
-class DBManagerEngine:
-    def __init__(self,init_config = None):
-        self.engine_name = "default"
-        self.__config = {}
-        self.__dbvar = None
-        if init_config:
-            self.set_build_config(init_config)
-            
-        self.__dbsdata = {}
-            
-    def __str__(self):
-        return "{}".format(self.engine_name)  
+class DefaultEngine:
+    def __init__(self,init_config = None,init_dbvar=None,name=""):
+        self.engine_name = "Default" + name + "Engine"
+        self.__cfgvar = init_config      
+        self.__dbvar = init_dbvar
+        self.__req_headers = []        
 
+#   API
     def set_build_config(self,raw_config):
-        self.__config = self._gen_build_config(raw_config)
+        if self._check_req_headers(config_to_check=raw_config):
+            self.__cfgvar = raw_config
+        else:
+            print("New Config is Incompatible. Setting new Config terminated.")
             
-    def _gen_build_config(self,raw_config):
-        dt = {}
-        for target in ["loaddb_on_load","auto_name_export","loaddb_loc","db_build_config","header_ref",
-                       "online_db_url","export_db_loc"]:
-            dt[target] = raw_config.get(target,None)
-        return dt  
+    def set_dbvar(self,new_dbdata):
+        self.__dbvar = new_dbdata    
+        
+    def get_dbvar(self):
+        return self.__dbvar
     
+    def get_config(self,need_copy=False):
+        if need_copy:
+            return copy.deepcopy(self.__cfgvar)
+        else:
+            return self.__cfgvar
+        return self.__cfgvar
+             
     def time_str(self,key="now"):
         if key == "now":
-            return datetime.datetime.now().strftime("%y%m%d-%H%M")    
-    
+            return datetime.datetime.now().strftime("%y%m%d-%H%M") 
+        
+    def get_cfg_val(self,key):
+        return self.__cfgvar[key]
+             
+    def _check_req_headers(self,config_to_check=None):
+        if not config_to_check:
+            config_to_check = self.__config
+        passed = True
+        for target in self.__req_headers:
+            if not config_to_check.get(target,False):
+                print("MISSING HEADER: ", target)
+                passed = False
+        return passed
+
+class SettingsManagerEngine(DefaultEngine):
+#    Note that settingsmanager does not use dbvar at all
+    def __init__(self,init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config,init_dbvar=init_dbvar,name="SettingsManager")    
+        self.user_settings = []
+        
+    def load_ini_settings(self,parser_sections):
+        temp_cfg = self.get_config(need_copy=True)
+        self.user_settings = []
+        for section_header,section_cfg in parser_sections.items():
+            for setting_header, setting_str in section_cfg.items():
+                try:
+                    temp_cfg[section_header]
+                except KeyError:
+                    print(section_header,"from .ini file not found in config.")
+                    print("This will mean updates to ini will not be unpacked and config updated.")
+                    continue
+                set_val,set_type = setting_str.split(":")
+                final_val = self._get_clean_val(set_val,set_type)
+                temp_cfg[section_header][setting_header] = final_val
+                self.user_settings.append([section_header,setting_header,final_val,set_type])
+        self.set_build_config(temp_cfg)   
+        
+    def _get_clean_val(self,setting_val,setting_type):
+        if setting_type == "bool":
+            if setting_val == "True":
+                val = True
+            elif setting_val == "False":
+                val = False
+            else:
+                print("ERROR, NOT SUITABLE VAL: ", setting_val,"FOR",setting_type)
+                raise ValueError
+        elif setting_type == "int":
+            val = int(setting_val)
+        elif setting_type in ["list","date","str"]:
+            val = setting_val
+        else:
+            val = None   
+        return val
+
+class DBManagerEngine(DefaultEngine):
+    def __init__(self,init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config,init_dbvar=init_dbvar,name="DBManager")
+
     def gen_bare_dbs(self):
         dbs = {}
-        template = self.__config["db_build_config"]
+        template = self.get_cfg_val("db_build_config")
         for key in template:
             dbs[key] = None
-        return dbs
-    
-    def get_db_ref(self):
-        return self.__config["db_build_config"]
-    
-    def get_auto_load_db(self):
-        return self.__config["loaddb_on_load"]
+        return dbs   
 
-    def get_auto_load_loc(self):
-        return self.__config["loaddb_loc"]
-    
-    def get_dbsdata(self):
-        return self.__dbsdata
-    
-    def set_dbsdata(self,new_dbsdata):
-        self.__dbsdata = new_dbsdata
-    
-    def should_auto_name_export(self):
-        return self.__config["auto_name_export"]
-    
-    def get_export_db_loc(self):
-        return self.__config["export_db_loc"]
-    
-    def get_header_ref(self):
-        return self.__config["header_ref"]
-    
-    def get_db_url(self):
-        return self.__config["online_db_url"]
-    
     def gen_single_db(self, db_str, dir_loc):
-        db_ref = self.get_db_ref()[db_str]
+        db_ref = self.get_cfg_val("db_build_config")[db_str]
         ext = ".xlsx"
         req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
         match_on_key = db_ref["match_on_key"]
-        new_df = etdf.gen_single_db_from_excels(dir_loc, ext, self.get_header_ref(),
+        new_df = etdf.gen_single_db_from_excels(dir_loc, ext, self.get_cfg_val("header_ref"),
                                                 req_excels_tpl, match_on_key)
         return new_df
     
     def reset_and_gen_single_db(self,db_str, dir_loc):
-        self.__dbsdata[db_str] = self.gen_single_db(db_str,dir_loc)
+        self.get_dbvar()[db_str] = self.gen_single_db(db_str,dir_loc)
 
     def reset_and_gen_all_dbs(self,dir_loc):
-        self.__dbsdata = self.gen_bare_dbs()
-        for db_str in self.__dbsdata:
+        self.set_dbvar(self.gen_bare_dbs())
+        for db_str in self.get_dbvar():
             self.reset_and_gen_single_db(db_str,dir_loc)  
             
     def update_single_db(self,db_str,dir_loc):
         print("Adding Data to: ", db_str)
-        db_ref = self.get_db_ref()[db_str]
-        curr_df = self.__dbsdata[db_str]
-
+        db_ref = self.get_cfg_val("db_build_config")[db_str]
+        curr_df = self.get_dbvar()[db_str]
         ext = ".xlsx"
         req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
         match_on_key = db_ref["match_on_key"]
 
-        self.__dbsdata[db_str] = etdf.add_data(curr_df, dir_loc, ext, self.get_header_ref(), 
+        self.get_dbvar()[db_str] = etdf.add_data(curr_df, dir_loc, ext, self.get_cfg_val("header_ref"), 
                                req_excels_tpl,match_on_key)
+        
+#        print(self.engine_name, "\n", id(self.get_dbvar()))
 
     def update_data_all_dbs(self,dir_loc):
-        for db_str in self.__dbsdata:
+        for db_str in self.get_dbvar():
             self.update_single_db(db_str,dir_loc) 
             
     def load_offline_dbs(self,dir_loc):
         with open(dir_loc, "rb") as dbfile:
             try:
-                self.set_dbsdata(pickle.load(dbfile))
+                self.set_dbvar(pickle.load(dbfile))
             except:
                 print("Likely in-compatible DB file.")
             
     def load_online_dbs(self,counter=None,ticker=None):
-        url = self.get_db_url()
+        url = self.get_cfg_val("online_db_url")
         first_response = requests.get(url,stream=True)
         x=0
         with open('databases//DH_DBS.pickle', 'wb') as dbfile:
@@ -132,12 +168,12 @@ class DBManagerEngine:
                 dbfile.write(chunk)
                 x += 1
         with open('databases//DH_DBS.pickle', "rb") as dbfile:
-            self.__dbsdata = pickle.load(dbfile)
+            self.set_dbvar(pickle.load(dbfile))
             
     def save_all_dbs(self,save_type="pickled_dataframe"):
         if save_type == "pickled_dataframe":
             with open('databases//DH_DBS.pickle', 'wb') as dbfile:
-                pickle.dump(self.__dbsdata, dbfile)     
+                pickle.dump(self.get_dbvar(), dbfile)     
                 
     def get_export_full_name(self,db_str,ftype="excel"):
         if ftype == "excel":
@@ -148,7 +184,7 @@ class DBManagerEngine:
             ext = ".db"
             
         outname = db_str + self.time_str() + ext
-        outdir = self.get_export_db_loc()
+        outdir = self.get_cfg_val("export_db_loc")
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         fullname = os.path.join(outdir, outname)      
@@ -156,7 +192,7 @@ class DBManagerEngine:
     
     def df2sqlite(self,db_str, db_name="import.sqlite", tbl_name="import"):
         print("Preparing conversion to sqlite for: ", db_name)
-        dataframe = self.__dbsdata[db_str]
+        dataframe = self.get_dbvar()[db_str]
         conn = sqlite3.connect(db_name)
         cur = conn.cursor()
     
@@ -164,8 +200,8 @@ class DBManagerEngine:
         data = [tuple(x) for x in dataframe.values]
         count = 0
         for x in data[3]:
-            print(count)
-            print(type(x), " is ", x)
+#            print(count)
+#            print(type(x), " is ", x)
             count += 1
     
         cur.execute("drop table if exists %s" % tbl_name)
@@ -177,40 +213,13 @@ class DBManagerEngine:
         conn.close()
         print("Export to Sqlite Completed")    
         
-class ProductViewerEngine:
-    def __init__(self,init_config = None,init_dbvar = None):
-        self.engine_name = "default"
-        self.__config = {}
-        self.__dbvar = None
-        if init_config:
-            self.set_build_config(init_config)
-        if init_dbvar:
-            self.set_dbvar(init_dbvar)
-            
-    def __str__(self):
-        return "{}".format(self.engine_name)  
-    
-    def set_dbvar(self, newref):
-        self.__dbvar = newref
+class ProductViewerEngine(DefaultEngine):
+    def __init__(self,init_config = None, init_dbvar=None, name="ProductViewer"):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar,
+                         name="ProductViewer")
 
-    def set_build_config(self,raw_config):
-        self.__config = self._gen_build_config(raw_config)
-            
-    def _gen_build_config(self,raw_config):
-        dt = {}
-        for target in []:
-            dt[target] = raw_config.get(target,None)
-        return dt  
-    
-    def time_str(self,key="now"):
-        if key == "now":
-            return datetime.datetime.now().strftime("%y%m%d-%H%M")
-        
-    def get_pdb_data(self):
-        return self.__dbvar["pdb"]
-    
     def get_pdb_product_data(self,pcode):
-        pdb = self.get_pdb_data()
+        pdb = self.get_dbvar()["pdb"]
         x = pdb.loc[pdb['product_code'] == pcode]  
         return x
         
@@ -267,44 +276,9 @@ class ProductViewerEngine:
         else:
             return im            
         
-class AnalysisPageEngine:
-    def __init__(self,init_config = None,init_dbvar = None):
-        self.engine_name = "default"
-        self.__config = {}
-        self.__dbvar = None
-        if init_config:
-            self.set_build_config(init_config)
-        if init_dbvar:
-            self.set_dbvar(init_dbvar)
-            
-    def __str__(self):
-        return "{}".format(self.engine_name)  
-    
-    def set_dbvar(self, newref):
-        self.__dbvar = newref
-
-    def set_build_config(self,raw_config):
-        self.__config = self._gen_build_config(raw_config)
-            
-    def _gen_build_config(self,raw_config):
-        dt = {}
-        for target in ["auto_export_loc","auto_name_exports","auto_query",
-                       "metric_graph_refs","controls_config"]:
-            dt[target] = raw_config.get(target,None)
-        return dt  
-    
-    def time_str(self,key="now"):
-        if key == "now":
-            return datetime.datetime.now().strftime("%y%m%d-%H%M")
-
-    def get_controls_cfg(self):
-        return self.__config["controls_config"] 
-    
-    def should_auto_export(self):
-        return self.__config["auto_name_exports"]
-    
-    def get_auto_export_loc(self):
-        return self.__config["auto_export_loc"]
+class AnalysisPageEngine(DefaultEngine):
+    def __init__(self, init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="AnalysisPage")
     
     def get_export_full_name(self,title,ftype="excel"):
         if ftype == "excel":
@@ -312,7 +286,7 @@ class AnalysisPageEngine:
         else:
             ext = ".png"
         outname = title.replace(".","") + self.time_str("now") + ext
-        outdir = self.get_auto_export_loc()
+        outdir = self.get_cfg_val("auto_export_loc")
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         fullname = os.path.join(outdir, outname)      
@@ -338,7 +312,7 @@ class AnalysisPageEngine:
         
         sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
         
-        if self.should_auto_export():
+        if self.get_cfg_val("auto_name_exports"):
             fullname = self.get_export_full_name(mrp["title"])
         else:    
             fullname = None
@@ -360,7 +334,7 @@ class AnalysisPageEngine:
         return None,None          
     
     def get_metric_graph_ref(self,metric_str):
-        return self.__config["metric_graph_refs"][metric_str]
+        return self.get_cfg_val("metric_graph_refs")[metric_str]
     
     def get_results_packs(self,pack):
         """
@@ -388,7 +362,7 @@ class AnalysisPageEngine:
         for ind,axis in enumerate(axes_select_packs):
             if axis:
                 metric = axis["metric"]
-                metric_graph_ref = self.get_metric_graph_ref(metric)
+                metric_graph_ref = self.get_cfg_val("metric_graph_refs")[metric]
                 ls_queries = []
                 ls_x_axis_data = []
                 ls_y_axis_data_lists = []
@@ -398,7 +372,7 @@ class AnalysisPageEngine:
                     ls_queries.append(query_tuple[0])
                     ls_colors_to_plot.append(query_tuple[1])
                     queryx, queryy = list(queries.main(query_tuple[0],
-                                                       self.__dbvar,
+                                                       self.get_dbvar(),
                                                        start,
                                                        end,
                                                        extra=axis["extra"]))  
@@ -419,60 +393,14 @@ class AnalysisPageEngine:
                     "colors":ls_colors_to_plot,
                 }
                 axes_result_packs[ind] = rp          
-        return axes_result_packs
-    
-    def _get_data_lists(self, ls_queries_to_plot, start, end, extra=None):
-        ls_line_labels = []
-        ls_x_axis_data = []
-        ls_y_axis_data_lists = []
-        for str_query in ls_queries_to_plot:
-            count = 0
-            ls_line_labels.append(str_query)
-            queryx, queryy = list(queries.main(str_query,
-                                               self.app.datahub.dbs,
-                                               start,
-                                               end,
-                                               self.app.cfg,
-                                               extra=extra))
-# just take x-axis from first query. but you can take any theoretically.
-            if count == 0:
-                ls_x_axis_data = queryx
-            ls_y_axis_data_lists.append(queryy)
-            count += 1
-        return ls_line_labels, ls_x_axis_data, ls_y_axis_data_lists          
+        return axes_result_packs      
         
-class ControlPanelEngine:
-    def __init__(self,init_config = None):
-        self.engine_name = "default"
-        self.__config = {}
-        if init_config:
-            self.set_build_config(init_config)
-            
-    def __str__(self):
-        return "{}".format(self.engine_name)  
-
-    def set_build_config(self,raw_config):
-            self.__config = self._gen_build_config(raw_config)
-        
-    def _gen_build_config(self,raw_config):
-        return {"axis_panel_names":raw_config.get("axis_panel_names",[]),
-                "setdates_on_load":raw_config.get("setdates_on_load",None),
-                "setdates_gap":raw_config.get("setdates_gap",None),
-                "setdates_from_date":raw_config.get("setdates_from_date",None),
-                "queries_config":raw_config.get("queries_config",{})
-                }   
-        
-    def should_set_dates_on_load(self):
-        return self.__config["setdates_on_load"]
+class ControlPanelEngine(DefaultEngine):
+    def __init__(self, init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="ControlPanel")
         
     def get_set_date_config(self):
-        return (self.__config["setdates_gap"],self.__config["setdates_from_date"])
-
-    def get_query_panel_names(self):
-        return self.__config["axis_panel_names"]   
-
-    def get_queries_config(self):
-        return self.__config["queries_config"]
+        return (self.get_cfg_val("setdates_gap"),self.get_cfg_val("setdates_from_date"))
     
     def set_end_date(self,date_cfg_pack):
         days_back = int(date_cfg_pack[0])
@@ -498,34 +426,19 @@ class ControlPanelEngine:
         return start_date,end_date
 
 
-class QueryPanelEngine:
-    def __init__(self,init_config = None):
-        self.engine_name = "default"
-        self.config = {}
-        if init_config:
-            self.set_build_config(init_config)
-            
-    def __str__(self):
-        return "{}".format(self.engine_name)  
-
-    def set_build_config(self,raw_config):
-            self.config = self.gen_build_config(raw_config)
-        
-    def gen_build_config(self,raw_config):
-        return {"pages_to_scopes_ref":raw_config.get("pages_to_scopes_ref",None),
-                "scopes_to_metrics":raw_config.get("scopes_to_metrics_ref",None),
-                "metrics_to_queries_ref":raw_config.get("metrics_to_queries_ref",None),
-                "colors_preferred": raw_config.get("colors_preferred",[])}
+class QueryPanelEngine(DefaultEngine):
+    def __init__(self, init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="QueryPanel")
         
     def get_scopes(self,page):
         a_list = []
-        for key in self.config["pages_to_scopes_ref"][page]:
+        for key in self.get_cfg_val("pages_to_scopes_ref")[page]:
             a_list.append(key)
         return a_list
     
     def get_extra(self,scope):
         try:
-            extra_details = self.config["scopes_to_metrics"].get(scope,None)["extra"]
+            extra_details = self.get_cfg_val("scopes_to_metrics_ref").get(scope,None)["extra"]
         except TypeError:
             return False
         if extra_details:
@@ -538,15 +451,15 @@ class QueryPanelEngine:
     
     def get_metrics(self,scope):
         a_list = []
-        for key in self.config["scopes_to_metrics"][scope]["metrics"]:
+        for key in self.get_cfg_val("scopes_to_metrics_ref")[scope]["metrics"]:
             a_list.append(key)
         return a_list
     
     def get_queries(self,metric):
-        return self.config["metrics_to_queries_ref"][metric][1]
+        return self.get_cfg_val("metrics_to_queries_ref")[metric][1]
 
     def should_exclude(self,metric):
-        return self.config["metrics_to_queries_ref"][metric][0]
+        return self.get_cfg_val("metrics_to_queries_ref")[metric][0]
     
     def get_colors_preferred(self):
-        return self.config["colors_preferred"].split("-")
+        return self.get_cfg_val("colors_preferred").split("-")

@@ -15,6 +15,7 @@ except ImportError:  # Python 3
 
 # Standard Modules
 from pprint import pprint
+import pickle
 
 # Non-standard Modules
 from PIL import ImageTk
@@ -36,8 +37,8 @@ class ProductViewer(tk.LabelFrame):
         else:
             self.engine = engine         
             
-        if config:
-            self.engine.set_build_config(raw_config = config)  
+#        if config:
+#            self.engine.set_cfgvar(config)
             
         if dbvar:
             self.engine.set_dbvar(dbvar)
@@ -51,6 +52,98 @@ class ProductViewer(tk.LabelFrame):
         self._build_product_info_frame()
         self._build_sku_frame()
         
+#   API
+    def set_dbvar(self,new_dbvar):
+        self.engine.set_dbvar(new_dbvar)
+        
+    def set_cfgvar(self,new_cfgvar):
+        self.engine.set_build_config(new_cfgvar)    
+        
+#   UX EVENT HANDLERS AND HELPERS        
+    def search_product(self,code=None):
+        if code == None:
+            code = self.search_pcode_stvar.get()        
+        search_product_result = self.engine.search_product(code=code)
+        if search_product_result == "no_results":
+            self.popup = tk.Toplevel()
+            self.popup.title("Load from Online or from Computer?")
+            msg = tk.Message(
+                self.popup,
+                text="No results for this product code in database.")
+            msg.pack()
+            okbutton = ttk.Button(
+                self.popup,
+                text="OK",
+                command=self.popup.destroy)
+            okbutton.pack()
+        elif search_product_result == "no_code_given":
+            print("No Code Given")
+        else:
+            self.update_product_info(search_product_result)     
+            
+    def update_product_info(self,product_dict):
+        self._clear_data()
+        
+#       UPDATE PRODUCT FRAME DETAILS      
+        for stvar_tpl in self.product_detail_packs:
+            key = stvar_tpl[0]
+            detail_var = stvar_tpl[1]
+            detail_var.set(product_dict["product_info"][key])
+
+#       UPDATE MAIN IMAGE 
+        p_url = product_dict["product_info"]["main_image_url"]
+        self._update_label_image(self.main_image_url_label,p_url,0)            
+
+#       UPDATE SKU FRAME
+        row_c = 1
+        for sku_tpl in product_dict["sku_list"]:
+            
+            barcode,color,size,url = sku_tpl
+            
+            barc_lbl = ttk.Label(self.sku_frame,text=barcode)
+            barc_lbl.grid(row=row_c,column=0,sticky="w",padx=8) 
+            
+            colorbt = ttk.Button(self.sku_frame, text=color,
+                command=lambda url = url: self._update_label_image(
+                    self.sku_image_label,
+                    url,1))
+            colorbt.grid(row=row_c,column=1,sticky="w",padx=8)
+            
+            size_lbl = ttk.Label(self.sku_frame,text=size)     
+            size_lbl.grid(row=row_c,column=2,sticky="w",padx=8)
+            
+            if row_c == 1:
+                colorbt.invoke()
+            row_c += 1
+            
+            sku_detail_pack = barc_lbl,colorbt,size_lbl
+            self.sku_detail_packs.append(sku_detail_pack)
+   
+    def _clear_data(self):
+        self.main_image_url_label["image"] = ""
+        self.sku_image_label["image"] = ""
+        for tpl in self.product_detail_packs:
+            tpl[1].set("")
+            
+        for tpl in self.sku_detail_packs:
+            for x in tpl:
+                x.grid_forget()
+        self.sku_detail_packs = []       
+
+    def _update_label_image(self, labelobj,url,curr_img_index):
+        im = self.engine.get_PIL_image(url)
+        if im:
+            im = im.resize((300, 300))
+            image = ImageTk.PhotoImage(im)
+            labelobj["image"] = image   
+            self.current_images.append(image) 
+        else:
+            labelobj["image"] = ""
+            image = None
+        self.current_images[curr_img_index] = image
+        
+#   BUILD FUNCTIONS
+                 
     def _build_search_frame(self):
         self.search_frame = ttk.LabelFrame(self,text="Search")
         self.search_frame.grid(row=0,column=0,sticky="ew",pady=15)
@@ -117,88 +210,7 @@ class ProductViewer(tk.LabelFrame):
         self.sku_image_label = ttk.Label(self.sku_frame,text="Default SKU URL")
         self.sku_image_label.grid(row=0,column=3,rowspan=10,sticky="e",padx=15)
         
-    def search_product(self,code=None):
-        if code == None:
-            code = self.search_pcode_stvar.get()        
-        search_product_result = self.engine.search_product(code=code)
-        if search_product_result == "no_results":
-            self.popup = tk.Toplevel()
-            self.popup.title("Load from Online or from Computer?")
-            msg = tk.Message(
-                self.popup,
-                text="No results for this product code in database.")
-            msg.pack()
-            okbutton = ttk.Button(
-                self.popup,
-                text="OK",
-                command=self.popup.destroy)
-            okbutton.pack()
-        elif search_product_result == "no_code_given":
-            print("No Code Given")
-        else:
-            self.update_product_info(search_product_result)     
-            
-    def update_product_info(self,product_dict):
-        self.clear_data()
-        
-#       UPDATE PRODUCT FRAME DETAILS      
-        for stvar_tpl in self.product_detail_packs:
-            key = stvar_tpl[0]
-            detail_var = stvar_tpl[1]
-            detail_var.set(product_dict["product_info"][key])
 
-#       UPDATE MAIN IMAGE 
-        p_url = product_dict["product_info"]["main_image_url"]
-        self.update_label_image(self.main_image_url_label,p_url,0)            
-
-#       UPDATE SKU FRAME
-        row_c = 1
-        for sku_tpl in product_dict["sku_list"]:
-            
-            barcode,color,size,url = sku_tpl
-            
-            barc_lbl = ttk.Label(self.sku_frame,text=barcode)
-            barc_lbl.grid(row=row_c,column=0,sticky="w",padx=8) 
-            
-            colorbt = ttk.Button(self.sku_frame, text=color,
-                command=lambda url = url: self.update_label_image(
-                    self.sku_image_label,
-                    url,1))
-            colorbt.grid(row=row_c,column=1,sticky="w",padx=8)
-            
-            size_lbl = ttk.Label(self.sku_frame,text=size)     
-            size_lbl.grid(row=row_c,column=2,sticky="w",padx=8)
-            
-            if row_c == 1:
-                colorbt.invoke()
-            row_c += 1
-            
-            sku_detail_pack = barc_lbl,colorbt,size_lbl
-            self.sku_detail_packs.append(sku_detail_pack)
-   
-    def clear_data(self):
-        self.main_image_url_label["image"] = ""
-        self.sku_image_label["image"] = ""
-        for tpl in self.product_detail_packs:
-            tpl[1].set("")
-            
-        for tpl in self.sku_detail_packs:
-            for x in tpl:
-                x.grid_forget()
-        self.sku_detail_packs = []       
-
-    def update_label_image(self, labelobj,url,curr_img_index):
-        im = self.engine.get_PIL_image(url)
-        if im:
-            im = im.resize((300, 300))
-            image = ImageTk.PhotoImage(im)
-            labelobj["image"] = image   
-            self.current_images.append(image) 
-        else:
-            labelobj["image"] = ""
-            image = None
-        self.current_images[curr_img_index] = image
-         
 if __name__ == "__main__":
     dbfile =  open(r"databases/DH_DBS.pickle", "rb")
     dbs = pickle.load(dbfile)  

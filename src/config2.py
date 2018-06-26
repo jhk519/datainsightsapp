@@ -11,10 +11,11 @@ import datetime
 backend_settings = {
     "dbmanager_config":{
         "online_db_url":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
+        "auto_name_export": True,        
         "export_db_loc":".//exports//databases",
         "loaddb_on_load": True, 
-        "auto_name_export": True,
         "loaddb_loc": "databases//DH_DBS.pickle",
+        
         "db_build_config": {
             "odb": {
                 "data": None,
@@ -62,6 +63,7 @@ backend_settings = {
                 "match_on_key": "sellmateBarcode"
             }
         },
+            
         "header_ref" :{
             "order_data": {
                 "주문번호": "order_id",
@@ -194,6 +196,7 @@ backend_settings = {
             }
         }              
     },
+            
     "analysispage_config":{     
         "auto_export_loc": ".//exports//graphs",
         "auto_name_exports": True,  
@@ -264,108 +267,108 @@ backend_settings = {
                 "xaxis_label": "Number of Days",
                 "type": "pie",
                 "yaxis_label": "Quantity",
-            },            
-        },
-            
-        "controls_config":{
-            "auto_query": True,
-            "axis_panel_names": [
-                    "Left Axis",
-                    "Right Axis"
-            ],
-            "setdates_on_load": True,
-            "setdates_gap":"14",
-            "setdates_from_date":"20180328",
-            
-            "queries_config":{
-                "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
-                "pages_to_scopes_ref": {
-                    "Graph": [
-                        "General",
-                        "Filter By Product",
-                        "Product Rankings"
-                    ]
-                },
-            
-                "scopes_to_metrics_ref": {
-                    "Filter By Product": {
-                        "metrics": [
-                            "Order Lifecycle",
-                            "Days To Ship",
-                            "Days Waiting To Ship",
-                            "Cancel Reasons",
-                            "Sales - Payment and Discount",
-                        ],
-                        "extra": {
-                            "use": True,
-                            "text": "Cafe24 Code",
-                            "type": "entry",
-                            "fill": "P0000PGG"
-                        }
-            
-                    },
-                    "General": {
-                        "metrics": [
-                            "Visitors By Device",
-                            "Revenue By Device",
-                            "Orders By Device",
-                            "Total Pageviews",
-                            "AOV",
-                            "AOS"
-                        ],
-                        "extra": {
-                            "use": False,
-                            "text": "NO_TEXT",
-                            "type": "text"
-                        }
-                    },
-                    "Product Rankings": {
-                        "metrics": [
-                            "Top 10 By Orders",
-                            "Top 10 By Returns",
-                        ],
-                        "extra": {
-                            "use": False,
-                            "text": "NO_TEXT",
-                            "type": "text"
-                        }
-                    }
-                },
-                        
-                "metrics_to_queries_ref": { 
-                    "Top 10 By Orders": ("exclude",["Top 10 By Orders",]),
-                    "Top 10 By Returns": ("exclude",["Top 10 By Returns"]),
-                    "Order Lifecycle": ("inclusive",["total_order_quantity",
-                                                     "total_cancel_quantity",
-                                                     "total_return_quantity"]),
-                    "Cancel Reasons": ("exclude",["cancel_reasons"]),
-                    "Sales - Payment and Discount": ("inclusive",["net_payment", 
-                                                                  "net_discount"]),
-                    "Visitors By Device": ("inclusive",["visitors_mobile",
-                                                        "visitors_pc",
-                                                        "visitors_app"
-                                                        ,"visitors_all"]),
-                        
-                    "Revenue By Device": ("inclusive",["revenue_all","revenue_app","revenue_pc",
-                                                       "revenue_mobile","revenue_kooding"]),
-                        
-                    "Orders By Device": ("inclusive",["orders_app","orders_pc","orders_mobile",
-                                                      "orders_all"]),
-                        
-                    "Total Pageviews": ("inclusive",["total_pageviews"]),
-                    
-                    "AOV": ("inclusive",["average_order_value"]),
-                    
-                    "AOS": ("inclusive",["average_order_size"]),
-                    
-                    "Days Waiting To Ship": ("exclude",["days_unsent"]),
-                    
-                    "Days To Ship": ("exclude",["days_to_ship"]),
-                },
-            }
+            }         
         }
     },
                     
-   
+    "controlpanel_config":{
+        "setdates_on_load": True,
+        "setdates_gap":"14",
+        "setdates_from_date":"20180128",                
+        "auto_query": True,
+        
+        "axis_panel_names": [
+                "Left Axis",
+                "Right Axis"
+        ],
+    },
+
+    "querypanel_config":{
+        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
+        
+        "pages_to_scopes_ref": {
+            "Graph": [
+                "General",
+                "Filter By Product",
+                "Product Rankings"
+            ]
+        },
+    
+        "scopes_to_metrics_ref": {
+            "Filter By Product": {
+                "metrics": [
+                    "Order Lifecycle",
+                    "Days To Ship",
+                    "Days Waiting To Ship",
+                    "Cancel Reasons",
+                    "Sales - Payment and Discount",
+                ],
+                "extra": {
+                    "use": True,
+                    "text": "Cafe24 Code",
+                    "type": "entry",
+                    "fill": "P0000PGG"
+                }
+    
+            },
+            "General": {
+                "metrics": [
+                    "Visitors By Device",
+                    "Revenue By Device",
+                    "Orders By Device",
+                    "Total Pageviews",
+                    "AOV",
+                    "AOS"
+                ],
+                "extra": {
+                    "use": False,
+                    "text": "NO_TEXT",
+                    "type": "text"
+                }
+            },
+            "Product Rankings": {
+                "metrics": [
+                    "Top 10 By Orders",
+                    "Top 10 By Returns",
+                ],
+                "extra": {
+                    "use": False,
+                    "text": "NO_TEXT",
+                    "type": "text"
+                }
+            }
+        },
+                
+        "metrics_to_queries_ref": { 
+            "Top 10 By Orders": ("exclude",["Top 10 By Orders",]),
+            "Top 10 By Returns": ("exclude",["Top 10 By Returns"]),
+            "Order Lifecycle": ("inclusive",["total_order_quantity",
+                                             "total_cancel_quantity",
+                                             "total_return_quantity"]),
+            "Cancel Reasons": ("exclude",["cancel_reasons"]),
+            "Sales - Payment and Discount": ("inclusive",["net_payment", 
+                                                          "net_discount"]),
+            "Visitors By Device": ("inclusive",["visitors_mobile",
+                                                "visitors_pc",
+                                                "visitors_app"
+                                                ,"visitors_all"]),
+                
+            "Revenue By Device": ("inclusive",["revenue_all","revenue_app","revenue_pc",
+                                               "revenue_mobile","revenue_kooding"]),
+                
+            "Orders By Device": ("inclusive",["orders_app","orders_pc","orders_mobile",
+                                              "orders_all"]),
+                
+            "Total Pageviews": ("inclusive",["total_pageviews"]),
+            
+            "AOV": ("inclusive",["average_order_value"]),
+            
+            "AOS": ("inclusive",["average_order_size"]),
+            
+            "Days Waiting To Ship": ("exclude",["days_unsent"]),
+            
+            "Days To Ship": ("exclude",["days_to_ship"]),
+        },
+    }
 }           
         

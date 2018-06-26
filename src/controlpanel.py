@@ -43,8 +43,9 @@ class ControlPanel(ttk.PanedWindow):
         else:
             self.engine = engine         
             
+        self.config_key = "controlpanel_config"    
         if config:
-            self.engine.set_build_config(raw_config = config)              
+            self.engine.set_build_config(raw_config = config[self.config_key])   
         
 #       LOGIC VARIABLES
         self.check_valid = "DataInsightsApp_ControlPanel"
@@ -72,7 +73,7 @@ class ControlPanel(ttk.PanedWindow):
                 
 #        BUILD
         self.b_input_pane()
-        self.b_queries_pane(),
+        self.b_queries_pane(config),
         self.b_menu_pane()
         self.add(self.input_pane)
         self.add(self.query_pane)
@@ -80,105 +81,8 @@ class ControlPanel(ttk.PanedWindow):
         
 #       CONFIG
         if config:
-            if self.engine.should_set_dates_on_load():
+            if self.engine.get_cfg_val("setdates_on_load"):
                 self._set_dates(self.engine.get_set_date_config())
-                
-    def b_input_pane(self):
-        self.input_pane = ttk.Labelframe(
-            self, text="Input")
-
-        self.back_one_month_button = ttk.Button(
-            self.input_pane, command=lambda: self._skip_calendars(-30), text="<<",width=3)
-        self.back_one_month_button.grid(
-                row=0, column=0, padx=(5, 0), pady=2)
-        self.back_one_week_button = ttk.Button(
-            self.input_pane, command=lambda: self._skip_calendars(-7), text="<",width=3)
-        self.back_one_week_button.grid(
-                row=0, column=1, padx=5, pady=2)
-
-        self.start_day_button = ttk.Button(self.input_pane,
-                                          command=self._open_start_calendar,
-                                          textvariable=self.start_textvar)
-        self.start_day_button.grid(row=0, column=2, padx=5, pady=2)
-
-        self.end_day_button = ttk.Button(self.input_pane,command=self._open_end_calendar,
-            textvariable=self.end_textvar)
-        self.end_day_button.grid(row=0, column=3, padx=5, pady=2)
-
-        self.forward_one_week_button = ttk.Button(
-            self.input_pane, command=lambda: self._skip_calendars(7), text=">",width=3)
-        self.forward_one_week_button.grid(
-                row=0, column=4, padx=5, pady=2)
-
-        self.forward_one_month_button = ttk.Button(
-            self.input_pane, command=lambda: self._skip_calendars(30), text=">>",width=3)
-        self.forward_one_month_button.grid(
-            row=0, column=5, padx=(0, 5), pady=2)
-
-        self.hold_y_axis_button = ttk.Checkbutton(
-            self.input_pane,
-            text="Hold Y-Axis on Date Change?",
-            variable=self.hold_y_var,
-            onvalue=True,
-            offvalue=False)
-        
-        self.hold_y_axis_button.grid(
-            row=1,
-            column=0,
-            pady=2,
-            padx=5,
-            sticky="w",
-            columnspan=5)
-
-    def b_queries_pane(self):
-        self.query_pane = tk.Frame(self)
-        col = 0
-        for query_panel_name in self.engine.get_query_panel_names():
-            query_panel = querypanel.QueryPanel(
-                self.query_pane,
-                controller=self,
-                engine="default",
-                config = self.engine.get_queries_config(),
-                panel_name = query_panel_name)
-            query_panel["text"] = query_panel_name
-            self.ls_query_panels.append(query_panel)
-            query_panel.grid(row=0, column=col, sticky="n")
-            col += 1
-            
-    def b_menu_pane(self):
-        self.menu_pane = ttk.Labelframe(
-            self, text="Controls")
-
-        self.should_search_on_query_change = ttk.Checkbutton(
-            self.menu_pane,
-            text="Auto-search on query change?",
-            variable=self.autosearch,
-            onvalue=True,
-            offvalue=False)
-        self.should_search_on_query_change.grid(
-            row=0, column=0, pady=2, padx=5, sticky="w", columnspan=2)
-
-        self.entry_input_button = ttk.Button(
-            self.menu_pane,
-            command=self.search_call,
-            text="Search")
-        self.entry_input_button.grid(
-            row=1, column=0, padx=5, pady=2, sticky="w")
-
-        self.export_excel_button = ttk.Button(
-            self.menu_pane,
-            command=self.export_excel_call,
-            text="Export Data to Excel")
-        self.export_excel_button.grid(
-            row=1, column=1, padx=5, pady=2, sticky="w")
-        
-        self.export_graph_button = ttk.Button(
-            self.menu_pane,
-            command=self.export_graph_call,
-            text="Export Graph",
-            state="normal")
-        self.export_graph_button.grid(
-            row=1, column=2, padx=5, pady=2, sticky="w")        
 
     def _set_dates(self,date_cfg_pack):
         self.start_date,self.end_date = self.engine.set_end_date(date_cfg_pack)
@@ -188,6 +92,11 @@ class ControlPanel(ttk.PanedWindow):
   # ===================================================================
 #       API
 # ===================================================================    
+    def set_cfgvar(self,new_cfgvar):
+        self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
+        for qp in self.ls_query_panels:
+            qp.set_cfgvar(self,new_cfgvar)
+            
 
     def search_call(self):
         try:
@@ -302,9 +211,105 @@ class ControlPanel(ttk.PanedWindow):
                 tree, col, int(
                     not descending)))            
         
+    def b_input_pane(self):
+        self.input_pane = ttk.Labelframe(
+            self, text="Input")
+
+        self.back_one_month_button = ttk.Button(
+            self.input_pane, command=lambda: self._skip_calendars(-30), text="<<",width=3)
+        self.back_one_month_button.grid(
+                row=0, column=0, padx=(5, 0), pady=2)
+        self.back_one_week_button = ttk.Button(
+            self.input_pane, command=lambda: self._skip_calendars(-7), text="<",width=3)
+        self.back_one_week_button.grid(
+                row=0, column=1, padx=5, pady=2)
+
+        self.start_day_button = ttk.Button(self.input_pane,
+                                          command=self._open_start_calendar,
+                                          textvariable=self.start_textvar)
+        self.start_day_button.grid(row=0, column=2, padx=5, pady=2)
+
+        self.end_day_button = ttk.Button(self.input_pane,command=self._open_end_calendar,
+            textvariable=self.end_textvar)
+        self.end_day_button.grid(row=0, column=3, padx=5, pady=2)
+
+        self.forward_one_week_button = ttk.Button(
+            self.input_pane, command=lambda: self._skip_calendars(7), text=">",width=3)
+        self.forward_one_week_button.grid(
+                row=0, column=4, padx=5, pady=2)
+
+        self.forward_one_month_button = ttk.Button(
+            self.input_pane, command=lambda: self._skip_calendars(30), text=">>",width=3)
+        self.forward_one_month_button.grid(
+            row=0, column=5, padx=(0, 5), pady=2)
+
+        self.hold_y_axis_button = ttk.Checkbutton(
+            self.input_pane,
+            text="Hold Y-Axis on Date Change?",
+            variable=self.hold_y_var,
+            onvalue=True,
+            offvalue=False)
+        
+        self.hold_y_axis_button.grid(
+            row=1,
+            column=0,
+            pady=2,
+            padx=5,
+            sticky="w",
+            columnspan=5)
+
+    def b_queries_pane(self,config=None):
+        self.query_pane = tk.Frame(self)
+        col = 0
+        for query_panel_name in self.engine.get_cfg_val("axis_panel_names"):
+            query_panel = querypanel.QueryPanel(
+                self.query_pane,
+                controller=self,
+                engine="default",
+                config = config,
+                panel_name = query_panel_name)
+            query_panel["text"] = query_panel_name
+            self.ls_query_panels.append(query_panel)
+            query_panel.grid(row=0, column=col, sticky="n")
+            col += 1
+            
+    def b_menu_pane(self):
+        self.menu_pane = ttk.Labelframe(
+            self, text="Controls")
+
+        self.should_search_on_query_change = ttk.Checkbutton(
+            self.menu_pane,
+            text="Auto-search on query change?",
+            variable=self.autosearch,
+            onvalue=True,
+            offvalue=False)
+        self.should_search_on_query_change.grid(
+            row=0, column=0, pady=2, padx=5, sticky="w", columnspan=2)
+
+        self.entry_input_button = ttk.Button(
+            self.menu_pane,
+            command=self.search_call,
+            text="Search")
+        self.entry_input_button.grid(
+            row=1, column=0, padx=5, pady=2, sticky="w")
+
+        self.export_excel_button = ttk.Button(
+            self.menu_pane,
+            command=self.export_excel_call,
+            text="Export Data to Excel")
+        self.export_excel_button.grid(
+            row=1, column=1, padx=5, pady=2, sticky="w")
+        
+        self.export_graph_button = ttk.Button(
+            self.menu_pane,
+            command=self.export_graph_call,
+            text="Export Graph",
+            state="normal")
+        self.export_graph_button.grid(
+            row=1, column=2, padx=5, pady=2, sticky="w")            
 if __name__ == "__main__":
     import config2
-    controls_config = config2.backend_settings["analysispage_config"]["controls_config"]
+    controls_config = config2.backend_settings
     
     app = tk.Tk()
     controlpanel = ControlPanel(app,config=controls_config)

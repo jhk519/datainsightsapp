@@ -16,9 +16,7 @@ except ImportError:  # Python 3
     import tkinter.ttk as ttk
     
 # Standard Modules    
-import copy    
-import logging
-import configparser    
+import logging   
 import pprint as PRETTYPRINTTHIS
 
 # Project Mpdules
@@ -26,10 +24,10 @@ import config2
 from analysispage import AnalysisPage
 from productviewer import ProductViewer
 from databasemanager import DBManager
-from settingsframe import SettingsFrame
+from settingsmanager import SettingsManager
 
 class DataInsightsApp(tk.Tk):
-    def __init__(self, account, config, ver=None):
+    def __init__(self, account, init_config, ver=None):
         
         logger = logging.getLogger(__name__)
         logging.info("DataInsightsApp init started. ")        
@@ -40,8 +38,8 @@ class DataInsightsApp(tk.Tk):
         
 #       APP-VARS
 #        self.ini_cfg = ini_cfg
-        self.cfg = config
-        self.analysisframes = []
+        self.init_cfg = init_config
+        self.analysispages = []
         
 #        APP DETAILS
         self.app_version_text = ver
@@ -64,44 +62,50 @@ class DataInsightsApp(tk.Tk):
         self.notebook = ttk.Notebook(self.mainframe)
         
     def _populate_notebook(self):
-#        self.settings_frame = SettingsFrame(self.notebook,self.ini_cfg)
-#        self.notebook.add(self.settings_frame,text="Settings")
-#        self.fcfg = self.settings_frame.settings_dict
+#       SETTINGS MANAGER PAGE INIT
+        self.settingsmanager = SettingsManager(self.notebook, self, config=self.init_cfg)
+        self.notebook.add(self.settingsmanager,text="Settings")
         
 #       DATA MANAGER PAGE INIT 
-        self.dbmanager = DBManager(self.notebook, self, config = self.cfg["dbmanager_config"])
+
+        self.dbmanager = DBManager(self.notebook, self, config=self.settingsmanager.get_config())
         self.notebook.add(self.dbmanager,text="Data")  
 
-#        PRODUCT VIEWER PAGE INIT
-        self.product_viewer_page = ProductViewer(self.notebook, self, dbvar=self.dbmanager.get_dbsdata())
+#       PRODUCT VIEWER PAGE INIT
+        self.product_viewer_page = ProductViewer(self.notebook, self, dbvar=self.dbmanager.get_dbvar())
         self.notebook.add(self.product_viewer_page,text="Product Viewer")
         
 #       ANALYSIS PAGE INIT
         ap = AnalysisPage(self.notebook, self, engine="default",
-            config = self.cfg["analysispage_config"], dbvar = self.dbmanager.get_dbsdata())
-        self.analysisframes.append(ap)
+            config = self.settingsmanager.get_config(), dbvar = self.dbmanager.get_dbvar())
+        self.analysispages.append(ap)
         self.notebook.add(ap, text="Analysis")
 
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
         self.notebook.select(self.dbmanager)
         
+#        Required when DBManager does full resets of its dbvar, meaning the 
+#        correct dbvar now has a new id. 
+    def propagate_db_var_change(self,new_dbvar):        
+        self.product_viewer_page.set_dbvar(new_dbvar)
+        for ap in self.analysispages:
+            ap.set_dbvar(new_dbvar)
+            
+    def propagate_cfg_var_change(self,new_cfgvar):
+        self.dbmanager.set_cfgvar(new_cfgvar)
+        self.product_viewer_page.set_cfgvar(new_cfgvar)
+        for ap in self.analysispages:
+            ap.set_cfgvar(new_cfgvar)
+        
 if __name__ == "__main__":
-    
     logging.basicConfig(filename='debug2.log',level=logging.DEBUG)
     logging.info("datainsightsapp module initialized...")
-    
-#    fcfg_parser = configparser.ConfigParser()
-#    fcfg_parser.read("fcfg.ini")
-#    logging.info("Loaded front-config of length %s.", len(fcfg))
-    
-    config = config2.backend_settings
-#    logging.info("Loaded back-config of length %s.", len(bcfg))
-    
+    config = config2.backend_settings    
     logging.info("Deepcopy of header_reference_dict made.")
     
     logging.info("Initializing app...")
-    ver = "v0.2.9.4 - 2018/06/25"
+    ver = "v0.2.9.5 - 2018/06/26"
     app = DataInsightsApp("admin",config,ver=ver)
     
     app.state("zoomed")

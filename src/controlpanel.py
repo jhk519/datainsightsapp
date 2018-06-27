@@ -95,9 +95,8 @@ class ControlPanel(ttk.PanedWindow):
     def set_cfgvar(self,new_cfgvar):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
         for qp in self.ls_query_panels:
-            qp.set_cfgvar(self,new_cfgvar)
+            qp.set_cfgvar(new_cfgvar)
             
-
     def search_call(self):
         try:
             self.controller.search_queries
@@ -306,7 +305,8 @@ class ControlPanel(ttk.PanedWindow):
             text="Export Graph",
             state="normal")
         self.export_graph_button.grid(
-            row=1, column=2, padx=5, pady=2, sticky="w")            
+            row=1, column=2, padx=5, pady=2, sticky="w")        
+        
 if __name__ == "__main__":
     import config2
     controls_config = config2.backend_settings

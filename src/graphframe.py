@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 
 
 class GraphFrame(tk.LabelFrame):
-    def __init__(self, parent, wd=9, ht=7):
+    def __init__(self, parent, wd=9, ht=6):
         super().__init__(parent, text='Graph')
 
         self.my_figure = Figure(figsize=(wd, ht), dpi=85)
@@ -69,6 +69,11 @@ class GraphFrame(tk.LabelFrame):
                 "colors":ls_colors_to_plot,
         }
         """
+        try: 
+            prp["x_data"][0]
+        except IndexError:
+            print("WARNING! {} receives 0-length x_data for prp.".format(__name__))
+            return None
 #       TITLING
         title = prp["met"]
         if srp:
@@ -77,12 +82,6 @@ class GraphFrame(tk.LabelFrame):
 
         self.axis_prime.xaxis.set_label_text(prp["str_x"])
         self.axis_prime.yaxis.set_label_text(prp["str_y"])
-
-        if srp:
-            self.axis_secondary.yaxis.set_visible(True)
-            self.axis_secondary.yaxis.tick_right()
-            self.axis_secondary.yaxis.set_label_position("right")
-            self.axis_secondary.yaxis.set_label_text(srp["str_y"])
 
 #       GRAPH PRP
         prp_colors = prp["colors"]
@@ -100,6 +99,7 @@ class GraphFrame(tk.LabelFrame):
                                      label=prp["line_labels"][x])
                 color_c += 1
 #           Set minimum and maximum due to some weird bug
+
             self.axis_prime.set_xlim(prp["x_data"][1], prp["x_data"][-1])
 
         elif prp["gtype"] == "string-bar" or prp["gtype"] == "bar":
@@ -116,6 +116,10 @@ class GraphFrame(tk.LabelFrame):
             self.axis_prime.pie(prp["y_data"][0],labels=prp["x_data"])
 
         if srp:
+            self.axis_secondary.yaxis.set_visible(True)
+            self.axis_secondary.yaxis.tick_right()
+            self.axis_secondary.yaxis.set_label_position("right")
+            self.axis_secondary.yaxis.set_label_text(srp["str_y"])            
             srp_colors = srp["colors"]
             color_c = 0
             if srp["gtype"] == "line":

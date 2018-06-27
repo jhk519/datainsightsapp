@@ -13,9 +13,11 @@ import pickle
 
 import sqlite3
 import pandas as pd
+import numpy as np
 import PIL
 import requests
 import copy
+import pandastable
 
 import queries
 import exceltodataframe as etdf
@@ -463,3 +465,41 @@ class QueryPanelEngine(DefaultEngine):
     
     def get_colors_preferred(self):
         return self.get_cfg_val("colors_preferred").split("-")
+    
+class DataTableEngine(DefaultEngine):
+    def __init__(self, init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="DataTable") 
+        
+        """
+        cfg/mrp = {
+            "start":start,
+            "end":end,
+            "title": title,
+            "line_labels": labels,
+            "data_list_of_lists": datas
+        }      
+        """
+
+    def get_rows_of_data(self):
+        list_of_rows = []
+        for row_c,data_pt in enumerate(self.get_cfg_val("data_list_of_lists")[0]):
+            row_values = []
+            for index, data_list in enumerate(self.get_cfg_val("data_list_of_lists")):
+                val = data_list[row_c]
+                if isinstance(val, float) or isinstance(val, np.float64):
+                    val = round(val, 2)
+                row_values.append(val)
+            list_of_rows.append(row_values)
+        return list_of_rows
+                              
+                              
+        for row_c in range(0, len(data_list_of_lists[0])):
+            values = []
+#            skip first col because they are used as tree "index"
+            for x in range(0, len(data_list_of_lists)):
+                dl = data_list_of_lists[x]
+                val = dl[row_c] 
+                if isinstance(val, float) or isinstance(val, np.float64):
+                    val = round(val, 2)
+                values.append(val)
+            self.nav_tree.insert("", "end", values=values)                              

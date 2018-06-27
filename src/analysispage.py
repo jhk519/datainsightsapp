@@ -20,6 +20,7 @@ import pickle
 from default_engines import AnalysisPageEngine
 import controlpanel
 import graphframe
+import datatable
 
 class AnalysisPage(tk.Frame):
     def __init__(self,parent,controller=None,engine="default",config=None,dbvar=None):
@@ -45,16 +46,16 @@ class AnalysisPage(tk.Frame):
 
 #        BUILD GUI
         self.graph_frame = graphframe.GraphFrame(self)
-        self.graph_frame.grid(row=0, column=0, sticky="NW")
+        self.graph_frame.grid(row=0, rowspan=2,column=0, sticky="NW")
 
         self.control_panel = controlpanel.ControlPanel(self,config=config)
         self.control_panel.grid(row=0, column=1, sticky="new", padx=15)
 
+        self.datatable = datatable.DataTable(self,config=config)
+        self.datatable.grid(row=1,column=1,sticky="nw")
+           
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
-
-    def _auto_set_dates(self, config):
-        self.control_panel.set_dates(config)
 
 # ================================================================
 # ================================================================
@@ -74,6 +75,8 @@ class AnalysisPage(tk.Frame):
         if left_results:
             self.search_results = self.graph_frame.update_graph(
                     left_results,right_results,False)
+            if self.search_results:
+                self.datatable.update_table(self.search_results)
             
     def export_excel(self):
         export_pack = self.engine.get_export_excel_pack(self.search_results)

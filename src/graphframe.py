@@ -16,6 +16,7 @@ except ImportError:  # Python 3
 from matplotlib import ticker
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+from pprint import pprint as PRETTYPRINT
 
 
 class GraphFrame(tk.LabelFrame):
@@ -39,8 +40,9 @@ class GraphFrame(tk.LabelFrame):
         self.toolbar.update()
         self.canvas._tkcanvas.pack()
 
-    def update_graph(self, prp, srp, hold_y):
+    def update_graph(self,analysis_pack ):
         #       CLEAN UP AND RESET
+        prp, srp, hold_y = analysis_pack
         prev_prime_y_axis_lims = self.axis_prime.get_ylim()
         prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
 
@@ -56,17 +58,17 @@ class GraphFrame(tk.LabelFrame):
 
 #       PREPARE NEW RESULTS
         """
-        rp = {
-                "start":start,
-                "end":end,
-                "met": metric,
-                "gtype": metric_graph_ref["type"],
-                "str_x": metric_graph_ref["xaxis_label"],
-                "str_y": metric_graph_ref["yaxis_label"],
-                "line_labels":ls_queries,
-                "x_data": ls_x_axis_data,
-                "y_data": ls_y_axis_data_lists,
-                "colors":ls_colors_to_plot,
+        rp  = {
+            "start":start,
+            "end":end,
+            "met": axis["metric"],
+            "gtype": axis["gtype"],
+            "str_x": pack["x_axis_label"],
+            "str_y": axis["metric"],
+            "line_labels":ls_queries,
+            "x_data": x_data,
+            "y_data": y_data_lists,
+            "colors":colors_to_plot,
         }
         """
         try: 
@@ -89,6 +91,7 @@ class GraphFrame(tk.LabelFrame):
         end = prp["end"]
         color_c = 0
 #        print("GTYPE ", prp["gtype"])
+#        print(prp["gtype"])
         if prp["gtype"] == "line":
             for x in range(0, len(prp["y_data"])):
                 self.axis_prime.plot(prp["x_data"],
@@ -147,7 +150,6 @@ class GraphFrame(tk.LabelFrame):
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
             if hold_y:
-                print("HOLD-Y!")
                 self.axis_prime.set_ylim(prev_prime_y_axis_lims)
                 self.axis_secondary.set_ylim(prev_secondary_y_axis_lims)
     

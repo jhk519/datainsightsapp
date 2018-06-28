@@ -17,6 +17,7 @@ except ImportError:  # Python 3
     
 import pprint as pprint
 
+
 # Project Modules
 from default_engines import QueryPanelEngine
    
@@ -39,11 +40,28 @@ class QueryPanel(ttk.LabelFrame):
             self.engine = engine
             
 #        UI Vars
-        self.max_num_queries = 5
-        self.scope_var = tk.StringVar()
-        self.scope_extra_var = tk.StringVar()
-        self.metric_var = tk.StringVar() 
+        self.max_num_queries = 10
+        self.extra_var = tk.StringVar()
+        self.category_var = tk.StringVar() 
+        self.x_axis_type = tk.StringVar()
+        self.x_axis_type.set("None")
         self.ls_query_packs = []
+        self.axis_packs = {
+            "left": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[]
+            },
+            "right": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[]
+            },            
+        }
         
 #        Build Skeleton UI
         self.__build_skeleton()
@@ -52,75 +70,80 @@ class QueryPanel(ttk.LabelFrame):
         self.config_key = "querypanel_config"    
         if config:
             self.engine.set_build_config(raw_config = config[self.config_key])  
+
+        self._update_category_menu()
+        self._update_queries(self.category_var.get()) 
             
-        self._update_scope_menu("Graph")
-        self._config_scope_extra()
-        self._update_metrics_menu(self.scope_var.get())
-        self._update_queries(self.metric_var.get()) 
-            
-#   API
-    def toggle_enabled(self, setto=None):
-        if not setto is None:
-            self.enabled_state = setto
-            if setto:
-                self.scope_menu["state"] = "readonly"
-                self.metric_menu["state"] = "readonly"
-                for query_pack in self.ls_query_packs:
-                    if not query_pack[1]["text"] == "":
-                        query_pack[1]["state"] = "normal"
-            else:
-                self.scope_menu["state"] = "disabled"
-                self.metric_menu["state"] = "disabled"
-                for query_pack in self.ls_query_packs:
-                    query_pack[1]["state"] = "disabled"
-        elif setto is None:
-            if self.enabled_state:
-                self.enabled_state(False)
-            else:
-                self.enabled_state(True)
-                
+#   API                
     def get_selection_pack(self):
-        scope = self.scope_var.get()
-        extra = self.scope_extra_var.get()
-        metric = self.metric_var.get()
-        pack = {"enabled":self.enabled_state,
-                "scope":scope,
-                "extra":extra,
-                "metric":metric,
-                "queries_list":[]}
-        
-        for query_pack in self.ls_query_packs:
-            if not query_pack[0].get() == "OffValue":
-                pack["queries_list"].append((query_pack[0].get(),query_pack[2]["background"]))          
-        return pack  
+#        extra = self.extra_var.get()
+        selection_pack = {
+            "extra":self.extra_var.get(),
+            "x_axis_label": self.x_axis_type.get(),
+            "left":None, 
+            "right":None
+        }     
+        for axis,info in self.axis_packs.items():
+            selection_pack[axis] = info       
+        return selection_pack  
     
     def set_cfgvar(self,new_cfgvar):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
             
 #   UX EVENT HANDLERS AND HELPERS      
-    def _update_scope_menu(self,page):
-        self.scope_menu["values"] = self.engine.get_scopes(page)
-        self.scope_menu.current(0)
+    def _send_to_axis(self,which_axis,index):
+        available_colors = self.engine.get_colors_preferred() 
+        compatible = True
+        query_str = self.ls_query_packs[index][0].get()
+        query_ref = self.engine.get_cfg_val("queries_ref")[query_str]
+        curr_x = self.x_axis_type.get()
+        targ_frame = self.axis_packs[which_axis]["frame"]
+        targ_metric = self.axis_packs[which_axis]["metric"]
+        targ_curr_queries = self.axis_packs[which_axis]["queries"]
         
-    def _config_scope_extra(self):
-        scope = self.scope_var.get()
-        extra_cfg = self.engine.get_extra(scope)
-        
-        if extra_cfg:
-            self.extra_entry_label.grid()
-            self.extra_entry_label["text"] = extra_cfg["text"]
-            self.extra_widget.grid()
-        else:
-            self.extra_widget.grid_remove()
-            self.extra_entry_label.grid_remove()          
+        if not curr_x == "None":
+            if not curr_x == query_ref["x-axis-label"]:
+                print("Current X-Axis Type:",self.x_axis_type,"=/=",query_ref["x-axis-label"]) 
+                compatible = False
+                return            
+        elif curr_x == "None":
+            self.x_axis_type.set(query_ref["x-axis-label"])
 
-    def _update_metrics_menu(self,scope):
-        self.metric_menu["values"] = self.engine.get_metrics(scope)
-        self.metric_menu.current(0)
+        if targ_metric:
+            if not targ_metric == query_ref["y-axis-label"]:   
+                print("Y-Axis Type:",targ_metric,"=/=",query_ref["y-axis-label"]) 
+                compatible = False
+                return
+        elif not targ_metric:
+            self.axis_packs[which_axis]["metric"] = query_ref["y-axis-label"]
+            self.axis_packs[which_axis]["gtype"] = query_ref["chart-type"]
+            self.axis_packs[which_axis]["dbtype"] = query_ref["db-req"]
+            
+        if compatible:
+            currlen = len(targ_curr_queries)
+            temp = ttk.Label(targ_frame,text=query_str)
+            temp.grid(row=currlen,column=0,sticky="w",pady=(10,10))
+            
+            com_tpl = which_axis, currlen
+            choose_color = tk.Button(targ_frame,width=1,
+                                     command=lambda com_tpl=com_tpl:self._choose_colors(com_tpl))
+            choose_color.grid(row=len(targ_curr_queries),column=1,padx=(10,0))
+            choose_color.configure(background=available_colors[currlen]) 
+            
+            delete_query_button = tk.Button(
+                    targ_frame,width=2, command=lambda com_tpl=com_tpl:self._delete_query(com_tpl))
+            delete_query_button.grid(row=len(targ_curr_queries), column=2,padx=(10,0))
+            
+            targ_curr_queries.append([query_str,available_colors[currlen],temp,choose_color,delete_query_button])
+             
+        self._update_queries(self.category_var.get())
+    
+    def _update_category_menu(self):
+        self.category_menu["values"] = self.engine.get_categories()
+        self.category_menu.current(0)
         
-    def _update_queries(self, metric):
-        req_queries = self.engine.get_queries(metric)
-        available_colors = self.engine.get_colors_preferred()
+    def _update_queries(self, category):
+        req_queries = self.engine.get_queries_list(category)
 
         try:
             self.controller.hold_y_var
@@ -129,95 +152,112 @@ class QueryPanel(ttk.LabelFrame):
             print(str(self.controller)," Not Suitable for Callback")      
         else:     
             self.controller.hold_y_var.set(False)
-            if self.engine.should_exclude(metric) == "exclude":
-                self.controller.exclude_panels(True, self.panel_name)
-            else:
-                self.controller.exclude_panels(False, self.panel_name) 
-
+                
+        q_count = 0
         for index,pack in enumerate(self.ls_query_packs):
-            checkvar,checkbox,colorbutton = pack[0],pack[1],pack[2]
+            query_var, left_axis, right_axis = pack
+            query_var.set("")
+            left_axis.grid()
+            left_axis["state"] = "disabled"
+            right_axis.grid()            
+            right_axis["state"] = "disabled"    
+
+            if not q_count < len(req_queries):
+                left_axis.grid_remove()
+                right_axis.grid_remove()
+                continue
+            query_str = req_queries[q_count]
+            query_ref = self.engine.get_cfg_val("queries_ref")[query_str]
+            query_var.set(query_str)
+            curr_x = self.x_axis_type.get()
+            q_count += 1 
+            if curr_x == "None" or curr_x == query_ref["x-axis-label"]:
+                left_m = self.axis_packs["left"]["metric"] 
+                right_m = self.axis_packs["right"]["metric"]
+                if left_m == query_ref["y-axis-label"] or left_m == None:
+                    found = False
+                    for qry in self.axis_packs["left"]["queries"]:
+                        if query_str == qry[0]:
+                            found = True
+                            break
+                    if not found:
+                        left_axis["state"] = "normal"
+                if right_m == query_ref["y-axis-label"] or right_m == None:   
+                    found = False
+                    for qry in self.axis_packs["right"]["queries"]:
+                        if query_str == qry[0]:
+                            found = True
+                            break
+                    if not found:
+                        right_axis["state"] = "normal"
+                    
+    def _category_changed(self,event=None):
+        self._update_queries(self.category_var.get())
+        
+    def _delete_query(self,command_tuple):
+        which_axis,index = command_tuple
+        for x in range(2,5):
+           self.axis_packs[which_axis]["queries"][index][x].grid_forget() 
+        self.axis_packs[which_axis]["queries"].pop(index)
+        if not self.axis_packs[which_axis]["queries"]:
+            for key in ["gtype","db-type","metric"]:
+               self.axis_packs[which_axis][key] = None 
+            self._update_queries(self.category_var.get())
             
-            checkvar.set("OffValue")
-            checkbox.configure(text="",state="disabled")
-                            
-            if index < len(req_queries):
-                colorx = index
-                if self.panel_name == "Right Axis":
-                    colorx = index + 4
-                try:
-                    available_colors[index]
-                except IndexError:
-                    colorx = index - 4
-                checkbox.configure(state="readonly",text=req_queries[index],
-                                   onvalue=req_queries[index])
-                colorbutton.configure(background=available_colors[colorx])
-        self.ls_query_packs[0][1].invoke()   
-       
-    def _scope_changed(self,event=None):
-        self._config_scope_extra()
-        self._update_metrics_menu(self.scope_var.get())
-        self._update_queries(self.metric_var.get())  
-        
-    def _metric_changed(self,event=None):
-        self._update_queries(self.metric_var.get())
-        
-    def _choose_colors(self, number):
-        pack = self.ls_query_packs[number]
-        colorbutton = pack[2]
-        colorbutton["background"] = colorchooser.askcolor()[1]
+    def _choose_colors(self, command_tuple):
+        get_color = colorchooser.askcolor()[1]
+        which_axis,index = command_tuple
+        self.axis_packs[which_axis]["queries"][index][1] = get_color
+        self.axis_packs[which_axis]["queries"][index][3]["background"] = get_color
         
 #   BUILD FUNCTIONS
     def __build_skeleton(self):
-#        Build Scope (No Extra)
-        self.scope_title= ttk.Label(self, text="Scope")
-        self.scope_title.grid(row=0, column=0, sticky="w", padx=0)
+        self.extra_entry_label = ttk.Label(self,text="Filter by Product:",anchor="w")
+        self.extra_entry_label.grid(row=0, column=0, sticky="ew", padx=(0,25))
         
-        self.scope_menu = ttk.Combobox(self, textvariable=self.scope_var)
-        self.scope_menu.grid(row=1, column=0, columnspan=2, sticky="w",padx=5)  
-        self.scope_menu.bind('<<ComboboxSelected>>',self._scope_changed)  
-        self.scope_menu["state"] = "readonly"
+        self.extra_widget = ttk.Entry(self, width=15, textvariable=self.extra_var)
+        self.extra_widget.grid(row=0, column=1,columnspan=1, pady=2, sticky="ew")
         
-        self.extra_entry_label = ttk.Label(self)
-        self.extra_entry_label.grid(row=0, column=2, sticky="w", padx=25) 
-        
-        self.extra_widget = ttk.Entry(self, width=15, textvariable=self.scope_extra_var)
-        self.extra_widget.grid(row=1, column=2, padx=25, pady=2, sticky="w")
-        self.extra_widget.grid_remove()
-        
-#       Build Metric
-        self.metric_title = ttk.Label(self, text="Metric")
-        self.metric_title.grid(row=2,column=0,sticky="w",padx=0,pady=(7,0))
+#       Build category
+        self.category_label = ttk.Label(self, text="Category")
+        self.category_label.grid(row=1,column=0,sticky="w",padx=0,pady=(5,15))
 
-        self.metric_menu = ttk.Combobox(self, textvariable=self.metric_var)
-        self.metric_menu.grid(row=3, column=0, columnspan=2,pady=(0, 7),  sticky="w", padx=5)
+        self.category_menu = ttk.Combobox(self, textvariable=self.category_var)
+        self.category_menu.grid(row=1, column=1,columnspan=2,pady=(5, 15),  sticky="w")
         
-        self.metric_menu.bind('<<ComboboxSelected>>',self._metric_changed)
-        self.metric_menu["state"] = "readonly"
+        self.category_menu.bind('<<ComboboxSelected>>',self._category_changed)
+        self.category_menu["state"] = "readonly"
         
-#       Build Query Boxes
-        try:
-            self.controller.check_valid
-        except AttributeError:
-            print("Not using valid controller")
-            print(str(self.controller)," Not Suitable for Callback")
-            query_check_callback = lambda: print("No Suitable Callback for Query Command")         
-        else:
-            if self.controller.check_valid == "DataInsightsApp_ControlPanel":
-                query_check_callback = lambda: self.controller.check_autosearch()            
+#       Build Axis Buckets
+        self.x_axis_type_header = ttk.Label(self, text="X-Axis Type: ")
+        self.x_axis_type_header.grid(row=1,column=3,padx=25)
+        
+        self.x_axis_type_label = ttk.Label(self, textvariable=self.x_axis_type)
+        self.x_axis_type_label.grid(row=1,column=4)
+        
+        self.axis_packs["left"]["frame"] = ttk.Labelframe(self,text="Left Axis")
+        self.axis_packs["left"]["frame"].grid(row=2,rowspan=10,column=3,sticky="n",
+                                              padx=(15,15))
+        
+        self.axis_packs["right"]["frame"] = ttk.Labelframe(self,text="Right Axis")
+        self.axis_packs["right"]["frame"] .grid(row=2,rowspan=10,column=4,sticky="n")     
+
+#       Build Queries        
         for index in range(0,self.max_num_queries):
-            stvar_check_var = tk.StringVar()
-            temp_checkbutton = ttk.Checkbutton(self,text="Default", variable=stvar_check_var,
-                                               onvalue="OnValue", offvalue="OffValue",
-                                               command=query_check_callback
-                                               )
-            temp_checkbutton.grid(row=index + 4, column=0, sticky="w", padx=5, pady=5)
+            query_var = tk.StringVar()
             
-            temp_choose_color_button = tk.Button(self,width=1,
-                                 command=lambda index=index:self._choose_colors(index))
-            temp_choose_color_button.grid(row=index+4,column=1,sticky="e",padx=(5,0),
-                pady=5)
-            temp_choose_color_button["background"] = "black"   
-            pack = (stvar_check_var,temp_checkbutton,temp_choose_color_button)
+            query_label = tk.Label(self,textvariable=query_var,anchor="w")
+            query_label.grid(row=index+2,column=0,sticky="ew")
+            
+            left_axis = tk.Button(self,text="L",width=5,
+                      command=lambda index=index:self._send_to_axis("left",index))
+            left_axis.grid(row=index+2,column=1,sticky="e",padx=(0,0),pady=(5))
+            
+            right_axis = tk.Button(self,text="R",width=5,
+                      command=lambda index=index:self._send_to_axis("right",index))
+            right_axis.grid(row=index+2,column=2,sticky="e",padx=(5,0))
+            
+            pack = (query_var, left_axis, right_axis)
             self.ls_query_packs.append(pack)
         
 if __name__ == "__main__":

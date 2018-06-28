@@ -40,7 +40,9 @@ def main(st_query_name, di_dbs, start, end, extra=None):
         "average_order_value":[aov,"odb"],
         "average_order_size":[aos,"odb"],
         "days_to_ship":[days_to_ship,"odb"],
-        "days_unsent":[days_unsent,"odb"],   
+        "days_unsent":[days_unsent,"odb"],  
+        "Top 10 By Orders":[topten_by_orders,"odb"],
+        "Top 10 By Returns":[topten_by_returns,"odb"],        
         "revenue_mobile":[revenue_mobile,"tdb"],
         "revenue_all":[revenue_all,"tdb"],
         "revenue_pc":[revenue_pc,"tdb"],
@@ -55,11 +57,6 @@ def main(st_query_name, di_dbs, start, end, extra=None):
         "orders_pc":[orders_pc,"tdb"],
         "orders_mobile":[orders_mobile,"tdb"],
         "orders_all":[orders_all,"tdb"],     
-        "Top 10 By Orders":[topten_by_orders,"odb"],
-        "Top 10 By Returns":[topten_by_returns,"odb"],
-#        "By Order:[Return Ratio":[topten_by_orderreturn_ratio,"odb"],
-#        "By Revenue":[topten_by_revenue,"odb"],
-#        "By Revenue - Discount":[topten_by_revenue_minus_discount,"odb"],
     }
     db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
     db = apply_mask(db,start,end)

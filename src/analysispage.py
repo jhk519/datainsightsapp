@@ -70,13 +70,11 @@ class AnalysisPage(tk.Frame):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
         self.control_panel.set_cfgvar(new_cfgvar)
           
-    def search_queries(self,search_pack):
-        left_results,right_results = self.engine.get_results_packs(search_pack)
-        if left_results:
-            self.search_results = self.graph_frame.update_graph(
-                    left_results,right_results,False)
-            if self.search_results:
-                self.datatable.update_table(self.search_results)
+    def search_queries(self,search_pack_from_console):
+        analysis_pack = self.engine.get_results_packs(search_pack_from_console)
+        self.search_results = self.graph_frame.update_graph(analysis_pack)
+        if self.search_results:
+            self.datatable.update_table(self.search_results)
             
     def export_excel(self):
         export_pack = self.engine.get_export_excel_pack(self.search_results)

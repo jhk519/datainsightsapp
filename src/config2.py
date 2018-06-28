@@ -200,75 +200,6 @@ backend_settings = {
     "analysispage_config":{     
         "auto_export_loc": ".//exports//graphs",
         "auto_name_exports": True,  
-            
-        "metric_graph_refs": {
-            "Top 10 By Orders": {
-                "type": "bar",
-                "xaxis_label": "Product Code",
-                "yaxis_label": "Order Quantity"
-            },
-            "Top 10 By Returns": {
-                "type": "bar",
-                "xaxis_label": "Product Code",
-                "yaxis_label": "Quantity"
-            },
-            "Order Lifecycle": {
-                "type": "line",
-                "xaxis_label": "Date",
-                "yaxis_label": "Quantity"
-            },
-            "Cancel Reasons": {
-                "type": "string-bar",
-                "xaxis_label": "Reasons",
-                "yaxis_label": "Quantity",
-            },
-            "Sales - Payment and Discount": {
-                "type": "line",
-                "xaxis_label": "Date",
-                "yaxis_label": "Total KRW",
-            },
-            "Visitors By Device": {
-                "type": "line",
-                "xaxis_label": "Date",
-                "yaxis_label": "Visitors",
-            },
-            "Revenue By Device": {
-                "xaxis_label": "Date",
-                "type": "line",
-                "yaxis_label": "Total KRW",
-            },
-            "Orders By Device": {
-                "xaxis_label": "Date",
-                "type": "line",
-                "yaxis_label": "Quantity",
-            },
-    
-            "Total Pageviews": {
-                "xaxis_label": "Date",
-                "type": "line",
-                "yaxis_label": "Pageviews",
-            },
-            "AOV": {
-                "xaxis_label": "Date",
-                "type": "line",
-                "yaxis_label": "Value KRW",
-            },
-            "AOS": {
-                "xaxis_label": "Date",
-                "type": "line",
-                "yaxis_label": "Quantity",
-            },
-            "Days Waiting To Ship": {
-                "xaxis_label": "Number of Days",
-                "yaxis_label": "Quantity",
-                "type": "pie",
-            },
-            "Days To Ship": {
-                "xaxis_label": "Number of Days",
-                "type": "pie",
-                "yaxis_label": "Quantity",
-            }         
-        }
     },
                     
     "controlpanel_config":{
@@ -276,99 +207,224 @@ backend_settings = {
         "setdates_gap":"14",
         "setdates_from_date":"20180128",                
         "auto_query": True,
-        
-        "axis_panel_names": [
-                "Left Axis",
-                "Right Axis"
-        ],
     },
 
     "querypanel_config":{
         "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
+        "categories": ["Orders","Cashflow","Traffic","Logistics","Product Rankings","Cancels"],
         
-        "pages_to_scopes_ref": {
-            "Graph": [
-                "General",
-                "Filter By Product",
-                "Product Rankings"
-            ]
-        },
-    
-        "scopes_to_metrics_ref": {
-            "Filter By Product": {
-                "metrics": [
-                    "Order Lifecycle",
-                    "Days To Ship",
-                    "Days Waiting To Ship",
-                    "Cancel Reasons",
-                    "Sales - Payment and Discount",
-                ],
-                "extra": {
-                    "use": True,
-                    "text": "Cafe24 Code",
-                    "type": "entry",
-                    "fill": "P0000PGG"
-                }
-    
+        "queries_ref": {
+            "average_order_size":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Order Size (Part-Orders)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "odb"
             },
-            "General": {
-                "metrics": [
-                    "Visitors By Device",
-                    "Revenue By Device",
-                    "Orders By Device",
-                    "Total Pageviews",
-                    "AOV",
-                    "AOS"
-                ],
-                "extra": {
-                    "use": False,
-                    "text": "NO_TEXT",
-                    "type": "text"
-                }
+            "average_order_value":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Order Value (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "odb"
             },
-            "Product Rankings": {
-                "metrics": [
-                    "Top 10 By Orders",
-                    "Top 10 By Returns",
-                ],
-                "extra": {
-                    "use": False,
-                    "text": "NO_TEXT",
-                    "type": "text"
-                }
-            }
-        },
-                
-        "metrics_to_queries_ref": { 
-            "Top 10 By Orders": ("exclude",["Top 10 By Orders",]),
-            "Top 10 By Returns": ("exclude",["Top 10 By Returns"]),
-            "Order Lifecycle": ("inclusive",["total_order_quantity",
-                                             "total_cancel_quantity",
-                                             "total_return_quantity"]),
-            "Cancel Reasons": ("exclude",["cancel_reasons"]),
-            "Sales - Payment and Discount": ("inclusive",["net_payment", 
-                                                          "net_discount"]),
-            "Visitors By Device": ("inclusive",["visitors_mobile",
-                                                "visitors_pc",
-                                                "visitors_app"
-                                                ,"visitors_all"]),
-                
-            "Revenue By Device": ("inclusive",["revenue_all","revenue_app","revenue_pc",
-                                               "revenue_mobile","revenue_kooding"]),
-                
-            "Orders By Device": ("inclusive",["orders_app","orders_pc","orders_mobile",
-                                              "orders_all"]),
-                
-            "Total Pageviews": ("inclusive",["total_pageviews"]),
+            "orders_app":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Orders)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "orders_pc":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Orders)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "orders_mobile":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Orders)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "orders_all":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Orders)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "total_order_quantity":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "line",
+            	"db-req": "odb"
+            },
+            "total_cancel_quantity":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "line",
+            	"db-req": "odb"
+            },
+            "total_return_quantity":{
+            	"category": "Orders",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "line",
+            	"db-req": "odb"
+            },
+            "revenue_all":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "revenue_app":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "revenue_pc":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "revenue_mobile":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "revenue_kooding":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "net_discount":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":"pcode",
+            	"chart-type": "line",
+            	"db-req": "odb"
+            },
+            "net_payment ":{
+            	"category": "Cashflow",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Cash (\)",
+            	"can-filter":"pcode",
+            	"chart-type": "line",
+            	"db-req": "odb"
+            },
+            "total_pageviews":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Pageviews",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "visitors_all":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Visitors",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "visitors_mobile":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Visitors",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "visitors_pc":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Visitors",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "visitors_app":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Visitors",
+            	"can-filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
+            },
+            "days_unsent":{
+            	"category": "Logistics",
+            	"x-axis-label": "Duration in Days",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "bar",
+            	"db-req": "odb"
+            },
+            "days_to_ship":{
+            	"category": "Logistics",
+            	"x-axis-label": "Duration in Days",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "bar",
+            	"db-req": "odb"
+            },
+            "Top 10 By Orders":{
+            	"category": "Product Rankings",
+            	"x-axis-label": "Product Codes",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":None,
+            	"chart-type": "bar",
+            	"db-req": "odb"
+            },
             
-            "AOV": ("inclusive",["average_order_value"]),
-            
-            "AOS": ("inclusive",["average_order_size"]),
-            
-            "Days Waiting To Ship": ("exclude",["days_unsent"]),
-            
-            "Days To Ship": ("exclude",["days_to_ship"]),
-        },
+            "Top 10 By Returns":{
+            	"category": "Product Rankings",
+            	"x-axis-label": "Product Codes",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":None,
+            	"chart-type": "bar",
+            	"db-req": "odb"
+            },
+            "cancel_reasons":{
+            	"category": "Cancels",
+            	"x-axis-label": "Reasons",
+            	"y-axis-label": "Quantity (Part-Orders)",
+            	"can-filter":"pcode",
+            	"chart-type": "bar",
+            	"db-req": "odb"
+            },
+        }
     }
-}           
-        
+}
+    
+           

@@ -123,22 +123,7 @@ class ControlPanel(ttk.PanedWindow):
             print("Not using valid controller")
             print(str(self.controller)," Not Suitable for .export_png callback")       
         else:     
-            self.controller.export_png()   
-             
-    def exclude_panels(self,need_exclude, st_solo_panel):
-        """
-        this is called from ap.update_query_checks.
-        which gets called when the METRIC gets changed.
-        metric is "changed" if the scope changes, or the metric menu is clicked,
-        """
-        for qp in self.ls_query_panels:
-            if need_exclude:
-                if not qp.panel_name == st_solo_panel:
-                    qp.toggle_enabled(False)
-
-            else:
-                if not qp.panel_name == st_solo_panel:
-                    qp.toggle_enabled(True)                 
+            self.controller.export_png()              
 
 #   Called by Querypanel query commands
     def check_autosearch(self):
@@ -147,23 +132,32 @@ class ControlPanel(ttk.PanedWindow):
             
     def gen_selection_pack(self):
         """
-        pack
-        {"enabled":self.bl_enabled,
-        "scope":scope,
-         "extra":extra,
-         "metric":metric,
-         "queries_list":[("query_str","red"),("query_str2","blue")]}
+        pack = {"extra":extra,
+                "metric": None,
+                "x_axis_label": self.x_axis_type,
+                "left": {
+                    "frame": None,
+                    "gtype":None,
+                    "db-type": None,
+                    "metric": None,
+                    "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
+                },
+                "right": {
+                    "frame": None,
+                    "gtype":None,
+                    "db-type": None,
+                    "metric": None,
+                    "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
+                },            
+        }
         """
+        
         start = self.start_date
         end = self.end_date
-        prime_pack = self.ls_query_panels[0].get_selection_pack()
-        secondary_pack = self.ls_query_panels[1].get_selection_pack()
-        selection_pack = {"start":start,
-                          "end":end,
-                          "prime":prime_pack,
-                          "secondary":secondary_pack,
-                          "hold_y":self.hold_y_var
-                          }
+        selection_pack = self.query_panel.get_selection_pack()
+        selection_pack["start"] = start
+        selection_pack["end"] = end
+        selection_pack["hold_y"] = self.hold_y_var.get()
         return selection_pack
         
   # ===================================================================
@@ -260,17 +254,13 @@ class ControlPanel(ttk.PanedWindow):
     def b_queries_pane(self,config=None):
         self.query_pane = tk.Frame(self)
         col = 0
-        for query_panel_name in self.engine.get_cfg_val("axis_panel_names"):
-            query_panel = querypanel.QueryPanel(
-                self.query_pane,
-                controller=self,
-                engine="default",
-                config = config,
-                panel_name = query_panel_name)
-            query_panel["text"] = query_panel_name
-            self.ls_query_panels.append(query_panel)
-            query_panel.grid(row=0, column=col, sticky="n")
-            col += 1
+        self.query_panel = querypanel.QueryPanel(
+            self.query_pane,
+            controller=self,
+            engine="default",
+            config = config)
+        self.query_panel.grid(row=0, column=col, sticky="n")
+        col += 1
             
     def b_menu_pane(self):
         self.menu_pane = ttk.Labelframe(

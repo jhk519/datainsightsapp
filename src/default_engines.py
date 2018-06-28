@@ -319,13 +319,13 @@ class AnalysisPageEngine(DefaultEngine):
         else:    
             fullname = None
         
-        return fullname,sheetname,newdf
+        return fullname,sheetname,newdf 
     
     def determine_left_right_axis(self,pack):
-        prm = pack["prime"]
-        sec = pack["secondary"]
-        p_req = prm["queries_list"] and prm["enabled"]
-        s_req = sec["queries_list"] and sec["enabled"]
+        prm = pack["left"]
+        sec = pack["right"]
+        p_req = prm["queries"]
+        s_req = sec["queries"]
         
         if p_req and s_req:
             return prm,sec
@@ -333,68 +333,71 @@ class AnalysisPageEngine(DefaultEngine):
             return prm,None
         elif not p_req and s_req:
             return sec,None
-        return None,None          
-    
-    def get_metric_graph_ref(self,metric_str):
-        return self.get_cfg_val("metric_graph_refs")[metric_str]
+        return None,None         
     
     def get_results_packs(self,pack):
         """
-        pack = {
-                "start":start,
-                "end":end,
-                "prime":{
-                    "enabled":self.bl_enabled,
-                    "scope":scope,
-                    "extra":extra,
-                    "metric":metric,
-                    "queries_list":[("query_str","red"),("query_str2","blue")]}
-              "secondary":{
-                    "enabled":self.bl_enabled,
-                    "scope":scope,
-                    "extra":extra,
-                    "metric":metric,
-                    "queries_list":[("query_str2","red"),("query_str2","blue")]}
-        """        
-        start = pack["start"]
+        pack = {"start":start,
+              "end":end,
+              "hold_y":self.hold_y_var
+              "extra":extra,
+              "metric": None,
+              "x_axis_label": self.x_axis_type,
+              "left": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
+            },
+            "right": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
+            },            
+        }
+        """      
+       
+        start = pack["start"]       
         end = pack["end"]
         axes_select_packs = self.determine_left_right_axis(pack)
-        axes_result_packs = [None,None]
+        axes_result_packs = [None,None,pack["hold_y"]]
 
         for ind,axis in enumerate(axes_select_packs):
             if axis:
-                metric = axis["metric"]
-                metric_graph_ref = self.get_cfg_val("metric_graph_refs")[metric]
-                ls_queries = []
-                ls_x_axis_data = []
-                ls_y_axis_data_lists = []
-                ls_colors_to_plot = []
-                
-                for query_count,query_tuple in enumerate(axis["queries_list"]):
-                    ls_queries.append(query_tuple[0])
-                    ls_colors_to_plot.append(query_tuple[1])
-                    queryx, queryy = list(queries.main(query_tuple[0],
-                                                       self.get_dbvar(),
-                                                       start,
-                                                       end,
-                                                       extra=axis["extra"]))  
-                    if query_count == 0:
-                        ls_x_axis_data = queryx
-                    ls_y_axis_data_lists.append(queryy)
+                if len(axis["queries"]) > 0:
+                    ls_queries = []
+                    x_data = []
+                    y_data_lists = []
+                    colors_to_plot = []
                     
-                rp  = {
-                    "start":start,
-                    "end":end,
-                    "met": metric,
-                    "gtype": metric_graph_ref["type"],
-                    "str_x": metric_graph_ref["xaxis_label"],
-                    "str_y": metric_graph_ref["yaxis_label"],
-                    "line_labels":ls_queries,
-                    "x_data": ls_x_axis_data,
-                    "y_data": ls_y_axis_data_lists,
-                    "colors":ls_colors_to_plot,
-                }
-                axes_result_packs[ind] = rp          
+                    for index,query_tuple in enumerate(axis["queries"]):
+                        ls_queries.append(query_tuple[0])
+                        colors_to_plot.append(query_tuple[1])
+                        queryx, queryy = list(queries.main(query_tuple[0],
+                                                           self.get_dbvar(),
+                                                           start,
+                                                           end,
+                                                           extra=pack["extra"]))  
+                        if index == 0:
+                            x_data = queryx
+                        y_data_lists.append(queryy)
+                        
+                    rp  = {
+                        "start":start,
+                        "end":end,
+                        "met": axis["metric"],
+                        "gtype": axis["gtype"],
+                        "str_x": pack["x_axis_label"],
+                        "str_y": axis["metric"],
+                        "line_labels":ls_queries,
+                        "x_data": x_data,
+                        "y_data": y_data_lists,
+                        "colors":colors_to_plot,
+                    }
+                    axes_result_packs[ind] = rp          
         return axes_result_packs      
         
 class ControlPanelEngine(DefaultEngine):
@@ -432,36 +435,18 @@ class QueryPanelEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
         super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="QueryPanel")
         
-    def get_scopes(self,page):
-        a_list = []
-        for key in self.get_cfg_val("pages_to_scopes_ref")[page]:
-            a_list.append(key)
-        return a_list
+    def get_categories(self):
+        return self.get_cfg_val("categories")
     
-    def get_extra(self,scope):
-        try:
-            extra_details = self.get_cfg_val("scopes_to_metrics_ref").get(scope,None)["extra"]
-        except TypeError:
-            return False
-        if extra_details:
-            if extra_details["use"]:
-                return extra_details
-            else:
-                return False
+    def get_queries_list(self,category):
+        qlist = []
+        if category:
+            for k,v in self.get_cfg_val("queries_ref").items():
+                if v["category"] == category:
+                    qlist.append(k)    
         else:
-            raise KeyError
-    
-    def get_metrics(self,scope):
-        a_list = []
-        for key in self.get_cfg_val("scopes_to_metrics_ref")[scope]["metrics"]:
-            a_list.append(key)
-        return a_list
-    
-    def get_queries(self,metric):
-        return self.get_cfg_val("metrics_to_queries_ref")[metric][1]
-
-    def should_exclude(self,metric):
-        return self.get_cfg_val("metrics_to_queries_ref")[metric][0]
+            qlist = list(self.get_cfg_val("queries_ref").keys())
+        return qlist
     
     def get_colors_preferred(self):
         return self.get_cfg_val("colors_preferred").split("-")

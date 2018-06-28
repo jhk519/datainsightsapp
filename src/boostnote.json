@@ -1,0 +1,205 @@
+"average_order_size":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "odb"
+},
+"average_order_value":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "odb"
+},
+"orders_app":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Orders)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"orders_pc":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Orders)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"orders_mobile":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Orders)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"orders_all":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Orders)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"total_order_quantity":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":"pcode",
+	"chart-type": line",
+	"db-req": "odb"
+},
+"total_cancel_quantity":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":"pcode",
+	"chart-type": line",
+	"db-req": "odb"
+},
+"total_return_quantity":{
+	"category": "Orders",
+	"x-axis-label": "Date",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":"pcode",
+	"chart-type": line",
+	"db-req": "odb"
+},
+"revenue_all":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"revenue_app":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"revenue_pc":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"revenue_mobile":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"revenue_kooding":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"net_discount":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":"pcode",
+	"chart-type": line",
+	"db-req": "odb"
+},
+"net_payment ":{
+	"category": "Cashflow",
+	"x-axis-label": "Date",
+	"y-axis-label": "Cash (\)",
+	"can-filter":"pcode",
+	"chart-type": line",
+	"db-req": "odb"
+},
+"total_pageviews":{
+	"category": "Traffic",
+	"x-axis-label": "Date",
+	"y-axis-label": "Pageviews",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"visitors_all":{
+	"category": "Traffic",
+	"x-axis-label": "Date",
+	"y-axis-label": "Visitors",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"visitors_mobile":{
+	"category": "Traffic",
+	"x-axis-label": "Date",
+	"y-axis-label": "Visitors",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"visitors_pc":{
+	"category": "Traffic",
+	"x-axis-label": "Date",
+	"y-axis-label": "Visitors",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"visitors_app":{
+	"category": "Traffic",
+	"x-axis-label": "Date",
+	"y-axis-label": "Visitors",
+	"can-filter":None,
+	"chart-type": line",
+	"db-req": "tdb"
+},
+"days_unsent":{
+	"category": "Logistics",
+	"x-axis-label": "Duration in Days",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":"pcode",
+	"chart-type": bar",
+	"db-req": "odb"
+},
+"days_to_ship":{
+	"category": "Logistics",
+	"x-axis-label": "Duration in Days",
+	"y-axis-label": "Quantity (Part-Orders)",
+	"can-filter":"pcode",
+	"chart-type": bar",
+	"db-req": "odb"
+},
+"Top 10 By Orders":{
+"category": "Product Rankings",
+"x-axis-label": "Product Codes",
+"y-axis-label": "Quantity (Part-Orders)",
+"can-filter":None,
+"chart-type": bar",
+"db-req": "odb"},
+"Top 10 By Returns":{
+"category": "Product Rankings",
+"x-axis-label": "Product Codes",
+"y-axis-label": "Quantity (Part-Orders)",
+"can-filter":None,
+"chart-type": bar",
+"db-req": "odb"},
+"cancel_reasons":{
+"category": "Cancels",
+"x-axis-label": "Reasons",
+"y-axis-label": "Quantity (Part-Orders)",
+"can-filter":"pcode",
+"chart-type": bar",
+"db-req": "odb"},

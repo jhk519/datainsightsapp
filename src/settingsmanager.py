@@ -56,7 +56,7 @@ class SettingsManager(ttk.LabelFrame):
         
 #   UX EVENT HANDLERS AND HELPERS
     def update_settings(self):
-        self.parser.read("fcfg.ini")       
+        self.parser.read("user_settings.ini")       
         self.engine.load_ini_settings(self.parser._sections)
 
     def settings_changed(self,index):
@@ -72,7 +72,7 @@ class SettingsManager(ttk.LabelFrame):
         header, label, stvar, set_type, entry_list = self.setting_packs[index]
         curr_val = stvar.get()
         self.parser.set(header,label["text"],curr_val+":"+set_type)
-        with open('fcfg.ini', 'w') as configfile:
+        with open('user_settings.ini', 'w') as configfile:
             self.parser.write(configfile)
         self.settings_changed(index)
         return 1

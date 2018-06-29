@@ -69,7 +69,7 @@ class DataInsightsApp(tk.Tk):
 #       DATA MANAGER PAGE INIT 
 
         self.dbmanager = DBManager(self.notebook, self, config=self.settingsmanager.get_config())
-        self.notebook.add(self.dbmanager,text="Data")  
+        self.notebook.add(self.dbmanager,text="DB Manager")  
 
 #       PRODUCT VIEWER PAGE INIT
         self.product_viewer_page = ProductViewer(self.notebook, self, dbvar=self.dbmanager.get_dbvar())
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     logging.info("Deepcopy of header_reference_dict made.")
     
     logging.info("Initializing app...")
-    ver = "v0.2.9.5 - 2018/06/26"
+    ver = "v0.2.9.6 - 2018/06/29"
     app = DataInsightsApp("admin",config,ver=ver)
     
     app.state("zoomed")

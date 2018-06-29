@@ -321,43 +321,47 @@ class AnalysisPageEngine(DefaultEngine):
         
         return fullname,sheetname,newdf 
     
+    def has_queries_req(self,queriespacklist):
+        found_something = False
+        for qpack in queriespacklist:
+            if not qpack[0] == "None":
+                found_something = True
+        return found_something           
+    
     def determine_left_right_axis(self,pack):
-        prm = pack["left"]
-        sec = pack["right"]
-        p_req = prm["queries"]
-        s_req = sec["queries"]
+        p_req = self.has_queries_req(pack["left"]["queries"])
+        s_req = self.has_queries_req(pack["right"]["queries"])
         
         if p_req and s_req:
-            return prm,sec
+            return pack["left"],pack["right"]
         elif p_req and not s_req:
-            return prm,None
+            return pack["left"],None
         elif not p_req and s_req:
-            return sec,None
+            return pack["right"],None
         return None,None         
     
     def get_results_packs(self,pack):
         """
         pack = {"start":start,
               "end":end,
-              "hold_y":self.hold_y_var
-              "extra":extra,
-              "metric": None,
-              "x_axis_label": self.x_axis_type,
-              "left": {
-                "frame": None,
-                "gtype":None,
-                "db-type": None,
-                "metric": None,
-                "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
-            },
-            "right": {
-                "frame": None,
-                "gtype":None,
-                "db-type": None,
-                "metric": None,
-                "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
-            },            
-        }
+              "hold_y":self.hold_y_var         
+                "extra":self.extra_var.get(),
+                "x_axis_label": self.x_axis_type.get(),
+                "left": {
+                    "frame": None,
+                    "gtype":None,
+                    "db-type": None,
+                    "metric": None,
+                    "queries":[(qstr,qcolor),(qstr,qcolor)]
+                },
+                "right": {
+                    "frame": None,
+                    "gtype":None,
+                    "db-type": None,
+                    "metric": None,
+                    "queries":[(qstr,qcolor),(qstr,qcolor)] 
+                },            
+            }
         """      
        
         start = pack["start"]       
@@ -367,37 +371,36 @@ class AnalysisPageEngine(DefaultEngine):
 
         for ind,axis in enumerate(axes_select_packs):
             if axis:
-                if len(axis["queries"]) > 0:
-                    ls_queries = []
-                    x_data = []
-                    y_data_lists = []
-                    colors_to_plot = []
-                    
-                    for index,query_tuple in enumerate(axis["queries"]):
+                ls_queries = []
+                x_data = []
+                y_data_lists = []
+                colors_to_plot = []
+                
+                for index,query_tuple in enumerate(axis["queries"]):
+                    first_found = True
+                    if not query_tuple[0] == "None":
                         ls_queries.append(query_tuple[0])
                         colors_to_plot.append(query_tuple[1])
-                        queryx, queryy = list(queries.main(query_tuple[0],
-                                                           self.get_dbvar(),
-                                                           start,
-                                                           end,
-                                                           extra=pack["extra"]))  
-                        if index == 0:
+                        queryx, queryy = queries.main(query_tuple[0],
+                            self.get_dbvar(),start,end,extra=pack["extra"])
+                        if first_found:
                             x_data = queryx
+                            first_found = False
                         y_data_lists.append(queryy)
-                        
-                    rp  = {
-                        "start":start,
-                        "end":end,
-                        "met": axis["metric"],
-                        "gtype": axis["gtype"],
-                        "str_x": pack["x_axis_label"],
-                        "str_y": axis["metric"],
-                        "line_labels":ls_queries,
-                        "x_data": x_data,
-                        "y_data": y_data_lists,
-                        "colors":colors_to_plot,
-                    }
-                    axes_result_packs[ind] = rp          
+                    
+                rp  = {
+                    "start":start,
+                    "end":end,
+                    "met": axis["metric"],
+                    "gtype": axis["gtype"],
+                    "str_x": pack["x_axis_label"],
+                    "str_y": axis["metric"],
+                    "line_labels":ls_queries,
+                    "x_data": x_data,
+                    "y_data": y_data_lists,
+                    "colors":colors_to_plot,
+                }
+                axes_result_packs[ind] = rp          
         return axes_result_packs      
         
 class ControlPanelEngine(DefaultEngine):

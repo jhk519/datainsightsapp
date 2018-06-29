@@ -132,31 +132,28 @@ class ControlPanel(ttk.PanedWindow):
             
     def gen_selection_pack(self):
         """
-        pack = {"extra":extra,
+        pack =             
+            "extra":self.extra_var.get(),
+            "x_axis_label": self.x_axis_type.get(),
+            "left": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
                 "metric": None,
-                "x_axis_label": self.x_axis_type,
-                "left": {
-                    "frame": None,
-                    "gtype":None,
-                    "db-type": None,
-                    "metric": None,
-                    "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
-                },
-                "right": {
-                    "frame": None,
-                    "gtype":None,
-                    "db-type": None,
-                    "metric": None,
-                    "queries":[(QUERY_STR,COLOR), (QUERY_STR,COLOR)]
-                },            
+                "queries":[(qstr,qcolor),(qstr,qcolor)]
+            },
+            "right": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[(qstr,qcolor),(qstr,qcolor)] 
+            },            
         }
         """
-        
-        start = self.start_date
-        end = self.end_date
         selection_pack = self.query_panel.get_selection_pack()
-        selection_pack["start"] = start
-        selection_pack["end"] = end
+        selection_pack["start"] = self.start_date
+        selection_pack["end"] = self.end_date
         selection_pack["hold_y"] = self.hold_y_var.get()
         return selection_pack
         
@@ -206,7 +203,7 @@ class ControlPanel(ttk.PanedWindow):
         
     def b_input_pane(self):
         self.input_pane = ttk.Labelframe(
-            self, text="Input")
+            self, text="Date Range")
 
         self.back_one_month_button = ttk.Button(
             self.input_pane, command=lambda: self._skip_calendars(-30), text="<<",width=3)

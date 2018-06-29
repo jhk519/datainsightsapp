@@ -225,7 +225,7 @@ backend_settings = {
             "average_order_value":{
             	"category": "Orders",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Order Value (\)",
+            	"y-axis-label": "Order Value (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "odb"
@@ -289,7 +289,7 @@ backend_settings = {
             "revenue_all":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
@@ -297,7 +297,7 @@ backend_settings = {
             "revenue_app":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
@@ -305,7 +305,7 @@ backend_settings = {
             "revenue_pc":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
@@ -313,7 +313,7 @@ backend_settings = {
             "revenue_mobile":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
@@ -321,7 +321,7 @@ backend_settings = {
             "revenue_kooding":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
@@ -329,7 +329,7 @@ backend_settings = {
             "net_discount":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
@@ -337,7 +337,7 @@ backend_settings = {
             "net_payment ":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (\)",
+            	"y-axis-label": "Cash (KRW)",
             	"can-filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"

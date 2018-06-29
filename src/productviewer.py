@@ -148,7 +148,8 @@ class ProductViewer(tk.LabelFrame):
         self.search_frame = ttk.LabelFrame(self,text="Search")
         self.search_frame.grid(row=0,column=0,sticky="ew",pady=15)
         
-        self.search_pcode_stvar = tk.StringVar()        
+        self.search_pcode_stvar = tk.StringVar()   
+        self.search_pcode_stvar.set("GZ2000")
         self.search_pcode_label = ttk.Label(self.search_frame,text="Search Product Code")
         self.search_pcode_label.grid(row=0,column=0)
         

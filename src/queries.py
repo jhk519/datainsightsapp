@@ -61,7 +61,7 @@ def main(st_query_name, di_dbs, start, end, extra=None):
     db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
     db = apply_mask(db,start,end)
     func = queries_ref[st_query_name][0]
-    return func(db, start, end, extra=extra)
+    return list(func(db, start, end, extra=extra))
 
 def cancel_quantity(db, start, end, extra=None):
     if extra is not None and not extra == "":

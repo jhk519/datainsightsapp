@@ -65,7 +65,7 @@ class DataTable(ttk.Labelframe):
             self.nav_tree.heading(header,text=header,
                                   command=lambda c=header: self.sortby(self.nav_tree,c,1))
             self.nav_tree.column(header, minwidth=20, anchor="center", stretch=False,
-                                 width=115)
+                                 width=125)
           
         for row_values in self.engine.get_rows_of_data():
             self.nav_tree.insert("", "end", values=row_values)

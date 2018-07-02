@@ -72,9 +72,19 @@ class AnalysisPage(tk.Frame):
           
     def search_queries(self,search_pack_from_console):
         analysis_pack = self.engine.get_results_packs(search_pack_from_console)
-        self.search_results = self.graph_frame.update_graph(analysis_pack)
-        if self.search_results:
-            self.datatable.update_table(self.search_results)
+        if analysis_pack == "No Date Data":
+            self.popup = tk.Toplevel()
+            msg = tk.Message(self.popup,text="No results for this date range.")
+            msg.pack()
+            okbutton = ttk.Button(
+                self.popup,
+                text="OK",
+                command=self.popup.destroy)
+            okbutton.pack()            
+        else:
+            self.search_results = self.graph_frame.update_graph(analysis_pack)
+            if self.search_results:
+                self.datatable.update_table(self.search_results)
             
     def export_excel(self):
         export_pack = self.engine.get_export_excel_pack(self.search_results)

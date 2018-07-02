@@ -218,7 +218,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Order Size (Part-Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -226,7 +226,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Order Value (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -234,7 +234,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -242,7 +242,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -250,7 +250,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -258,7 +258,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -266,7 +266,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -274,7 +274,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -282,7 +282,7 @@ backend_settings = {
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -290,7 +290,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -298,7 +298,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -306,7 +306,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -314,7 +314,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -322,7 +322,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -330,7 +330,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -338,7 +338,7 @@ backend_settings = {
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "line",
             	"db-req": "odb"
             },
@@ -346,7 +346,7 @@ backend_settings = {
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Pageviews",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -354,7 +354,7 @@ backend_settings = {
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -362,7 +362,7 @@ backend_settings = {
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -370,7 +370,7 @@ backend_settings = {
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -378,7 +378,7 @@ backend_settings = {
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "line",
             	"db-req": "tdb"
             },
@@ -386,7 +386,7 @@ backend_settings = {
             	"category": "Logistics",
             	"x-axis-label": "Duration in Days",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "bar",
             	"db-req": "odb"
             },
@@ -394,7 +394,7 @@ backend_settings = {
             	"category": "Logistics",
             	"x-axis-label": "Duration in Days",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "bar",
             	"db-req": "odb"
             },
@@ -402,7 +402,7 @@ backend_settings = {
             	"category": "Product Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "bar",
             	"db-req": "odb"
             },
@@ -411,7 +411,7 @@ backend_settings = {
             	"category": "Product Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":None,
+            	"can_filter":None,
             	"chart-type": "bar",
             	"db-req": "odb"
             },
@@ -419,7 +419,7 @@ backend_settings = {
             	"category": "Cancels",
             	"x-axis-label": "Reasons",
             	"y-axis-label": "Quantity (Part-Orders)",
-            	"can-filter":"pcode",
+            	"can_filter":"pcode",
             	"chart-type": "bar",
             	"db-req": "odb"
             },

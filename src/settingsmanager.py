@@ -50,6 +50,10 @@ class SettingsManager(ttk.LabelFrame):
         self.update_settings()
         self.build_settings()
         
+        self.columnconfigure(0, weight=0)
+        self.columnconfigure(1, weight=0)
+        self.columnconfigure(2, weight=1)
+        
 #   API
     def get_config(self):
         return self.engine.get_config()        
@@ -140,11 +144,11 @@ class SettingsManager(ttk.LabelFrame):
                                              command=lambdafunc))
                 
             for colcount,value_widget in enumerate(entry_list):
-                if type(value_widget) is ttk.Entry:
+                if type(value_widget) == ttk.Entry:
                     value_widget.grid(row=index,column=colcount+1,sticky="w",
-                        columnspan=3)
+                        columnspan=2)
                 else:
-                    value_widget.grid(row=index,column=colcount+1,sticky="w")     
+                    value_widget.grid(row=index,column=colcount+1,sticky="w",padx=(0,10))     
         
 if __name__ == "__main__":
     import config2

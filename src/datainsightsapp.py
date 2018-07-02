@@ -109,7 +109,7 @@ if __name__ == "__main__":
     app = DataInsightsApp("admin",config,ver=ver)
     
     app.state("zoomed")
-    app.title("Data Insights App")
+    app.title("Data Insights App - {}".format(ver))
     app.mainloop()
     logging.info("app.mainloop() terminated.")
     

@@ -381,8 +381,11 @@ class AnalysisPageEngine(DefaultEngine):
                     if not query_tuple[0] == "None":
                         ls_queries.append(query_tuple[0])
                         colors_to_plot.append(query_tuple[1])
-                        queryx, queryy = queries.main(query_tuple[0],
+                        xandy = queries.main(query_tuple[0],
                             self.get_dbvar(),start,end,extra=pack["extra"])
+                        if xandy == "No Date Data":
+                            return xandy
+                        queryx,queryy = xandy
                         if first_found:
                             x_data = queryx
                             first_found = False

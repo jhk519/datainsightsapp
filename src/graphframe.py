@@ -71,10 +71,24 @@ class GraphFrame(tk.LabelFrame):
             "colors":colors_to_plot,
         }
         """
-        try: 
-            prp["x_data"][0]
-        except IndexError:
-            print("WARNING! {} receives 0-length x_data for prp.".format(__name__))
+        if prp:
+            try: 
+                prp["y_data"][0]
+            except IndexError:
+                self.popup = tk.Toplevel()
+                self.popup.title("No Results for these Dates")
+                msg = tk.Message(
+                    self.popup,
+                    text="No results for the selected date range filters.")
+                msg.pack()
+                okbutton = ttk.Button(
+                    self.popup,
+                    text="OK",
+                    command=self.popup.destroy)
+                okbutton.pack()
+                return None
+        else:
+            print("WARNING! User searched for no queries in prp")
             return None
 #       TITLING
         title = prp["met"]

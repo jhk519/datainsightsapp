@@ -97,6 +97,7 @@ class DBManager(tk.Frame):
             self.popup,
             text="Online",
             command=self._load_online_dbs)
+#        online_button["state"] = "disabled"
         offline_button = ttk.Button(
             self.popup,
             text="Offline",

@@ -60,6 +60,8 @@ def main(st_query_name, di_dbs, start, end, extra=None):
     }
     db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
     db = apply_mask(db,start,end)
+    if db.shape[0] <= 1:
+        return "No Date Data"
     func = queries_ref[st_query_name][0]
     return list(func(db, start, end, extra=extra))
 

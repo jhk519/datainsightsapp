@@ -214,7 +214,7 @@ backend_settings = {
         "categories": ["Orders","Cashflow","Traffic","Logistics","Product Rankings","Cancels"],
         
         "queries_ref": {
-            "average_order_size":{
+            "Average Order Size":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Order Size (Part-Orders)",
@@ -222,7 +222,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "average_order_value":{
+            "Average Order Value":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Order Value (KRW)",
@@ -230,7 +230,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "orders_app":{
+            "Orders By App":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
@@ -238,7 +238,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "orders_pc":{
+            "Orders By PC":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
@@ -246,7 +246,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "orders_mobile":{
+            "Orders By Mobile":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
@@ -254,7 +254,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "orders_all":{
+            "Orders By All Devices":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Orders)",
@@ -262,7 +262,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "total_order_quantity":{
+            "Total Orders by Item":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -270,7 +270,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "total_cancel_quantity":{
+            "Total Cancels By Item":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -278,7 +278,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "total_return_quantity":{
+            "Total Returns By Item":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -286,7 +286,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "revenue_all":{
+            "Revenue By All Devices":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -294,7 +294,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "revenue_app":{
+            "Revenue By App":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -302,7 +302,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "revenue_pc":{
+            "Revenue By PC":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -310,7 +310,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "revenue_mobile":{
+            "Revenue By Mobile":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -318,7 +318,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "revenue_kooding":{
+            "Revenue By Kooding":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -326,7 +326,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "net_discount":{
+            "Net Discount Given":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -334,7 +334,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "net_payment ":{
+            "Net Payments Received":{
             	"category": "Cashflow",
             	"x-axis-label": "Date",
             	"y-axis-label": "Cash (KRW)",
@@ -342,7 +342,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "odb"
             },
-            "total_pageviews":{
+            "Total Pageviews":{
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Pageviews",
@@ -350,7 +350,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "visitors_all":{
+            "Visitors By All Devices":{
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
@@ -358,7 +358,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "visitors_mobile":{
+            "Visitors By Mobile":{
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
@@ -366,7 +366,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "visitors_pc":{
+            "Visitors By PC":{
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
@@ -374,7 +374,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "visitors_app":{
+            "Visitors By App":{
             	"category": "Traffic",
             	"x-axis-label": "Date",
             	"y-axis-label": "Visitors",
@@ -382,7 +382,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "days_unsent":{
+            "Unsent Orders Days to Ship":{
             	"category": "Logistics",
             	"x-axis-label": "Duration in Days",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -390,7 +390,7 @@ backend_settings = {
             	"chart-type": "bar",
             	"db-req": "odb"
             },
-            "days_to_ship":{
+            "Sent Orders Days To Ship":{
             	"category": "Logistics",
             	"x-axis-label": "Duration in Days",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -415,13 +415,21 @@ backend_settings = {
             	"chart-type": "bar",
             	"db-req": "odb"
             },
-            "cancel_reasons":{
+            "Cancel Reasons":{
             	"category": "Cancels",
             	"x-axis-label": "Reasons",
             	"y-axis-label": "Quantity (Part-Orders)",
             	"can_filter":"pcode",
             	"chart-type": "bar",
             	"db-req": "odb"
+            },
+            "Conversion Rate":{
+            	"category": "Traffic",
+            	"x-axis-label": "Date",
+            	"y-axis-label": "Conversion Rate (Purchases / Visitors)",
+            	"can_filter":None,
+            	"chart-type": "line",
+            	"db-req": "tdb"
             },
         }
     }

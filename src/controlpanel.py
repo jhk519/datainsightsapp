@@ -135,6 +135,7 @@ class ControlPanel(ttk.PanedWindow):
         pack =             
             "extra":self.extra_var.get(),
             "x_axis_label": self.x_axis_type.get(),
+            "mirror_days": self.mirror_days_var.get(),   
             "left": {
                 "frame": None,
                 "gtype":None,

@@ -42,7 +42,8 @@ class GraphFrame(tk.LabelFrame):
 
     def update_graph(self,analysis_pack ):
         #       CLEAN UP AND RESET
-        prp, srp, hold_y = analysis_pack
+
+        prp, srp, hold_y = analysis_pack      
         prev_prime_y_axis_lims = self.axis_prime.get_ylim()
         prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
 
@@ -108,27 +109,26 @@ class GraphFrame(tk.LabelFrame):
 #        print(prp["gtype"])
         if prp["gtype"] == "line":
             for x in range(0, len(prp["y_data"])):
+                if "_Mirror" in prp["line_labels"][x]:
+                    linestyle = "--"
+                else:
+                    linestyle = "-"
                 self.axis_prime.plot(prp["x_data"],
                                      prp["y_data"][x],
                                      color=prp_colors[color_c],
-                                     ls="-",
+                                     ls=linestyle,
                                      lw=2,
                                      label=prp["line_labels"][x])
                 color_c += 1
-#           Set minimum and maximum due to some weird bug
 
-            self.axis_prime.set_xlim(prp["x_data"][1], prp["x_data"][-1])
+            self.axis_prime.set_xlim(prp["x_data"][0], prp["x_data"][-1])
 
         elif prp["gtype"] == "string-bar" or prp["gtype"] == "bar":
             self.axis_prime.bar(prp["x_data"],
                                 prp["y_data"][0],
                                 color=prp_colors[color_c])
             self.axis_prime.set_xlim(prp["x_data"][0], prp["x_data"][-1])
-            color_c += 1
-        #It might seem weird that we don't check for pie charts in srp
-        #But in reality, if srp["gtype"] == "pie", this is wrong! We should
-        #not be allowing any axis-panel to output a pie-query without disabling the
-        #other.         
+            color_c += 1   
         elif prp["gtype"] == "pie":
             self.axis_prime.pie(prp["y_data"][0],labels=prp["x_data"])
 
@@ -150,8 +150,8 @@ class GraphFrame(tk.LabelFrame):
                     color_c += 1
 
     #           Set minimum and maximum due to some weird bug
-                self.axis_secondary.set_xlim(
-                    srp["x_data"][1], srp["x_data"][-1])
+#                self.axis_secondary.set_xlim(
+#                    srp["x_data"][0], srp["x_data"][-1])
 
             elif srp["gtype"] == "string-bar" or "bar":
                 self.axis_secondary.bar(srp["x_data"],

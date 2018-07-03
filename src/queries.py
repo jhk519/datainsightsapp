@@ -31,32 +31,33 @@ dates =  [
 
 def main(st_query_name, di_dbs, start, end, extra=None):
     queries_ref = {
-        "total_order_quantity":[order_quantity,"odb"],
-        "total_return_quantity":[return_quantity,"odb"],
-        "total_cancel_quantity":[cancel_quantity,"odb"],
-        "cancel_reasons":[cancel_reasons,"odb"],
-        "net_payment":[net_payment,"odb"],
-        "net_discount":[net_discount,"odb"],
-        "average_order_value":[aov,"odb"],
-        "average_order_size":[aos,"odb"],
-        "days_to_ship":[days_to_ship,"odb"],
-        "days_unsent":[days_unsent,"odb"],  
+        "Total Orders By Item":[order_quantity,"odb"],
+        "Total Returns By Item":[return_quantity,"odb"],
+        "Total Cancels By Item":[cancel_quantity,"odb"],
+        "Cancel Reasons":[cancel_reasons,"odb"],
+        "Net Payments Received":[net_payment,"odb"],
+        "Net Discount Given":[net_discount,"odb"],
+        "Average Order Value":[aov,"odb"],
+        "Average Order Size":[aos,"odb"],
+        "Sent Orders Days To Ship":[days_to_ship,"odb"],
+        "Unsent Orders Days To Ship":[days_unsent,"odb"],  
         "Top 10 By Orders":[topten_by_orders,"odb"],
         "Top 10 By Returns":[topten_by_returns,"odb"],        
-        "revenue_mobile":[revenue_mobile,"tdb"],
-        "revenue_all":[revenue_all,"tdb"],
-        "revenue_pc":[revenue_pc,"tdb"],
-        "revenue_kooding":[revenue_kooding,"tdb"],
-        "revenue_app":[revenue_app,"tdb"],
-        "total_pageviews":[pageviews,"tdb"],
-        "visitors_mobile":[visitors_mobile,"tdb"],
-        "visitors_pc":[visitors_pc,"tdb"],
-        "visitors_app":[visitors_app,"tdb"],
-        "visitors_all":[visitors_all,"tdb"],
-        "orders_app":[orders_app,"tdb"],
-        "orders_pc":[orders_pc,"tdb"],
-        "orders_mobile":[orders_mobile,"tdb"],
-        "orders_all":[orders_all,"tdb"],     
+        "Revenue By Mobile":[revenue_mobile,"tdb"],
+        "Revenue By All Devices":[revenue_all,"tdb"],
+        "Revenue By PC":[revenue_pc,"tdb"],
+        "Revenue By Kooding":[revenue_kooding,"tdb"],
+        "Revenue By App":[revenue_app,"tdb"],
+        "Total Pageviews":[pageviews,"tdb"],
+        "Visitors By Mobile":[visitors_mobile,"tdb"],
+        "Visitors By PC":[visitors_pc,"tdb"],
+        "Visitors By App":[visitors_app,"tdb"],
+        "Visitors By All Devices":[visitors_all,"tdb"],
+        "Orders By App":[orders_app,"tdb"],
+        "Orders By PC":[orders_pc,"tdb"],
+        "Orders By Mobile":[orders_mobile,"tdb"],
+        "Orders By All Devices":[orders_all,"tdb"],   
+        "Conversion Rate":[conversion_rate,"tdb"]
     }
     db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
     db = apply_mask(db,start,end)
@@ -364,8 +365,7 @@ def aov(db, start, end, extra=None):
 #   make a separate db without duplicate order_ids.
     db = db.drop_duplicates(subset="order_id")
 
-    date_dict = _gen_dates(start, end, init_kvs=[("payments", "list")
-                                                 ])
+    date_dict = _gen_dates(start, end, init_kvs=[("payments", "list")])
     date_dict = collections.OrderedDict(sorted(date_dict.items()))
 
     for index, row in db.iterrows():
@@ -473,6 +473,26 @@ def days_unsent(db, start, end, extra=None):
         y_axis_values.append(counter_dict_of_diffs[diff_day])
     return x_axis_labels, y_axis_values
 
+def conversion_rate(db,start,end,extra=None):
+    date_dict = _gen_dates(start, end, init_kvs=[("cr",0)])
+    date_dict = collections.OrderedDict(sorted(date_dict.items()))
+    for index, row in db.iterrows():
+        temp_date = row["date"]
+        if temp_date in date_dict:
+            visitors = row["returning_visitors_count"] + row["new_visitors_count"]
+            orders = row["app_orders_count"]+row["mobile_orders_count"]+row["pc_orders_count"]
+            cr = orders/visitors * 100
+#            print()
+            date_dict[temp_date]["cr"] = cr
+    x_axis_labels = []
+    y_axis_values_1 = []
+
+    for date in date_dict:
+        x_axis_labels.append(date)
+        dd = date_dict[date]
+        y_axis_values_1.append(dd["cr"])
+    return x_axis_labels, y_axis_values_1    
+
 def topten_by_orders(db, start, end, extra=None):
     count_db = db["product_cafe24_code"].value_counts().head(10)
     x_axis_labels = []
@@ -508,7 +528,7 @@ def topten_by_returns(db, start, end, extra=None):
     
 def apply_mask(source,start,end):
     db = source.copy(deep=True)
-    mask = (db['date'] > start) & (
+    mask = (db['date'] >= start) & (
         db['date'] <= end)
     return db.loc[mask]    
 

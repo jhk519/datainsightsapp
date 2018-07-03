@@ -342,32 +342,37 @@ class AnalysisPageEngine(DefaultEngine):
     
     def get_results_packs(self,pack):
         """
-        pack = {"start":start,
-              "end":end,
-              "hold_y":self.hold_y_var         
-                "extra":self.extra_var.get(),
-                "x_axis_label": self.x_axis_type.get(),
-                "left": {
-                    "frame": None,
-                    "gtype":None,
-                    "db-type": None,
-                    "metric": None,
-                    "queries":[(qstr,qcolor),(qstr,qcolor)]
-                },
-                "right": {
-                    "frame": None,
-                    "gtype":None,
-                    "db-type": None,
-                    "metric": None,
-                    "queries":[(qstr,qcolor),(qstr,qcolor)] 
-                },            
-            }
+        pack = {
+            "start":start,
+            "end":end,
+            "hold_y":self.hold_y_var         
+            "extra":self.extra_var.get(),
+            "x_axis_label": self.x_axis_type.get(),
+            "mirror_days": self.mirror_days_var.get(),  
+            "left": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[(qstr,qcolor),(qstr,qcolor)]
+            },
+            "right": {
+                "frame": None,
+                "gtype":None,
+                "db-type": None,
+                "metric": None,
+                "queries":[(qstr,qcolor),(qstr,qcolor)] 
+            },            
+        }
         """      
        
         start = pack["start"]       
         end = pack["end"]
         axes_select_packs = self.determine_left_right_axis(pack)
         axes_result_packs = [None,None,pack["hold_y"]]
+        if bool(pack["mirror_days"]):
+            m_start = (start - datetime.timedelta(pack["mirror_days"]))
+            m_end = (end - datetime.timedelta(pack["mirror_days"]))
 
         for ind,axis in enumerate(axes_select_packs):
             if axis:
@@ -377,6 +382,7 @@ class AnalysisPageEngine(DefaultEngine):
                 colors_to_plot = []
                 
                 for index,query_tuple in enumerate(axis["queries"]):
+                    
                     first_found = True
                     if not query_tuple[0] == "None":
                         ls_queries.append(query_tuple[0])
@@ -390,6 +396,20 @@ class AnalysisPageEngine(DefaultEngine):
                             x_data = queryx
                             first_found = False
                         y_data_lists.append(queryy)
+                        
+                        if bool(pack["mirror_days"]):
+                            ls_queries.append(query_tuple[0] + "_Mirror")
+                            colors_to_plot.append(query_tuple[1])
+                            xandy = queries.main(query_tuple[0],
+                                self.get_dbvar(),m_start,m_end,extra=pack["extra"])
+                            if xandy == "No Date Data":
+                                return xandy
+                            queryx,queryy = xandy
+                            if first_found:
+                                x_data = queryx
+                                first_found = False
+                            y_data_lists.append(queryy)                            
+                        
                     
                 rp  = {
                     "start":start,
@@ -420,9 +440,7 @@ class ControlPanelEngine(DefaultEngine):
         if from_what_day == "today":
             self.end_date = datetime.datetime.today().date()
         elif from_what_day == "yesterday":
-            self.end_date = (
-                datetime.datetime.today() -
-                datetime.timedelta(1)).date()
+            self.end_date = (datetime.datetime.today() - datetime.timedelta(1)).date()
         elif len(from_what_day) == 8:
             try:
                 int(from_what_day)

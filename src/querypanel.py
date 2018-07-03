@@ -41,17 +41,27 @@ class QueryPanel(ttk.LabelFrame):
             
 #        UI Vars
         self.category_menu = None
-        self.max_num_queries = 10
+        self.max_num_queries = 11
         self.use_extra_var = tk.BooleanVar()
         self.use_extra_var.set(False)
         self.extra_var = tk.StringVar()
+        
         self.category_var = tk.StringVar() 
+        self.ls_query_packs = []
+        
         self.x_axis_type = tk.StringVar()
         self.x_axis_type.set("None")
-        self.ls_query_packs = []
+        
+        self.use_mirror_var = tk.BooleanVar()
+        self.use_mirror_var.set(False)
+        
+        self.mirror_days_var = tk.IntVar()
+        self.mirror_days_var.set(0)
+        
         self.selection_pack = {
             "extra":self.extra_var.get(),
             "x_axis_label": self.x_axis_type.get(),
+            "mirror_days": self.mirror_days_var.get(),
             "left": {
                 "frame": None,
                 "gtype":None,
@@ -83,6 +93,7 @@ class QueryPanel(ttk.LabelFrame):
         stringified_pack = {
             "extra":self.extra_var.get(),
             "x_axis_label": self.x_axis_type.get(),
+            "mirror_days": self.mirror_days_var.get(),            
             "left": {
                 "gtype":self.selection_pack["left"]["gtype"],
                 "db-type": self.selection_pack["left"]["dbtype"],
@@ -97,6 +108,7 @@ class QueryPanel(ttk.LabelFrame):
                 #selected_query_pack = [stvar, label, choose_color, delete]      
             },            
         }
+            
         for axis in ["left","right"]:
             for ind,oldpack in enumerate(self.selection_pack[axis]["queries"]):
                 new_pack = [oldpack[0].get(),oldpack[2]["background"]]
@@ -120,8 +132,17 @@ class QueryPanel(ttk.LabelFrame):
                         self._delete_query((axis,ind))
         else:
             self.extra_widget.grid_remove()
+            self.extra_var.set("")
         self._update_queries(self.category_var.get())
         
+    def _use_mirror_var_changed(self):
+        need_use = self.use_mirror_var.get()
+        if need_use:
+            self.mirror_days_entry.grid()
+        else:
+            self.mirror_days_entry.grid_remove()
+            self.mirror_days_var.set(0)
+
     def _send_to_axis(self,which_axis,index):
         query_str = self.ls_query_packs[index][0].get()
         query_ref = self.engine.get_cfg_val("queries_ref")[query_str]
@@ -303,8 +324,17 @@ class QueryPanel(ttk.LabelFrame):
         self.x_axis_type_label = ttk.Label(self, textvariable=self.x_axis_type)
         self.x_axis_type_label.grid(row=2,column=1,sticky="W",pady=(0,15))
         
+        self.mirror_days_check = tk.Checkbutton(self,text="Make Comparison Mirrors",
+              onvalue=True,  offvalue=False, variable=self.use_mirror_var,
+              command=lambda x= x:self._use_mirror_var_changed())
+        self.mirror_days_check.grid(row=3,column=0,sticky="w")          
+        
+        self.mirror_days_entry = ttk.Entry(self, width=5, textvariable=self.mirror_days_var)
+        self.mirror_days_entry.grid(row=3, column=1,columnspan=1, pady=2, sticky="w")
+        self.mirror_days_entry.grid_remove()        
+        
         self.query_menu = ttk.LabelFrame(self,text="Queries")
-        self.query_menu.grid(row=3,column=0,columnspan=2,sticky="w")
+        self.query_menu.grid(row=4,column=0,columnspan=2,sticky="w")
         
 #       Build Queries        
         for index in range(0,self.max_num_queries):
@@ -326,35 +356,37 @@ class QueryPanel(ttk.LabelFrame):
             
 #       BUILD AXIS PANELS
         self.selection_pack["left"]["frame"] = ttk.LabelFrame(self,text="Left Axis")
-        self.selection_pack["left"]["frame"].grid(row=3,rowspan=6,column=2,sticky="wn",)
+        self.selection_pack["left"]["frame"].grid(row=4,rowspan=6,column=2,sticky="wn",)
         
         self.selection_pack["right"]["frame"] = ttk.LabelFrame(self,text="Right Axis")
-        self.selection_pack["right"]["frame"] .grid(row=3,rowspan=6,column=3,sticky="wn")  
+        self.selection_pack["right"]["frame"] .grid(row=4,rowspan=6,column=3,sticky="wn")  
         
         available_colors = self.engine.get_colors_preferred() 
-        for axis in ["left","right"]:
-            
-                
+        for axis in ["left","right"]:        
             for index in range(0,4):
+                rownum = index + 1
+                if axis == "right":
+                    backindex = index + 4                
+                
                 currframe = self.selection_pack[axis]["frame"]
                 
                 stvar = tk.StringVar()
                 stvar.set("None")
                 label = tk.Label(currframe,textvariable=stvar)
-                label.grid(row=index,column=0,padx=(10,0))
+                label.grid(row=rownum,column=0,padx=(10,0))
                 
                 axis_index = axis,index
                 choose_color = tk.Button(currframe,width=1,
                      command=lambda axis_index =axis_index :self._choose_colors(axis_index))
-                choose_color.grid(row=index,column=1,padx=(10,0))
+                choose_color.grid(row=rownum,column=1,padx=(10,0))
                 backindex = index
-                if axis == "right":
-                    backindex = index + 4
+
                 choose_color.configure(background=available_colors[backindex]) 
 
                 delete = tk.Button(currframe,width=1, text="X",
                     command=lambda axis_index=axis_index:self._delete_query(axis_index))
-                delete.grid(row=index, column=2,padx=(10,10))
+                delete.grid(row=rownum, column=2,padx=(10,10))
+                
                 selected_query_pack = [stvar, label, choose_color, delete]
                 self.selection_pack[axis]["queries"].append(selected_query_pack)
 

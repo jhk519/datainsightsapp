@@ -83,7 +83,7 @@ class SettingsManagerEngine(DefaultEngine):
                     print(section_header,"from .ini file not found in config.")
                     print("This will mean updates to ini will not be unpacked and config updated.")
                     continue
-                set_val,set_type = setting_str.split(":")
+                set_val,set_type = setting_str.split("$$")
                 final_val = self._get_clean_val(set_val,set_type)
                 temp_cfg[section_header][setting_header] = final_val
                 self.user_settings.append([section_header,setting_header,final_val,set_type])
@@ -100,9 +100,10 @@ class SettingsManagerEngine(DefaultEngine):
                 raise ValueError
         elif setting_type == "int":
             val = int(setting_val)
-        elif setting_type in ["list","date","str"]:
+        elif setting_type in ["list","date","str","dirloc","fileloc"]:
             val = setting_val
         else:
+            print("INVALID TYPE FOR SETTING! - ", setting_type, " - ", setting_val)
             val = None   
         return val
 
@@ -470,6 +471,7 @@ class QueryPanelEngine(DefaultEngine):
                     qlist.append(k)    
         else:
             qlist = list(self.get_cfg_val("queries_ref").keys())
+        qlist.sort()
         return qlist
     
     def get_colors_preferred(self):
@@ -499,16 +501,4 @@ class DataTableEngine(DefaultEngine):
                     val = round(val, 2)
                 row_values.append(val)
             list_of_rows.append(row_values)
-        return list_of_rows
-                              
-                              
-        for row_c in range(0, len(data_list_of_lists[0])):
-            values = []
-#            skip first col because they are used as tree "index"
-            for x in range(0, len(data_list_of_lists)):
-                dl = data_list_of_lists[x]
-                val = dl[row_c] 
-                if isinstance(val, float) or isinstance(val, np.float64):
-                    val = round(val, 2)
-                values.append(val)
-            self.nav_tree.insert("", "end", values=values)                              
+        return list_of_rows                             

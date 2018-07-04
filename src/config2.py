@@ -262,7 +262,7 @@ backend_settings = {
             	"chart-type": "line",
             	"db-req": "tdb"
             },
-            "Total Orders by Item":{
+            "Total Orders By Item":{
             	"category": "Orders",
             	"x-axis-label": "Date",
             	"y-axis-label": "Quantity (Part-Orders)",

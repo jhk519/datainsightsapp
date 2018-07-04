@@ -139,6 +139,7 @@ class QueryPanel(ttk.LabelFrame):
         need_use = self.use_mirror_var.get()
         if need_use:
             self.mirror_days_entry.grid()
+            self.mirror_days_var.set(30)
         else:
             self.mirror_days_entry.grid_remove()
             self.mirror_days_var.set(0)
@@ -303,60 +304,68 @@ class QueryPanel(ttk.LabelFrame):
               command=lambda x= x:self._use_extra_var_changed())
         self.extra_use_check.grid(row=0,column=0,sticky="w")
         
-        self.extra_widget = ttk.Entry(self, width=25, textvariable=self.extra_var)
-        self.extra_widget.grid(row=0, column=1,columnspan=2, pady=2, sticky="ew")
+        self.extra_widget = ttk.Entry(self, width=15, textvariable=self.extra_var)
+        self.extra_widget.grid(row=0, column=1,columnspan=2, pady=2, sticky="w")
         self.extra_widget.grid_remove()
         
-#       Build category
-        self.category_label = ttk.Label(self, text="Category")
-        self.category_label.grid(row=1,column=0,sticky="w",padx=0,pady=(5,15))
-
-        self.category_menu = ttk.Combobox(self, textvariable=self.category_var)
-        self.category_menu.grid(row=1, column=1,columnspan=2,pady=(5, 15),  sticky="w")
-        
-        self.category_menu.bind('<<ComboboxSelected>>',self._category_changed)
-        self.category_menu["state"] = "readonly"
-        
-#       Build Axis Buckets
-        self.x_axis_type_header = ttk.Label(self, text="X-Axis Type: ",anchor="w")
-        self.x_axis_type_header.grid(row=2,column=0,sticky="w",pady=(0,15))
-        
-        self.x_axis_type_label = ttk.Label(self, textvariable=self.x_axis_type)
-        self.x_axis_type_label.grid(row=2,column=1,sticky="W",pady=(0,15))
-        
-        self.mirror_days_check = tk.Checkbutton(self,text="Make Comparison Mirrors",
+#       Build Axis Buckets        
+        self.mirror_days_check = tk.Checkbutton(self,text="Mirror Queries with Past Results? ",
               onvalue=True,  offvalue=False, variable=self.use_mirror_var,
               command=lambda x= x:self._use_mirror_var_changed())
-        self.mirror_days_check.grid(row=3,column=0,sticky="w")          
+        self.mirror_days_check.grid(row=3,column=0,sticky="w",pady=(0,10))          
         
         self.mirror_days_entry = ttk.Entry(self, width=5, textvariable=self.mirror_days_var)
-        self.mirror_days_entry.grid(row=3, column=1,columnspan=1, pady=2, sticky="w")
+        self.mirror_days_entry.grid(row=3, column=1,columnspan=2, pady=2, sticky="w")
         self.mirror_days_entry.grid_remove()        
         
-        self.query_menu = ttk.LabelFrame(self,text="Queries")
+#        QUERY MENU
+        self.query_menu = ttk.LabelFrame(self,text="Select Queries")
         self.query_menu.grid(row=4,column=0,columnspan=2,sticky="w")
+
+        self.x_axis_type_header = ttk.Label(self.query_menu, text="Current X-Axis: ",anchor="w")
+        self.x_axis_type_header.grid(row=0,column=0,sticky="w",pady=(5,5))
+        
+        self.x_axis_type_label = ttk.Label(self.query_menu, textvariable=self.x_axis_type)
+        self.x_axis_type_label.grid(row=0,column=1,sticky="W",pady=(5,5))  
+        
+        self.category_label = ttk.Label(self.query_menu, text="Category: ")
+        self.category_label.grid(row=1,column=0,sticky="w",padx=0,pady=(5,15))
+
+        self.category_menu = ttk.Combobox(self.query_menu, textvariable=self.category_var,
+                                          width=17)
+        self.category_menu.grid(row=1, column=1,columnspan=2,pady=(5,5), sticky="w",
+                                padx=(0,5))
+        
+        self.category_menu.bind('<<ComboboxSelected>>',self._category_changed)
+        self.category_menu["state"] = "readonly"  
+        
+        self.query_menu_separator = ttk.Separator(self.query_menu)
+        self.query_menu_separator.grid(row=2,column=0,columnspan=4,sticky="ew",
+                                       padx=(45,45),pady=(5,5))
         
 #       Build Queries        
         for index in range(0,self.max_num_queries):
+            row_n = index + 3
             query_var = tk.StringVar()
             
             query_label = tk.Label(self.query_menu,textvariable=query_var,anchor="w")
-            query_label.grid(row=index,column=0,sticky="ew")
+            query_label.grid(row=row_n,column=0,sticky="ew",padx=(5,0))
             
             left_axis = tk.Button(self.query_menu,text="L",width=5,
                       command=lambda index=index:self._send_to_axis("left",index))
-            left_axis.grid(row=index,column=1,sticky="e",padx=(10,0),pady=(5))
+            left_axis.grid(row=row_n,column=1,sticky="e",padx=(10,0),pady=(5))
             
             right_axis = tk.Button(self.query_menu,text="R",width=5,
                       command=lambda index=index:self._send_to_axis("right",index))
-            right_axis.grid(row=index,column=2,sticky="e",padx=(5,5))
+            right_axis.grid(row=row_n,column=2,sticky="w",padx=(5,5))
             
             pack = (query_var, left_axis, right_axis)
             self.ls_query_packs.append(pack)
             
 #       BUILD AXIS PANELS
         self.selection_pack["left"]["frame"] = ttk.LabelFrame(self,text="Left Axis")
-        self.selection_pack["left"]["frame"].grid(row=4,rowspan=6,column=2,sticky="wn",)
+        self.selection_pack["left"]["frame"].grid(row=4,rowspan=6,column=2,sticky="wn",
+                           padx=(10,5))
         
         self.selection_pack["right"]["frame"] = ttk.LabelFrame(self,text="Right Axis")
         self.selection_pack["right"]["frame"] .grid(row=4,rowspan=6,column=3,sticky="wn")  
@@ -365,6 +374,7 @@ class QueryPanel(ttk.LabelFrame):
         for axis in ["left","right"]:        
             for index in range(0,4):
                 rownum = index + 1
+                backindex = index
                 if axis == "right":
                     backindex = index + 4                
                 
@@ -372,15 +382,14 @@ class QueryPanel(ttk.LabelFrame):
                 
                 stvar = tk.StringVar()
                 stvar.set("None")
-                label = tk.Label(currframe,textvariable=stvar)
-                label.grid(row=rownum,column=0,padx=(10,0))
+                label = tk.Label(currframe,textvariable=stvar,wraplength=110,anchor="w",
+                                 justify="left",width=15)
+                label.grid(row=rownum,column=0,padx=(10,0),sticky="w")
                 
                 axis_index = axis,index
                 choose_color = tk.Button(currframe,width=1,
                      command=lambda axis_index =axis_index :self._choose_colors(axis_index))
                 choose_color.grid(row=rownum,column=1,padx=(10,0))
-                backindex = index
-
                 choose_color.configure(background=available_colors[backindex]) 
 
                 delete = tk.Button(currframe,width=1, text="X",

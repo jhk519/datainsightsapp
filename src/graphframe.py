@@ -141,17 +141,17 @@ class GraphFrame(tk.LabelFrame):
             color_c = 0
             if srp["gtype"] == "line":
                 for x in range(0, len(srp["y_data"])):
+                    if "_Mirror" in srp["line_labels"][x]:
+                        linestyle = "--"
+                    else:
+                        linestyle = "-"                    
                     self.axis_secondary.plot(srp["x_data"],
                                              srp["y_data"][x],
                                              color=srp_colors[color_c],
-                                             ls="-",
+                                             ls=linestyle,
                                              lw=2,
                                              label=srp["line_labels"][x])
                     color_c += 1
-
-    #           Set minimum and maximum due to some weird bug
-#                self.axis_secondary.set_xlim(
-#                    srp["x_data"][0], srp["x_data"][-1])
 
             elif srp["gtype"] == "string-bar" or "bar":
                 self.axis_secondary.bar(srp["x_data"],

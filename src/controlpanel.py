@@ -7,22 +7,16 @@ Created on Thu May 31 14:25:28 2018
 #Tkinter Modules
 try:
     import Tkinter as tk
-    import tkFont
     import ttk
 except ImportError:  # Python 3
     import tkinter as tk
     import tkinter.ttk as ttk
-from tkinter import filedialog
 
 # Standard Modules
 import datetime
-import os
-import sys
 
 # Non-Standard Modules
-import pandas as pd
 from pprint import pprint
-import numpy as np
 
 # Project Modules
 import querypanel

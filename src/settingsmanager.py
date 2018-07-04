@@ -19,10 +19,12 @@ try:
 except ImportError:  # Python 3
     import tkinter as tk
     import tkinter.ttk as ttk
+    
 
 # Standard Modules
 import configparser 
 from pprint import pprint as PPRINT
+import logging
 
 # Project Modules    
 from default_engines import SettingsManagerEngine
@@ -30,6 +32,7 @@ from default_engines import SettingsManagerEngine
 class SettingsManager(ttk.LabelFrame):
     def __init__(self,parent,controller=None,engine="default",config=None):
         super().__init__(parent)
+        self.logger = logging.getLogger(__name__)
         self.parent = parent
         if not controller:
             self.controller = parent
@@ -48,7 +51,9 @@ class SettingsManager(ttk.LabelFrame):
         self.setting_packs = []
             
         self.update_settings()
-        self.build_settings()
+        
+        self._build_settings()
+        self._build_entries()
         
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=0)
@@ -67,6 +72,7 @@ class SettingsManager(ttk.LabelFrame):
         self.update_settings()
         try:
             self.controller.propagate_cfg_var_change
+            logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
         except:
             print("No suitable controlelr to propagate_cfg_var")
         else:
@@ -74,18 +80,24 @@ class SettingsManager(ttk.LabelFrame):
                
     def _validate_and_set(self,index):
         header, label, stvar, set_type, entry_list = self.setting_packs[index]
+        if set_type == "dirloc":
+            dirloc = tk.filedialog.askdirectory()   
+            stvar.set(dirloc)
+        elif set_type == "fileloc":
+            fileloc = tk.filedialog.askopenfilename()   
+            stvar.set(fileloc)            
         curr_val = stvar.get()
-        self.parser.set(header,label["text"],curr_val+":"+set_type)
+        self.parser.set(header,label["text"],curr_val+"$$"+set_type)
         with open('user_settings.ini', 'w') as configfile:
             self.parser.write(configfile)
         self.settings_changed(index)
         return 1
-            
-#   BUILD FUNCTIONS    
-    def build_settings(self):
-        self._build_settings()
-        self._build_entries()
+                    
+    def _get_loc(self,index):
+        dirloc = tk.filedialog.askdirectory()   
         
+        self._validate_and_set(index)              
+#   BUILD FUNCTIONS            
     def _build_settings(self):
         frame_row = 0
 
@@ -113,42 +125,44 @@ class SettingsManager(ttk.LabelFrame):
             set_type = setting_pack[3] 
             entry_list = []
             
-            lambdafunc = lambda index = index: self._validate_and_set(index)
+            def_lambda = lambda index = index: self._validate_and_set(index)
+            loc_lambda = lambda index = index: self._get_loc(index)
             
-            if set_type == "str":
-                entry_list.append(ttk.Entry(self, textvariable=stvar,
-                                            validate="focusout",
-                                            validatecommand=lambdafunc,width=30))
+            if set_type == "dirloc" or set_type == "fileloc":
+                entry_list.append(ttk.Label(self, textvariable=stvar))
+                entry_list.append(tk.Button(self,command=def_lambda,text="..."))
+              
             elif set_type == "bool":
                 entry_list.append(ttk.Radiobutton(self, variable=stvar, text="Yes",
-                                                  value="True", command=lambdafunc))
+                                                  value="True", command=def_lambda))
                 
                 entry_list.append(ttk.Radiobutton(self, variable=stvar, text="No",
                                                   value="False",
-                                                  command=lambdafunc))
+                                                  command=def_lambda))
                     
             elif set_type == "list": 
                 entry_list.append(ttk.Entry(self, textvariable=stvar,
                                             validate="key",
-                                            validatecommand=lambdafunc, width=90))
+                                            validatecommand=def_lambda, width=90))
                     
             elif set_type == "date":
                 entry_list.append(ttk.Entry(self, textvariable=stvar,
                                             validate="focusout",
-                                            validatecommand=lambdafunc, width=30))
+                                            validatecommand=def_lambda, width=30))
                     
             elif set_type == "int":
                 entry_list.append(tk.Spinbox(self, from_=1.0, to=30.0, wrap=True, 
                                              width=4, validate="key", state="readonly",    
                                              textvariable = stvar,
-                                             command=lambdafunc))
+                                             command=def_lambda))
                 
             for colcount,value_widget in enumerate(entry_list):
                 if type(value_widget) == ttk.Entry:
                     value_widget.grid(row=index,column=colcount+1,sticky="w",
                         columnspan=2)
                 else:
-                    value_widget.grid(row=index,column=colcount+1,sticky="w",padx=(0,10))     
+                    value_widget.grid(row=index,column=colcount+1,sticky="w",padx=(0,10))   
+                  
         
 if __name__ == "__main__":
     import config2

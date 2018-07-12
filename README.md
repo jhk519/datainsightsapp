@@ -2,11 +2,13 @@
 
 **Development Information Links**
 
-[Latest and In-Development Version](https://github.com/jhk519/datainsightsapp/wiki/Most-Recent)
+[Latest and In-Development Version](https://github.com/jhk519/datainsightsapp/wiki/Latest-and-In-Development-Versions)
 
 [Past Versions](https://github.com/jhk519/datainsightsapp/wiki/Past-Updates)
 
 [Future Plans](https://github.com/jhk519/datainsightsapp/wiki/Future-Plans)
+
+[ARCHIVE - Changelog < 0.2.9.6](https://github.com/jhk519/datainsightsapp/wiki/Changelog)
 
 **Manual/Overview Links**
 

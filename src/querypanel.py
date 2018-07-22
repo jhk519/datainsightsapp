@@ -117,6 +117,12 @@ class QueryPanel(ttk.LabelFrame):
     
     def set_cfgvar(self,new_cfgvar):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
+        colors = self.engine.get_colors_preferred()
+        all_query_slots = self.selection_pack["left"]["queries"] + self.selection_pack["right"]["queries"]
+        for query_index, query_slot_pack in enumerate(all_query_slots):
+            color_button = query_slot_pack[2]
+            color_button["background"] = colors[query_index]
+            
             
 #   UX EVENT HANDLERS AND HELPERS      
     def _use_extra_var_changed(self):
@@ -221,6 +227,7 @@ class QueryPanel(ttk.LabelFrame):
             curr_x = self.x_axis_type.get()
             q_count += 1 
             
+            #if cannot use product filter, and product filter input exists       
             if self.use_extra_var.get() == True and query_ref["can_filter"] == None:
                 continue    
             

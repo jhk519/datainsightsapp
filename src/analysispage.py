@@ -68,6 +68,7 @@ class AnalysisPage(tk.Frame):
         
     def set_cfgvar(self,new_cfgvar):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
+#        print("AnalysisPage.set_cfgvar called, propagating to ControlPanel.")
         self.control_panel.set_cfgvar(new_cfgvar)
           
     def search_queries(self,search_pack_from_console):

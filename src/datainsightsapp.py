@@ -17,6 +17,7 @@ except ImportError:  # Python 3
     
 # Standard Modules    
 import logging   
+import datetime
 import pprint as PRETTYPRINTTHIS
 
 # Project Mpdules
@@ -25,6 +26,7 @@ from analysispage import AnalysisPage
 from productviewer import ProductViewer
 from databasemanager import DBManager
 from settingsmanager import SettingsManager
+from multigrapher import MultiGrapher
 
 class DataInsightsApp(tk.Tk):
     def __init__(self, account, init_config, ver=None):
@@ -64,20 +66,23 @@ class DataInsightsApp(tk.Tk):
     def _populate_notebook(self):
 #       SETTINGS MANAGER PAGE INIT
         self.settingsmanager = SettingsManager(self.notebook, self, config=self.init_cfg)
-        self.notebook.add(self.settingsmanager,text="Settings")
+        self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
+        
+        curr_config = self.settingsmanager.get_config()
         
 #       DATA MANAGER PAGE INIT 
 
-        self.dbmanager = DBManager(self.notebook, self, config=self.settingsmanager.get_config())
+        self.dbmanager = DBManager(self.notebook, self, config=curr_config)
         self.notebook.add(self.dbmanager,text="DB Manager")  
 
 #       PRODUCT VIEWER PAGE INIT
-        self.product_viewer_page = ProductViewer(self.notebook, self, dbvar=self.dbmanager.get_dbvar())
+        self.product_viewer_page = ProductViewer(self.notebook, self, engine="default",
+                                                 dbvar=self.dbmanager.get_dbvar(),
+                                                 config=curr_config)
         self.notebook.add(self.product_viewer_page,text="Product Viewer")
         
 #       ANALYSIS PAGE INIT
-        ap = AnalysisPage(self.notebook, self, engine="default",
-            config = self.settingsmanager.get_config(), dbvar = self.dbmanager.get_dbvar())
+        ap = AnalysisPage(self.notebook, self, engine="default", config = curr_config, dbvar = self.dbmanager.get_dbvar())
         self.analysispages.append(ap)
         self.notebook.add(ap, text="Analysis")
 
@@ -99,14 +104,21 @@ class DataInsightsApp(tk.Tk):
             ap.set_cfgvar(new_cfgvar)
         
 if __name__ == "__main__":
-    logging.basicConfig(filename='debug2.log',level=logging.DEBUG)
+    
+    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
+    ver = "v0.2.10.0 - 2018/07/04"
+    
+    logging.basicConfig(filename=logname,level=logging.DEBUG)
+    logging.info("-------------------------------------------------------------")
+    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
+    logging.info("VERSION: {}".format(ver))
+    logging.info("-------------------------------------------------------------")
     logging.info("datainsightsapp module initialized...")
     config = config2.backend_settings    
-    logging.info("Deepcopy of header_reference_dict made.")
+    logging.info("Collected config2.backend_settings")
     
-    logging.info("Initializing app...")
-    ver = "v0.2.9.6 - 2018/06/29"
     app = DataInsightsApp("admin",config,ver=ver)
+    logging.info("App Initialized...")
     
     app.state("zoomed")
     app.title("Data Insights App - {}".format(ver))

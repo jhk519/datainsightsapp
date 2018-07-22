@@ -1,0 +1,754 @@
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:productviewer:ProductViewer Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+DEBUG:matplotlib.font_manager:findfont: Matching :family=sans-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=10.0 to DejaVu Sans ('c:\\users\\user\\documents\\python35\\lib\\site-packages\\matplotlib\\mpl-data\\fonts\\ttf\\DejaVuSans.ttf') with score of 0.050000
+DEBUG:matplotlib.font_manager:findfont: Matching :family=sans-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=12.0 to DejaVu Sans ('c:\\users\\user\\documents\\python35\\lib\\site-packages\\matplotlib\\mpl-data\\fonts\\ttf\\DejaVuSans.ttf') with score of 0.050000
+INFO:controlpanel:ControlPanel Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+INFO:default_engines:Post-Super Init for ProductViewer
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines-DefaultSettingsManagerEngine:DefaultSettingsManagerEngine Init.
+INFO:default_engines-DefaultDBManagerEngine:DefaultDBManagerEngine Init.
+INFO:default_engines-DefaultProductViewerEngine:DefaultProductViewerEngine Init.
+INFO:default_engines-DefaultProductViewerEngine:Post-Super Init for ProductViewer
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines-DefaultAnalysisPageEngine:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines-DefaultControlPanelEngine:DefaultControlPanelEngine Init.
+INFO:default_engines-DefaultQueryPanelEngine:DefaultQueryPanelEngine Init.
+INFO:default_engines-DefaultDataTableEngine:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+INFO:default_engines:Post-Super Init for ProductViewer
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180720-1734
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180720-1734
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180720-1735
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Deepcopy of header_reference_dict made.
+INFO:root:Initializing app...
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180720-1736
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180720-1737
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:Setting Page's Controller has .propagate_cfg_var_change method.
+DEBUG:matplotlib.font_manager:findfont: Matching :family=sans-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=8.0 to DejaVu Sans ('c:\\users\\user\\documents\\python35\\lib\\site-packages\\matplotlib\\mpl-data\\fonts\\ttf\\DejaVuSans.ttf') with score of 0.050000
+DEBUG:matplotlib.font_manager:findfont: Matching :family=sans-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=8.33 to DejaVu Sans ('c:\\users\\user\\documents\\python35\\lib\\site-packages\\matplotlib\\mpl-data\\fonts\\ttf\\DejaVuSans.ttf') with score of 0.050000
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-1846
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:app.mainloop() terminated.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:default_engines:Odb Got.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2034
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:__main__:ProductViewer Init.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2039
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2040
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2042
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2053
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2055
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2058
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2100
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2101
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+DEBUG:default_engines:Could not get cfg_val for: automatic export location for DefaultProductViewerEngine config.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2102
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+DEBUG:default_engines:Could not get cfg_val for: automatic export location for DefaultProductViewerEngine config.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2103
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+DEBUG:default_engines:Could not get cfg_val for: automatic export location for DefaultProductViewerEngine config.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2103
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+DEBUG:default_engines:Could not get cfg_val for: automatic export location for DefaultProductViewerEngine config.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2105
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+DEBUG:default_engines:Could not get cfg_val for: automatic export location for DefaultProductViewerEngine config.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2107
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2107
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> None
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2205
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2206
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+INFO:root:app.mainloop() terminated.
+INFO:root:-------------------------------------------------------------
+INFO:root:DEBUGLOG @ 180721-2206
+INFO:root:VERSION: v0.2.10.0 - 2018/07/04
+INFO:root:-------------------------------------------------------------
+INFO:root:datainsightsapp module initialized...
+INFO:root:Collected config2.backend_settings
+INFO:root:DataInsightsApp init started. 
+INFO:root:super init completed.
+INFO:root:Account id = admin
+INFO:settingsmanager:Settings Manager Initializing...
+INFO:default_engines:DefaultSettingsManagerEngine Init.
+INFO:default_engines:DefaultDBManagerEngine Init.
+INFO:default_engines:DefaultProductViewerEngine Init.
+DEBUG:default_engines:Post-Super Init for ProductViewer Engine
+INFO:productviewer:ProductViewer Init.
+INFO:default_engines:DefaultAnalysisPageEngine Init.
+WARNING:matplotlib.legend:No handles with labels found to put in legend.
+INFO:controlpanel:ControlPanel Init.
+INFO:default_engines:DefaultControlPanelEngine Init.
+INFO:default_engines:DefaultQueryPanelEngine Init.
+INFO:default_engines:DefaultDataTableEngine Init.
+INFO:root:App Initialized...
+INFO:default_engines:Odb Got.
+INFO:default_engines:Got Locced.
+DEBUG:productviewer:export_customer_result >> <class 'pandas.core.frame.DataFrame'>

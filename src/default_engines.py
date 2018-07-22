@@ -18,6 +18,7 @@ import PIL
 import requests
 import copy
 import pandastable
+import logging
 
 import queries
 import exceltodataframe as etdf
@@ -25,6 +26,9 @@ import exceltodataframe as etdf
 class DefaultEngine:
     def __init__(self,init_config = None,init_dbvar=None,name=""):
         self.engine_name = "Default" + name + "Engine"
+        self.log = logging.getLogger(__name__).info
+        self.log("{} Init.".format(self.engine_name))    
+        self.bug = logging.getLogger(__name__).debug
         self.__cfgvar = init_config      
         self.__dbvar = init_dbvar
         self.__req_headers = []        
@@ -54,7 +58,27 @@ class DefaultEngine:
             return datetime.datetime.now().strftime("%y%m%d-%H%M") 
         
     def get_cfg_val(self,key):
-        return self.__cfgvar[key]
+        print(self.__cfgvar)
+        try: 
+            value = self.__cfgvar[key]
+        except TypeError:
+            self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
+        return value
+    
+    def get_export_full_name(self,db_str,ftype="excel"):
+        if ftype == "excel":
+            ext = ".xlsx"
+        elif ftype =="image":
+            ext = ".png"
+        elif ftype =="sqlite":
+            ext = ".db"
+            
+        outname = db_str + self.time_str() + ext
+        outdir = self.get_cfg_val("automatic export location")
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+        fullname = os.path.join(outdir, outname)      
+        return fullname  
              
     def _check_req_headers(self,config_to_check=None):
         if not config_to_check:
@@ -100,7 +124,7 @@ class SettingsManagerEngine(DefaultEngine):
                 raise ValueError
         elif setting_type == "int":
             val = int(setting_val)
-        elif setting_type in ["list","date","str","dirloc","fileloc"]:
+        elif setting_type in ["list","date","str","dirloc","fileloc","colors"]:
             val = setting_val
         else:
             print("INVALID TYPE FOR SETTING! - ", setting_type, " - ", setting_val)
@@ -160,7 +184,7 @@ class DBManagerEngine(DefaultEngine):
                 print("Likely in-compatible DB file.")
             
     def load_online_dbs(self,counter=None,ticker=None):
-        url = self.get_cfg_val("online_db_url")
+        url = self.get_cfg_val("URL for Online DB Download")
         first_response = requests.get(url,stream=True)
         x=0
         with open('databases//DH_DBS.pickle', 'wb') as dbfile:
@@ -178,20 +202,20 @@ class DBManagerEngine(DefaultEngine):
             with open('databases//DH_DBS.pickle', 'wb') as dbfile:
                 pickle.dump(self.get_dbvar(), dbfile)     
                 
-    def get_export_full_name(self,db_str,ftype="excel"):
-        if ftype == "excel":
-            ext = ".xlsx"
-        elif ftype =="image":
-            ext = ".png"
-        elif ftype =="sqlite":
-            ext = ".db"
-            
-        outname = db_str + self.time_str() + ext
-        outdir = self.get_cfg_val("export_db_loc")
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-        fullname = os.path.join(outdir, outname)      
-        return fullname
+#    def get_export_full_name(self,db_str,ftype="excel"):
+#        if ftype == "excel":
+#            ext = ".xlsx"
+#        elif ftype =="image":
+#            ext = ".png"
+#        elif ftype =="sqlite":
+#            ext = ".db"
+#            
+#        outname = db_str + self.time_str() + ext
+#        outdir = self.get_cfg_val("automatic export location")
+#        if not os.path.exists(outdir):
+#            os.mkdir(outdir)
+#        fullname = os.path.join(outdir, outname)      
+#        return fullname
     
     def df2sqlite(self,db_str, db_name="import.sqlite", tbl_name="import"):
         print("Preparing conversion to sqlite for: ", db_name)
@@ -220,13 +244,44 @@ class ProductViewerEngine(DefaultEngine):
     def __init__(self,init_config = None, init_dbvar=None, name="ProductViewer"):
         super().__init__(init_config=init_config, init_dbvar=init_dbvar,
                          name="ProductViewer")
-
+        
+        self.bug("Post-Super Init for {} Engine".format(name))
+        
+    def get_cdb_data(self):
+        cdb = self.get_dbvar()["cdb"]
+        self.log("Cdb Got.")
+        return cdb
+     
+    def get_odb_data(self):
+        odb = self.get_dbvar()["odb"]
+        self.log("Odb Got.")
+        return odb
+    
+    def get_orders_by_product(self,product_code):
+        temp_odb = self.get_odb_data()
+        locced = temp_odb.loc[temp_odb["product_cafe24_code"] == product_code]
+        self.log("Got Locced.")
+        return locced
+        
     def get_pdb_product_data(self,pcode):
         pdb = self.get_dbvar()["pdb"]
         x = pdb.loc[pdb['product_code'] == pcode]  
         return x
+    
+    def get_customers_list(self,code):
+        if not code is None and not code == "":
+            filtered_odb = self.get_orders_by_product(code)
+            if filtered_odb.shape[0] < 1:
+                self.bug("No orders for this product code: {}".formaT(code))
+                return "No Results"
+            else:
+                dropped = filtered_odb.drop_duplicates(subset="customer_phone_number")
+                return dropped
+        else:
+            self.bug("No Code Given")
+            return "No Code Given"
         
-    def search_product(self,code=None):
+    def search_product(self,code):
         if not code is None and not code == "":
             pdb = self.get_pdb_product_data(code)
         else:
@@ -276,24 +331,18 @@ class ProductViewerEngine(DefaultEngine):
         except AttributeError:
             print("CANNOT READ URLOPEN FOR ", url)
             return None
-        else:
-            return im            
+        else: 
+            return im   
+
+class MultiGrapherEngine(DefaultEngine):
+    def __init__(self, init_config=None, init_dbvar=None):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="MultiGrapher")         
         
 class AnalysisPageEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
         super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="AnalysisPage")
     
-    def get_export_full_name(self,title,ftype="excel"):
-        if ftype == "excel":
-            ext = ".xlsx"
-        else:
-            ext = ".png"
-        outname = title.replace(".","") + self.time_str("now") + ext
-        outdir = self.get_cfg_val("auto_export_loc")
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
-        fullname = os.path.join(outdir, outname)      
-        return fullname
+
     
     def get_export_excel_pack(self,mrp):
         """
@@ -315,7 +364,7 @@ class AnalysisPageEngine(DefaultEngine):
         
         sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
         
-        if self.get_cfg_val("auto_name_exports"):
+        if self.get_cfg_val("automatic search export"):
             fullname = self.get_export_full_name(mrp["title"])
         else:    
             fullname = None

@@ -8,11 +8,17 @@ Created on Fri Jun 22 00:58:46 2018
 import reportlab
 import datetime
 
+#   Settings are divided based on their related page. For settings that users can
+# directly modify, they must be listed in the user_settings.ini file under a 
+# section header that exactly matches the key in the backend_settings dict. 
+#   This is handled by the settingsmanager Engine. As such, if the Section and/or 
+# specific setting is not on the .ini file, it will not appear at all in settingsmanager.
+
 backend_settings = {
     "dbmanager_config":{
-        "online_db_url":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
-        "auto_name_export": True,        
-        "export_db_loc":".//exports//databases",
+        "URL for Online DB Download":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
+        "automatic db export": True,        
+        "automatic export location":".//exports//databases",
         "loaddb_on_load": True, 
         "loaddb_loc": "databases//DH_DBS.pickle",
         
@@ -56,11 +62,19 @@ backend_settings = {
                 "match_on_key": "sku_code"
             },
             "sm_stdb": {
-                "date": None,
+                "data": None,
                 "proper_title":"Sellmate Stock Database",
                 "core": "sellmate_stock_excel",
                 "appends_list": [],
                 "match_on_key": "sellmateBarcode"
+            },
+            
+            "cdb":{
+                "data":None,
+                "proper_title":"Customer Database",
+                "core":"customer_data",
+                "appends_list":[],
+                "match_on_key":"customer_phone"
             }
         },
             
@@ -174,6 +188,12 @@ backend_settings = {
                 "바코드번호서식": "sellmateBarcode",
                 "현재재고": "stock"
             },
+                    
+            "customer_data": {
+                "주문자휴대전화": "customer_phone",
+                "주문자명": "customer_name"
+            },
+                    
             "sellmate_product_excel": {
                 "공급처분류": "supplierGroup",
                 "공급처코드": "supplierCode",
@@ -197,8 +217,16 @@ backend_settings = {
         }              
     },
             
+    "multigrapher_config":{
+        
+    },
+            
+    "productviewer_config":{
+        "automatic export location":".//exports//product_customer_lists"
+    },
+            
     "analysispage_config":{     
-        "auto_export_loc": ".//exports//graphs",
+        "automatic export location": ".//exports//graphs",
         "auto_name_exports": True,  
     },
                     

@@ -14,9 +14,11 @@ except ImportError:  # Python 3
 
 # Standard Modules
 import datetime
+import logging
 
 # Non-Standard Modules
 from pprint import pprint
+
 
 # Project Modules
 import querypanel
@@ -31,6 +33,9 @@ class ControlPanel(ttk.PanedWindow):
             self.controller = parent
         else:
             self.controller = controller
+        
+        self.log = logging.getLogger(__name__).info
+        self.log("ControlPanel Init.")
             
         if str(engine) == "default":
             self.engine = ControlPanelEngine()
@@ -88,8 +93,7 @@ class ControlPanel(ttk.PanedWindow):
 # ===================================================================    
     def set_cfgvar(self,new_cfgvar):
         self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
-        for qp in self.ls_query_panels:
-            qp.set_cfgvar(new_cfgvar)
+        self.query_panel.set_cfgvar(new_cfgvar)
             
     def search_call(self):
         try:
@@ -171,7 +175,10 @@ class ControlPanel(ttk.PanedWindow):
 
     def _open_end_calendar(self):
         end_calendar = cal_dialog.CalendarDialog(self)
-        self.end_date = end_calendar.result.date()
+        try:
+            self.end_date = end_calendar.result.date()
+        except AttributeError:
+            self.lgr.info("end_calendar.result.date() Probably Returned NoneType")
         self.end_textvar.set(str(self.end_date))
 
     def _open_ref_calendar(self):

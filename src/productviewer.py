@@ -16,12 +16,14 @@ except ImportError:  # Python 3
 # Standard Modules
 from pprint import pprint
 import pickle
+import logging
 
 # Non-standard Modules
 from PIL import ImageTk
 
 #Package Modules
 from default_engines import ProductViewerEngine
+import config2
 
 class ProductViewer(tk.LabelFrame):
     def __init__(self,parent,controller=None,engine="default",config=None,dbvar=None):
@@ -37,12 +39,18 @@ class ProductViewer(tk.LabelFrame):
         else:
             self.engine = engine         
             
-#        if config:
-#            self.engine.set_cfgvar(config)
+        self.log = logging.getLogger(__name__).info
+        self.log("ProductViewer Init.")
+        self.bug = logging.getLogger(__name__).debug    
+        
+        self.config_key = "productviewer_config"    
+        if config:
+            self.engine.set_build_config(raw_config = config[self.config_key])    
             
         if dbvar:
             self.engine.set_dbvar(dbvar)
             
+
         self.product_detail_packs = []
         self.sku_detail_packs = []
 #        Required to keep images in memory for tkinter to render
@@ -60,13 +68,46 @@ class ProductViewer(tk.LabelFrame):
         self.engine.set_build_config(new_cfgvar)    
         
 #   UX EVENT HANDLERS AND HELPERS        
+        
+    def export_customers(self,code=None):
+        if code == None:
+            code = self.search_pcode_stvar.get()       
+        export_customer_result = self.engine.get_customers_list(code)
+        self.bug("export_customer_result >> {}".format(str(type(export_customer_result))))
+        try:
+            self.export_to_csv(code,export_customer_result)
+        except AttributeError:
+            print("GGGG")
+        else:
+            if export_customer_result == "no_results":
+                self.bug("No Results for Export Customers Search for: {}".format(code))
+                self.popup = tk.Toplevel()
+                self.popup.title("No Results for this Product Code")
+                msg = tk.Message(
+                    self.popup,
+                    text="No results for {} in database.".format(code))
+                msg.pack()
+                okbutton = ttk.Button(
+                    self.popup,
+                    text="OK",
+                    command=self.popup.destroy)
+                okbutton.pack()
+            elif export_customer_result == "no_code_given":
+                print("No Code Given")
+                return "no_code_given"
+                    
+    def export_to_csv(self,code,dataframe):
+        dbstr = "product_customers_{}".format(code)
+        fullname = self.engine.get_export_full_name(dbstr,ftype="excel")
+        dataframe.to_excel(fullname, sheet_name=code)
+        
     def search_product(self,code=None):
         if code == None:
             code = self.search_pcode_stvar.get()        
-        search_product_result = self.engine.search_product(code=code)
+        search_product_result = self.engine.search_product(code)
         if search_product_result == "no_results":
             self.popup = tk.Toplevel()
-            self.popup.title("Load from Online or from Computer?")
+            self.popup.title("No Results for This Product Code")
             msg = tk.Message(
                 self.popup,
                 text="No results for this product code in database.")
@@ -149,7 +190,7 @@ class ProductViewer(tk.LabelFrame):
         self.search_frame.grid(row=0,column=0,sticky="ew",pady=15)
         
         self.search_pcode_stvar = tk.StringVar()   
-        self.search_pcode_stvar.set("GZ2000")
+        self.search_pcode_stvar.set("GZ1862")
         self.search_pcode_label = ttk.Label(self.search_frame,text="Search Product Code")
         self.search_pcode_label.grid(row=0,column=0)
         
@@ -166,6 +207,13 @@ class ProductViewer(tk.LabelFrame):
             command = self.search_product
         )
         self.search_button.grid(row=0,column=2,padx=5,sticky="w")
+        
+        self.export_customers_button = ttk.Button(
+            self.search_frame,
+            text = "Export Customers List",
+            command = self.export_customers
+        )
+        self.export_customers_button.grid(row=0,column=3,padx=5,sticky="w")
         
     def _build_product_info_frame(self):
         self.product_info_frame = ttk.LabelFrame(self,text="Product Information")
@@ -216,7 +264,7 @@ if __name__ == "__main__":
     dbfile =  open(r"databases/DH_DBS.pickle", "rb")
     dbs = pickle.load(dbfile)  
     app = tk.Tk()
-    analysispage = ProductViewer(app,config=None,dbvar=dbs)
+    analysispage = ProductViewer(app,config=config2.backend_settings,dbvar=dbs)
     analysispage.grid(padx=20)
     app.mainloop()            
          

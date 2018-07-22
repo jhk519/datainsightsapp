@@ -138,7 +138,7 @@ class DBManager(tk.Frame):
 
     def _export_db_csv(self, db_str):
         print("Export_DB")
-        if self.engine.get_cfg_val("auto_name_export"):
+        if self.engine.get_cfg_val("automatic db export"):
             fullname = self.engine.get_export_full_name(db_str)
         else:
             dir_loc = filedialog.asksaveasfilename()
@@ -147,7 +147,7 @@ class DBManager(tk.Frame):
 
     def _export_db_sqlite(self, db_str):
         print("Export DB to SQlite")
-        if self.engine.get_cfg_val("auto_name_export"):
+        if self.engine.get_cfg_val("automatic db export"):
             fullname = self.engine.get_export_full_name(db_str,ftype="sqlite")
         else:
             dir_loc = filedialog.asksaveasfilename()
@@ -181,7 +181,7 @@ class DBManager(tk.Frame):
             db_pack[1]["text"] = "Passed initial check... Checking dataset."
             db_pack[1]["fg"] = "orange"
 
-            no_sort_dbs = {"pdb", "sm_odb", "sm_stdb"}
+            no_sort_dbs = {"pdb", "sm_odb", "sm_stdb","cdb"}
             line2 = ""
             if not db_pack[0] in no_sort_dbs:
                 firstd = None

@@ -3,10 +3,15 @@ from pprint import pprint
 import collections
 import copy
 from datetime import datetime, timedelta
+import logging
 
 # Non-Standard Modules
 import workdays
 import pandas as pd
+
+log = logging.getLogger(__name__).info
+log("{} Init.".format(__name__))    
+bug = logging.getLogger(__name__).debug       
 
 dates =  [
         "2018-01-01",
@@ -64,7 +69,11 @@ def main(st_query_name, di_dbs, start, end, extra=None):
     if db.shape[0] <= 1:
         return "No Date Data"
     func = queries_ref[st_query_name][0]
-    return list(func(db, start, end, extra=extra))
+    returnval = func(db, start, end, extra=extra)
+    if returnval:
+        return list(returnval)
+    else:
+        return None
 
 def cancel_quantity(db, start, end, extra=None):
     if extra is not None and not extra == "":
@@ -74,9 +83,9 @@ def cancel_quantity(db, start, end, extra=None):
     
     for index, row in db.iterrows():
         temp_date = row["date_payment"]
-        temp_cancel = row["date_cancelled"]
+        temp_cancel = row["cancel_status"]
         if temp_date in date_dict:
-            if not temp_cancel == 0:
+            if temp_cancel == "부분취소" or temp_cancel == "취소":
                 date_dict[temp_date]["cancels"] += 1
 
     date_list = []
@@ -130,11 +139,16 @@ def cancel_reasons(db, start, end, extra=None):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
 
-    db = db["reason_cancelled"].value_counts()
+    try:
+        db = db["reason_cancelled"].value_counts()
+    except KeyError:
+        bug("Missing 'reason_cancelled in DB")
+        return None
     list_of_unique_reasons = []
     counts_of_reasons = []
     total_non_sold_out = 0
     for x in db.iteritems():
+        bug("cancel_reasons x[0] = {}, x[1] = {} END".format(x[0],x[1]))
         if x[0] == '품절':
             list_of_unique_reasons.append("Sold Out")
             counts_of_reasons.append(x[1])

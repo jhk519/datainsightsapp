@@ -25,10 +25,11 @@ import exceltodataframe as etdf
 
 class DefaultEngine:
     def __init__(self,init_config = None,init_dbvar=None,name=""):
-        self.engine_name = "Default" + name + "Engine"
-        self.log = logging.getLogger(__name__).info
+        self.engine_name = "DefaultEngine-{}".format(name   )
+        self.log = logging.getLogger(self.engine_name).info
         self.log("{} Init.".format(self.engine_name))    
-        self.bug = logging.getLogger(__name__).debug
+        self.bug = logging.getLogger(self.engine_name).debug
+        
         self.__cfgvar = init_config      
         self.__dbvar = init_dbvar
         self.__req_headers = []        
@@ -55,17 +56,16 @@ class DefaultEngine:
              
     def time_str(self,key="now"):
         if key == "now":
-            return datetime.datetime.now().strftime("%y%m%d-%H%M") 
+            return datetime.datetime.now().strftime("%y%m%d-%H%M%S") 
         
     def get_cfg_val(self,key):
-        print(self.__cfgvar)
         try: 
             value = self.__cfgvar[key]
         except TypeError:
             self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
         return value
     
-    def get_export_full_name(self,db_str,ftype="excel"):
+    def get_export_full_name(self,db_str,ftype="excel",outdir=None):
         if ftype == "excel":
             ext = ".xlsx"
         elif ftype =="image":
@@ -74,7 +74,9 @@ class DefaultEngine:
             ext = ".db"
             
         outname = db_str + self.time_str() + ext
-        outdir = self.get_cfg_val("automatic export location")
+        if not outdir:
+            outdir = self.get_cfg_val("automatic export location")
+            self.log("outdir from config: {}".format(outdir))
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         fullname = os.path.join(outdir, outname)      
@@ -141,36 +143,66 @@ class DBManagerEngine(DefaultEngine):
         for key in template:
             dbs[key] = None
         return dbs   
-
-    def gen_single_db(self, db_str, dir_loc):
-        db_ref = self.get_cfg_val("db_build_config")[db_str]
-        ext = ".xlsx"
-        req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
-        match_on_key = db_ref["match_on_key"]
-        new_df = etdf.gen_single_db_from_excels(dir_loc, ext, self.get_cfg_val("header_ref"),
-                                                req_excels_tpl, match_on_key)
-        return new_df
     
-    def reset_and_gen_single_db(self,db_str, dir_loc):
-        self.get_dbvar()[db_str] = self.gen_single_db(db_str,dir_loc)
-
+    def gen_cdb(self):
+        odb = self.get_dbvar()["odb"]
+#        print(odb.head)
+        adb = odb[["customer_phone_number","customer_id"]]
+#        print(type(adb))
+        cdb = adb.drop_duplicates()
+        return cdb
+    
+#    def gen_pdb(self):
+#        odb = self.get_dbvar()["odb"]
+##        print(odb.head)
+#        adb = odb[["product_cafe24_code","product_option"]]
+##        print(type(adb))
+#        cdb = adb.drop_duplicates()
+#        return cdb        
+            
     def reset_and_gen_all_dbs(self,dir_loc):
         self.set_dbvar(self.gen_bare_dbs())
         for db_str in self.get_dbvar():
-            self.reset_and_gen_single_db(db_str,dir_loc)  
-            
-    def update_single_db(self,db_str,dir_loc):
-        print("Adding Data to: ", db_str)
+            self.reset_and_gen_single_db(db_str,dir_loc) 
+    
+    def reset_and_gen_single_db(self,db_str, dir_list):
+        self.get_dbvar()[db_str] = self.gen_single_db(db_str,dir_list)
+        
+    def gen_single_db(self, db_str, path_list):
+        if db_str == "cdb":
+            return self.gen_cdb()
+#        elif db_str == "pdb":
+#            return self.gen_pdb()
+        
         db_ref = self.get_cfg_val("db_build_config")[db_str]
-        curr_df = self.get_dbvar()[db_str]
         ext = ".xlsx"
         req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
         match_on_key = db_ref["match_on_key"]
-
-        self.get_dbvar()[db_str] = etdf.add_data(curr_df, dir_loc, ext, self.get_cfg_val("header_ref"), 
-                               req_excels_tpl,match_on_key)
         
-#        print(self.engine_name, "\n", id(self.get_dbvar()))
+        for index, path in enumerate(path_list):
+            if index == 0:
+                new_df = etdf.gen_single_db_from_excels(path, ext, self.get_cfg_val("header_ref"),
+                                                        req_excels_tpl, match_on_key)
+            else:
+                new_df =  etdf.add_data(new_df, path, ext, self.get_cfg_val("header_ref"), 
+                               req_excels_tpl,match_on_key)                
+        return new_df        
+
+    
+    def update_single_db(self,db_str,path_list):
+        self.log("Adding Data to: {}".format(db_str))
+        db_ref = self.get_cfg_val("db_build_config")[db_str]
+        new_df = self.get_dbvar()[db_str]
+        ext = ".xlsx"
+        req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
+        match_on_key = db_ref["match_on_key"]
+        
+        for index, path in enumerate(path_list):
+            self.log("Updating from path {}".format(path))
+            new_df =  etdf.add_data(new_df, path, ext, self.get_cfg_val("header_ref"), 
+                               req_excels_tpl,match_on_key)
+        self.get_dbvar()[db_str] = new_df   
+        
 
     def update_data_all_dbs(self,dir_loc):
         for db_str in self.get_dbvar():
@@ -201,22 +233,7 @@ class DBManagerEngine(DefaultEngine):
         if save_type == "pickled_dataframe":
             with open('databases//DH_DBS.pickle', 'wb') as dbfile:
                 pickle.dump(self.get_dbvar(), dbfile)     
-                
-#    def get_export_full_name(self,db_str,ftype="excel"):
-#        if ftype == "excel":
-#            ext = ".xlsx"
-#        elif ftype =="image":
-#            ext = ".png"
-#        elif ftype =="sqlite":
-#            ext = ".db"
-#            
-#        outname = db_str + self.time_str() + ext
-#        outdir = self.get_cfg_val("automatic export location")
-#        if not os.path.exists(outdir):
-#            os.mkdir(outdir)
-#        fullname = os.path.join(outdir, outname)      
-#        return fullname
-    
+
     def df2sqlite(self,db_str, db_name="import.sqlite", tbl_name="import"):
         print("Preparing conversion to sqlite for: ", db_name)
         dataframe = self.get_dbvar()[db_str]
@@ -249,18 +266,12 @@ class ProductViewerEngine(DefaultEngine):
         
     def get_cdb_data(self):
         cdb = self.get_dbvar()["cdb"]
-        self.log("Cdb Got.")
         return cdb
-     
-    def get_odb_data(self):
-        odb = self.get_dbvar()["odb"]
-        self.log("Odb Got.")
-        return odb
     
     def get_orders_by_product(self,product_code):
-        temp_odb = self.get_odb_data()
+        temp_odb = self.get_dbvar()["odb"]
         locced = temp_odb.loc[temp_odb["product_cafe24_code"] == product_code]
-        self.log("Got Locced.")
+        self.log(".get_orders_by_product locced df length: {}".format(locced.shape[0]))
         return locced
         
     def get_pdb_product_data(self,pcode):
@@ -269,17 +280,18 @@ class ProductViewerEngine(DefaultEngine):
         return x
     
     def get_customers_list(self,code):
+        self.log("Called with code: {}".format(code))
         if not code is None and not code == "":
             filtered_odb = self.get_orders_by_product(code)
             if filtered_odb.shape[0] < 1:
-                self.bug("No orders for this product code: {}".formaT(code))
-                return "No Results"
+                self.bug("No orders for this product code: {}".format(code))
+                return "no_results"
             else:
                 dropped = filtered_odb.drop_duplicates(subset="customer_phone_number")
                 return dropped
         else:
             self.bug("No Code Given")
-            return "No Code Given"
+            return "no_code_given"
         
     def search_product(self,code):
         if not code is None and not code == "":
@@ -295,9 +307,9 @@ class ProductViewerEngine(DefaultEngine):
         final_dict = {
             "product_info": {
                 "product_code": "DEFAULT PRODUCT CODE",
-                "vendor_name": "DEFAULT VENDOR NAME",
-                "vendor_code": "DEFAULT VENDOR CODE",
-                "vendor_price": "DEFAULT VENDOR PRICE",
+#                "vendor_name": "DEFAULT VENDOR NAME",
+#                "vendor_code": "DEFAULT VENDOR CODE",
+#                "vendor_price": "DEFAULT VENDOR PRICE",
                 "main_image_url": "DEFAULT URL",
                 "category": "DEFAULT  CATEGORY"
             },
@@ -306,10 +318,10 @@ class ProductViewerEngine(DefaultEngine):
             
         for sku_dict in plist:
             final_dict["product_info"]["product_code"] = sku_dict["product_code"]
-            final_dict["product_info"]["vendor_name"] = sku_dict["vendor_name"]
-            final_dict["product_info"]["vendor_code"] = sku_dict["vendor_code"]
-            final_dict["product_info"]["vendor_price"] = sku_dict["vendor_price"]
-            final_dict["product_info"]["main_image_url"] = sku_dict["main_image_url"]
+#            final_dict["product_info"]["vendor_name"] = sku_dict["vendor_name"]
+#            final_dict["product_info"]["vendor_code"] = sku_dict["vendor_code"]
+#            final_dict["product_info"]["vendor_price"] = sku_dict["vendor_price"]
+#            final_dict["product_info"]["main_image_url"] = sku_dict["main_image_url"]
             final_dict["product_info"]["category"] = sku_dict["category"]
             
             sku_full_options_text_split = sku_dict["option_text"].split(",")
@@ -323,16 +335,19 @@ class ProductViewerEngine(DefaultEngine):
             
     def get_PIL_image(self,url):
         try:        
+            self.log("Trying PIL Image from {}...".format(url))
             raw_data = urllib.request.urlopen(url).read()
-            im = PIL.Image.open(io.BytesIO(raw_data))
+            self.log("urllib.request.urlopen(ABOVE URL).read() successfully called.")   
         except ValueError:
-            print("THIS IMAGE AT ",url," IS NOT WORKING!")
+            self.bug("THIS IMAGE AT ",url," IS NOT WORKING!")
             return None
         except AttributeError:
-            print("CANNOT READ URLOPEN FOR ", url)
+            self.bug("CANNOT READ URLOPEN FOR ", url)
             return None
         else: 
-            return im   
+            PILim = PIL.Image.open(io.BytesIO(raw_data)).resize((300, 300))
+            TKim = PIL.ImageTk.PhotoImage(image=PILim)         
+            return TKim   
 
 class MultiGrapherEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
@@ -341,7 +356,6 @@ class MultiGrapherEngine(DefaultEngine):
 class AnalysisPageEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
         super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="AnalysisPage")
-    
 
     
     def get_export_excel_pack(self,mrp):
@@ -439,8 +453,13 @@ class AnalysisPageEngine(DefaultEngine):
                         colors_to_plot.append(query_tuple[1])
                         xandy = queries.main(query_tuple[0],
                             self.get_dbvar(),start,end,extra=pack["extra"])
+                        self.bug("xandy type: {}".format(type(xandy)))
                         if xandy == "No Date Data":
+                            self.bug("No Date Data given to default engine from queries")
                             return xandy
+                        elif xandy is None:
+                            self.bug("None given to default engine query.")
+                            return None
                         queryx,queryy = xandy
                         if first_found:
                             x_data = queryx
@@ -452,8 +471,13 @@ class AnalysisPageEngine(DefaultEngine):
                             colors_to_plot.append(query_tuple[1])
                             xandy = queries.main(query_tuple[0],
                                 self.get_dbvar(),m_start,m_end,extra=pack["extra"])
+                            self.bug("xandy type: {}".format(type(xandy)))
                             if xandy == "No Date Data":
+                                self.bug("No Date Data given to default engine from queries")
                                 return xandy
+                            elif xandy is None:
+                                self.bug("None given to default engine query.")
+                                return None
                             queryx,queryy = xandy
                             if first_found:
                                 x_data = queryx

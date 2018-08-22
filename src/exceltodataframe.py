@@ -7,42 +7,47 @@ Created on Wed May  2 22:27:37 2018
 # Standard Modules
 import os
 from pprint import pprint
+import logging
 
 # Non-Standard Modules
 import pandas as pd
 import datetime
 from openpyxl import load_workbook
 
+
+log = logging.getLogger(__name__).info
+log("{} Init.".format(__name__))    
+bug = logging.getLogger(__name__).debug       
+
+
 def add_data(curr_df,dir_loc,ext,hr_dict,req_excels_tpl,match_on_key):
-    append_df= gen_single_db_from_excels(dir_loc,ext,hr_dict,req_excels_tpl,
+    append_df = gen_single_db_from_excels(dir_loc,ext,hr_dict,req_excels_tpl,
         match_on_key)
+    log("Append DF length: {} {}".format(append_df.shape[0],append_df.shape[1]))
     new_df = pd.concat([curr_df, append_df], axis=0, ignore_index = True,
                        join = "outer")  
     return sanitize_df(new_df)
     
-def gen_single_db_from_excels(dir_loc,ext,hr_dict,req_excels_tpl,
+def gen_single_db_from_excels(expath,ext,hr_dict,req_excels_tpl,
         match_on_key):       
     core_req_exc = req_excels_tpl[0]
     append_excs_list = req_excels_tpl[1]
-    
-    loc = dir_loc + "/" + core_req_exc+ ext
-    print("Starting with Core: ", core_req_exc, "at ", loc)
-    if os.path.isfile(loc):    
-        temp_df = gen_core_db(loc, hr_dict[core_req_exc])
+    log("Starting with Core: {} at {}".format(core_req_exc,expath))
+    if os.path.isfile(expath):    
+        temp_df = gen_core_db(expath, hr_dict[core_req_exc])
     else: 
-        print("NO EXCEL EXISTS AT ", loc)
+        bug("NO EXCEL EXISTS AT ", expath)
         return
     for adb in append_excs_list:
-        print("Appending Secondary Data: ",adb)
-        loc = dir_loc + "/" + adb + ext
-        if os.path.isfile(loc):  
+        log("Appending Secondary Data: ",adb)
+        if os.path.isfile(expath):  
             temp_df = append_columns(
                 temp_df,
-                loc,
+                expath,
                 hr_dict[adb],
                 match_on_key)
         else:
-            print("NO APPEND")
+            bug("NO APPEND")
     return sanitize_df(temp_df)
 
 def gen_core_db(excel_loc, required_headers_dict):
@@ -72,7 +77,7 @@ def append_columns(starting_df, excel_loc, required_headers_dict, match_key):
     return new_df
 
 def sanitize_df(df):
-    print("Sanitizing...")
+    log("Sanitizing...")
     temp = df.copy(deep=True)
     temp = temp.fillna(0) 
     for column_name in temp.columns:

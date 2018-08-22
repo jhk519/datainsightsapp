@@ -15,8 +15,10 @@ except ImportError:  # Python 3
     import tkinter.font as tkFont
     import tkinter.ttk as ttk
     
+# Standard Modules
 from pprint import pprint as pprint
 import copy
+import logging
 
 # Project Modules
 from default_engines import QueryPanelEngine
@@ -30,6 +32,10 @@ class QueryPanel(ttk.LabelFrame):
             self.controller = parent
         else:
             self.controller = controller
+            
+        self.log = logging.getLogger(__name__).info
+        self.log("{} Init.".format(__name__))    
+        self.bug = logging.getLogger(__name__).debug                
             
 #        Abstract Vars
         self.panel_name = panel_name
@@ -90,6 +96,7 @@ class QueryPanel(ttk.LabelFrame):
             
 #   API                
     def get_selection_pack(self):
+        self.log("Starting Selection Pack Gen.")
         stringified_pack = {
             "extra":self.extra_var.get(),
             "x_axis_label": self.x_axis_type.get(),
@@ -110,9 +117,11 @@ class QueryPanel(ttk.LabelFrame):
         }
             
         for axis in ["left","right"]:
+            self.log("Looking for queries in self.selection_pack[{}]".format(axis))
             for ind,oldpack in enumerate(self.selection_pack[axis]["queries"]):
-                new_pack = [oldpack[0].get(),oldpack[2]["background"]]
-                stringified_pack[axis]["queries"].append(new_pack)     
+                query_pack = [oldpack[0].get(),oldpack[2]["background"]]
+                self.log(query_pack)
+                stringified_pack[axis]["queries"].append(query_pack)     
         return stringified_pack 
     
     def set_cfgvar(self,new_cfgvar):
@@ -125,6 +134,8 @@ class QueryPanel(ttk.LabelFrame):
             
             
 #   UX EVENT HANDLERS AND HELPERS      
+
+        
     def _use_extra_var_changed(self):
         need_use = self.use_extra_var.get()
         if need_use:
@@ -275,8 +286,16 @@ class QueryPanel(ttk.LabelFrame):
             if not qpack[0].get() == "None":
                     found_something = True
         return not found_something
+      
+            
+    def _clear_all_queries(self,axis):
+        self.log("Clear all queries for axis: {}".format(axis))
+        for index in range(0,4):
+          self.bug("Clear all queries iteration: {}".format(index))
+          self._delete_query((axis,0))
             
     def _delete_query(self,axis_index):
+        self.bug("Delete_query called for: {}".format(axis_index))
         axis,index = axis_index
         targ_queries = self.selection_pack[axis]["queries"]
         targ_qpack = targ_queries[index]
@@ -355,53 +374,67 @@ class QueryPanel(ttk.LabelFrame):
             row_n = index + 3
             query_var = tk.StringVar()
             
-            query_label = tk.Label(self.query_menu,textvariable=query_var,anchor="w")
+            query_label = tk.Label(self.query_menu,textvariable=query_var,anchor="w",
+                                   font="Helvetica 9")
             query_label.grid(row=row_n,column=0,sticky="ew",padx=(5,0))
             
-            left_axis = tk.Button(self.query_menu,text="L",width=5,
+            send_left_axis = tk.Button(self.query_menu,text="L",width=5,
                       command=lambda index=index:self._send_to_axis("left",index))
-            left_axis.grid(row=row_n,column=1,sticky="e",padx=(10,0),pady=(5))
+            send_left_axis.grid(row=row_n,column=1,sticky="e",padx=(10,0),pady=(5))
             
-            right_axis = tk.Button(self.query_menu,text="R",width=5,
+            send_right_axis = tk.Button(self.query_menu,text="R",width=5,
                       command=lambda index=index:self._send_to_axis("right",index))
-            right_axis.grid(row=row_n,column=2,sticky="w",padx=(5,5))
+            send_right_axis.grid(row=row_n,column=2,sticky="w",padx=(5,5))
             
-            pack = (query_var, left_axis, right_axis)
+            pack = (query_var, send_left_axis, send_right_axis)
             self.ls_query_packs.append(pack)
             
 #       BUILD AXIS PANELS
-        self.selection_pack["left"]["frame"] = ttk.LabelFrame(self,text="Left Axis")
-        self.selection_pack["left"]["frame"].grid(row=4,rowspan=6,column=2,sticky="wn",
+        left_query_panel = ttk.LabelFrame(self,text="Left Axis")
+        left_query_panel.grid(row=4,rowspan=6,column=2,sticky="wn",
                            padx=(10,5))
+        left_clear_all = tk.Button(left_query_panel,text="Clear",foreground="red",
+                                   command=lambda: self._clear_all_queries("left"),
+                                   relief="groove",font="Helvetica 7",width=4)
+        left_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
+        self.selection_pack["left"]["frame"] = left_query_panel
         
-        self.selection_pack["right"]["frame"] = ttk.LabelFrame(self,text="Right Axis")
-        self.selection_pack["right"]["frame"] .grid(row=4,rowspan=6,column=3,sticky="wn")  
+        
+        right_query_panel = ttk.LabelFrame(self,text="Right Axis")
+        right_query_panel.grid(row=4,rowspan=6,column=3,sticky="wn")  
+        right_clear_all = tk.Button(right_query_panel,text="Clear",foreground="red",
+                                   command=lambda: self._clear_all_queries("right"),
+                                   relief="groove",font="Helvetica 7",width=4)      
+        right_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
+        self.selection_pack["right"]["frame"] = right_query_panel
         
         available_colors = self.engine.get_colors_preferred() 
         for axis in ["left","right"]:        
             for index in range(0,4):
                 rownum = index + 1
-                backindex = index
+                colorindex = index
+                
                 if axis == "right":
-                    backindex = index + 4                
+                    colorindex = index + 4   
                 
                 currframe = self.selection_pack[axis]["frame"]
                 
                 stvar = tk.StringVar()
                 stvar.set("None")
                 label = tk.Label(currframe,textvariable=stvar,wraplength=110,anchor="w",
-                                 justify="left",width=15)
+                                 justify="left",width=15,height=2)
                 label.grid(row=rownum,column=0,padx=(10,0),sticky="w")
                 
                 axis_index = axis,index
-                choose_color = tk.Button(currframe,width=1,
+                choose_color = tk.Button(currframe,width=1,height=1,
                      command=lambda axis_index =axis_index :self._choose_colors(axis_index))
                 choose_color.grid(row=rownum,column=1,padx=(10,0))
-                choose_color.configure(background=available_colors[backindex]) 
+                choose_color.configure(background=available_colors[colorindex]) 
 
-                delete = tk.Button(currframe,width=1, text="X",
-                    command=lambda axis_index=axis_index:self._delete_query(axis_index))
-                delete.grid(row=rownum, column=2,padx=(10,10))
+                delete = tk.Button(currframe,width=1, text="x",
+                    command=lambda axis_index=axis_index:self._delete_query(axis_index),
+                    font="Helvetica 7")
+                delete.grid(row=rownum, column=2,padx=(10,10),pady=(5,0),sticky="ne")
                 
                 selected_query_pack = [stvar, label, choose_color, delete]
                 self.selection_pack[axis]["queries"].append(selected_query_pack)

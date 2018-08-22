@@ -15,6 +15,7 @@ except ImportError:  # Python 3
 from tkinter import filedialog
 
 # Standard Modules
+import logging
 
 # Project Modules
 from default_engines import DBManagerEngine
@@ -27,6 +28,10 @@ class DBManager(tk.Frame):
             self.controller = parent
         else:
             self.controller = controller
+            
+        self.log = logging.getLogger(__name__).info
+        self.log("{} Init.".format(__name__))    
+        self.bug = logging.getLogger(__name__).debug             
             
         if str(engine) == "default":
             self.engine = DBManagerEngine()
@@ -57,34 +62,42 @@ class DBManager(tk.Frame):
         
 #   UX EVENT HANDLERS AND HELPERS   
     def _reset_and_gen_all_new_dbs(self):
-        print("Resetting All DBs.")
+        self.log("Resetting All DBs.")
         dir_loc = filedialog.askdirectory()
         self.engine.reset_and_gen_all_dbs(dir_loc)
         self.gen_db_status_value["text"] = "Generated new DBs at " + self.engine.time_str()
         self._update_statuses()
         self.controller.propagate_db_var_change(self.get_dbvar())
-        print("Completed Generated New Dbs")
+        self.log("Completed Generated New Dbs")
         
-    def _reset_and_gen(self,db_str,dir_loc = None):
-        if not dir_loc:
-            dir_loc = filedialog.askdirectory()
-        self.engine.reset_and_gen_single_db(db_str, dir_loc=dir_loc)
-        print("Completed resetting and generating: ", db_str)       
+    def _reset_and_gen(self,db_str,dir_list = None):
+        self.bug(".reset_and_gen for {} called. dir_list given: {}".format(db_str,dir_list))
+        if not dir_list:
+#          returns tuple of strings
+            pathstr_tuple = filedialog.askopenfilenames()
+            dir_list = list(pathstr_tuple)
+            self.bug(".reset_and_gen called. Filedialog returns: {}".format(dir_list))
+        self.engine.reset_and_gen_single_db(db_str, dir_list=dir_list)
+        self._update_statuses()
+        self.log("Completed resetting and generating: ".format(db_str))
 
     def _add_data_to_all_dbs(self):
-        print("Adding Data to All DBs.")
+        self.log("Adding Data to All DBs.")
         dir_loc = filedialog.askdirectory()
         self.engine.update_data_all_dbs(dir_loc)
         self.add_db_status_value["text"] = "Add new DBs at " + self.engine.time_str()
         self._update_statuses()        
-        print("Completed Adding Data to All Dbs")      
+        self.log("Completed Adding Data to All Dbs")      
 
-    def _add_data(self, db_str, dir_loc=None):
-        if not dir_loc:
-            dir_loc = filedialog.askdirectory()
-        self.engine.update_single_db(db_str,dir_loc)
+    def _add_data(self, db_str, dir_list=None):
+        self.bug("Add data to {}, dir_list given: {}".format(db_str,dir_list))
+        if not dir_list:
+            pathstr_tuple = filedialog.askopenfilenames()
+            dir_list = list(pathstr_tuple)
+            self.bug("Filedialog returns: {}".format(dir_list))
+        self.engine.update_single_db(db_str,dir_list)
         self._update_statuses()
-        print("Completed adding to: ", db_str)
+        self.log("Completed adding to: {}".format(db_str))
 
     def _pick_online_offline(self):
         self.popup = tk.Toplevel()
@@ -114,13 +127,13 @@ class DBManager(tk.Frame):
         
         self.engine.load_online_dbs(counter=self.online_loaded,ticker=self.load_db_status_value)        
         self._update_statuses()
-        print("Loaded DBs.")
+        self.log("Loaded DBs.")
 
     def _load_offline_dbs(self,file_loc=None):
         try:
             self.popup.destroy()
         except AttributeError:
-            print("Cannot find popup widget to .destroy()")
+            self.bug("Cannot find popup widget to .destroy()")
         if file_loc:
             dir_loc = file_loc
         else:
@@ -129,7 +142,7 @@ class DBManager(tk.Frame):
 
         self.load_db_status_value["text"] = "Loaded at DBs at " + self.engine.time_str()
         self._update_statuses()
-        print("Loaded DBs.")
+        self.log("Loaded DBs.")
 
     def _save_dbs(self, save_type):
         self.engine.save_all_dbs(save_type)
@@ -137,22 +150,28 @@ class DBManager(tk.Frame):
         self._update_statuses()
 
     def _export_db_csv(self, db_str):
-        print("Export_DB")
+        self.log("Export DB CSV for {}".format(db_str))
         if self.engine.get_cfg_val("automatic db export"):
             fullname = self.engine.get_export_full_name(db_str)
+            self.bug(".export_db_csb auto-fullname: {}".format(fullname))
         else:
-            dir_loc = filedialog.asksaveasfilename()
+            self.bug("No automatic db export given, asking dialog.")
+            dir_loc = filedialog.asksaveasfilename() 
             fullname = dir_loc + ".xlsx"
+            self.bug("_export_db_csv manual fullname: {}".format(fullname))
+        self.log("Start Excel conversion")
         self.engine.get_dbvar()[db_str].to_excel(fullname)
+        self.log("End Excel Conversion")
 
     def _export_db_sqlite(self, db_str):
-        print("Export DB to SQlite")
+        self.log("Export DB to SQlite")
         if self.engine.get_cfg_val("automatic db export"):
             fullname = self.engine.get_export_full_name(db_str,ftype="sqlite")
         else:
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".db"
         self.engine.df2sqlite(db_str, fullname)
+        self.log(".export_db_sqlite resolved.")
 
     def _update_statuses(self):
         try:

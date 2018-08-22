@@ -13,8 +13,10 @@ except ImportError:  # Python 3
     import tkinter as tk
     import tkinter.ttk as ttk
     
+# Standard Modules
 from pprint import pprint
 import pickle
+import logging
 
 # Project Modules
 from default_engines import AnalysisPageEngine
@@ -31,6 +33,10 @@ class AnalysisPage(tk.Frame):
             self.controller = parent
         else:
             self.controller = controller
+            
+        self.log = logging.getLogger(__name__).info
+        self.log("{} Init.".format(__name__))    
+        self.bug = logging.getLogger(__name__).debug             
             
         if str(engine) == "default":
             self.engine = AnalysisPageEngine()
@@ -72,6 +78,7 @@ class AnalysisPage(tk.Frame):
         self.control_panel.set_cfgvar(new_cfgvar)
           
     def search_queries(self,search_pack_from_console):
+        self.log("Calling search_queries.")
         analysis_pack = self.engine.get_results_packs(search_pack_from_console)
         if analysis_pack == "No Date Data":
             self.popup = tk.Toplevel()
@@ -81,7 +88,17 @@ class AnalysisPage(tk.Frame):
                 self.popup,
                 text="OK",
                 command=self.popup.destroy)
-            okbutton.pack()            
+            okbutton.pack()   
+        elif analysis_pack is None:
+            self.bug("analysis_pack given None from engine.")
+            self.popup = tk.Toplevel()
+            msg = tk.Message(self.popup,text="Error. Please send debug log.")
+            msg.pack()
+            okbutton = ttk.Button(
+                self.popup,
+                text="OK",
+                command=self.popup.destroy)
+            okbutton.pack()             
         else:
             self.search_results = self.graph_frame.update_graph(analysis_pack)
             if self.search_results:
@@ -95,14 +112,26 @@ class AnalysisPage(tk.Frame):
             fullname = file_location + self.engine.time_str() + ".xlsx"
         newdf.to_excel(fullname, sheet_name=sheetname)    
 
-    def export_png(self):
+    def export_png(self,outdir=None):
+        """
+        Currently called by controlpanel's export function
+        and as a helper for send_to_multigrapher
+        """
         if self.engine.get_cfg_val("auto_name_exports"):
             fullname = self.engine.get_export_full_name(self.search_results["title"],
-                                                        ftype="image")
+                                                        ftype="image",
+                                                        outdir=outdir)
         else: 
             file_location = tk.filedialog.asksaveasfilename()
             fullname = file_location + self.engine.time_str() + ".png"
-        self.graph_frame.my_figure.savefig(fullname)         
+        self.graph_frame.my_figure.savefig(fullname) 
+        self.log(fullname)
+        return fullname
+
+    def send_to_multigrapher(self):
+        self.log("Send to multigrapher called.")
+        fullname = self.export_png(outdir="exports\multigrapher")        
+        self.controller.send_to_multigrapher(fullname,0)
         
 if __name__ == "__main__":
     import config2

@@ -30,16 +30,17 @@ from multigrapher import MultiGrapher
 
 class DataInsightsApp(tk.Tk):
     def __init__(self, account, init_config, ver=None):
-        
         logger = logging.getLogger(__name__)
-        logging.info("DataInsightsApp init started. ")        
-        super().__init__()
-        logging.info("super init completed.")
-        self.account = account
-        logging.info("Account id = %s",self.account)
+        self.log = logging.getLogger(__name__).info
+        self.bug = logging.getLogger(__name__).debug
         
+        logging.info("DataInsightsApp init started.")        
+        super().__init__()
+        self.log("Super init completed.")
+        self.account = account
+        self.log("Account id = {}".format(self.account))
+            
 #       APP-VARS
-#        self.ini_cfg = ini_cfg
         self.init_cfg = init_config
         self.analysispages = []
         
@@ -71,9 +72,8 @@ class DataInsightsApp(tk.Tk):
         curr_config = self.settingsmanager.get_config()
         
 #       DATA MANAGER PAGE INIT 
-
         self.dbmanager = DBManager(self.notebook, self, config=curr_config)
-        self.notebook.add(self.dbmanager,text="DB Manager")  
+        self.notebook.add(self.dbmanager,text="DB Manager",sticky="nsew")  
 
 #       PRODUCT VIEWER PAGE INIT
         self.product_viewer_page = ProductViewer(self.notebook, self, engine="default",
@@ -84,15 +84,27 @@ class DataInsightsApp(tk.Tk):
 #       ANALYSIS PAGE INIT
         ap = AnalysisPage(self.notebook, self, engine="default", config = curr_config, dbvar = self.dbmanager.get_dbvar())
         self.analysispages.append(ap)
-        self.notebook.add(ap, text="Analysis")
+        self.notebook.add(ap, text="Analysis",sticky="nsew")
 
+
+        
+#       MULTIGRAPHER INIT
+        self.multigrapher = MultiGrapher(self.notebook,self,
+                                         engine="default", 
+                                         config = curr_config)
+        self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
+        
+        
+#       FINALIZE NOTEBOOK
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
         self.notebook.select(self.dbmanager)
         
+        
+#       API 
+    def propagate_db_var_change(self,new_dbvar):       
 #        Required when DBManager does full resets of its dbvar, meaning the 
-#        correct dbvar now has a new id. 
-    def propagate_db_var_change(self,new_dbvar):        
+#        correct dbvar now has a new id.         
         self.product_viewer_page.set_dbvar(new_dbvar)
         for ap in self.analysispages:
             ap.set_dbvar(new_dbvar)
@@ -102,16 +114,24 @@ class DataInsightsApp(tk.Tk):
         self.product_viewer_page.set_cfgvar(new_cfgvar)
         for ap in self.analysispages:
             ap.set_cfgvar(new_cfgvar)
+            
+    def send_to_multigrapher(self,path,slot):
+        self.log("Send_to_multigrapher for path: {} AND slot: {}".format(path,slot))
+        self.multigrapher.receive_image(path,slot)
         
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.2.10.0 - 2018/07/04"
+    ver = "v0.2.10.7 - 2018/07/22"
     
-    logging.basicConfig(filename=logname,level=logging.DEBUG)
+    logging.basicConfig(filename=logname,
+        level=logging.DEBUG, 
+        format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
+        datefmt='%H:%M:%S')
     logging.info("-------------------------------------------------------------")
     logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
     logging.info("VERSION: {}".format(ver))
+    logging.info("AUTHOR:{}".format("Justin H Kim"))
     logging.info("-------------------------------------------------------------")
     logging.info("datainsightsapp module initialized...")
     config = config2.backend_settings    

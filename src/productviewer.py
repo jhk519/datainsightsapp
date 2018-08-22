@@ -25,7 +25,7 @@ from PIL import ImageTk
 from default_engines import ProductViewerEngine
 import config2
 
-class ProductViewer(tk.LabelFrame):
+class ProductViewer(tk.Frame):
     def __init__(self,parent,controller=None,engine="default",config=None,dbvar=None):
         super().__init__(parent)
         self.parent = parent
@@ -72,13 +72,15 @@ class ProductViewer(tk.LabelFrame):
     def export_customers(self,code=None):
         if code == None:
             code = self.search_pcode_stvar.get()       
+            code = code.strip().replace(" ", "").replace("\n", "")
+            
+        self.log("Exporting customers for code: {}------END".format(code))
         export_customer_result = self.engine.get_customers_list(code)
-        self.bug("export_customer_result >> {}".format(str(type(export_customer_result))))
         try:
             self.export_to_csv(code,export_customer_result)
         except AttributeError:
-            print("GGGG")
-        else:
+            self.bug("export_customer_result is not a df, it is a {}".format(str(type(export_customer_result))))
+
             if export_customer_result == "no_results":
                 self.bug("No Results for Export Customers Search for: {}".format(code))
                 self.popup = tk.Toplevel()
@@ -92,10 +94,12 @@ class ProductViewer(tk.LabelFrame):
                     text="OK",
                     command=self.popup.destroy)
                 okbutton.pack()
+                return
             elif export_customer_result == "no_code_given":
                 print("No Code Given")
                 return "no_code_given"
-                    
+        
+
     def export_to_csv(self,code,dataframe):
         dbstr = "product_customers_{}".format(code)
         fullname = self.engine.get_export_full_name(dbstr,ftype="excel")
@@ -172,19 +176,20 @@ class ProductViewer(tk.LabelFrame):
         self.sku_detail_packs = []       
 
     def _update_label_image(self, labelobj,url,curr_img_index):
-        im = self.engine.get_PIL_image(url)
-        if im:
-            im = im.resize((300, 300))
-            image = ImageTk.PhotoImage(im)
-            labelobj["image"] = image   
-            self.current_images.append(image) 
-        else:
+        """ 
+        Receives a label object (either main or SKU) and the curr_img_index
+        from functions that update those photos. 
+        The curr_img_index is used for the self.current_images array of 2 length
+        that is just there to hold the images in memory.
+        """
+        TKim = self.engine.get_PIL_image(url)     
+        if TKim:
+            labelobj["image"] = TKim   
+        elif TKim == None:
             labelobj["image"] = ""
-            image = None
-        self.current_images[curr_img_index] = image
+        self.current_images[curr_img_index] = TKim
         
 #   BUILD FUNCTIONS
-                 
     def _build_search_frame(self):
         self.search_frame = ttk.LabelFrame(self,text="Search")
         self.search_frame.grid(row=0,column=0,sticky="ew",pady=15)
@@ -223,7 +228,11 @@ class ProductViewer(tk.LabelFrame):
         self.product_info_frame.columnconfigure(1,weight=0)        
         self.product_info_frame.columnconfigure(2,weight=1)   
 
-        required_details = ["product_code","vendor_name","vendor_code","vendor_price","category"]
+        required_details = ["product_code",
+#                            "vendor_name",
+#                            "vendor_code",
+#                            "vendor_price",
+                            "category"]
         start_row = 0   
         for key in required_details:
             detail_var = tk.StringVar()

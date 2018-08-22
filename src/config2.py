@@ -27,7 +27,8 @@ backend_settings = {
                 "data": None,
                 "proper_title": "Order Database",
                 "core": "order_data",
-                "appends_list": ["cancel_data", "shipping_data", "return_data"],
+                "appends_list":[],
+#                "appends_list": ["cancel_data","return_data"],
                 "match_on_key": "order_part_id"
             },
             "tdb": {
@@ -44,29 +45,12 @@ backend_settings = {
                 "appends_list": [],
                 "match_on_key": "date"
             },
-            "sm_odb": {
-                "data": None,
-                "proper_title":"Sellmate Order Database",
-                "core": "sellmate_order_excel",
-                "appends_list": [
-                    "sellmate_cancel_excel",
-                    "sellmate_shipping_excel",
-                ],
-                "match_on_key": "sellmateIndex"
-            },
             "pdb": {
                 "data": None,
                 "proper_title":"Product Database",
                 "core": "product_data",
                 "appends_list": [],
                 "match_on_key": "sku_code"
-            },
-            "sm_stdb": {
-                "data": None,
-                "proper_title":"Sellmate Stock Database",
-                "core": "sellmate_stock_excel",
-                "appends_list": [],
-                "match_on_key": "sellmateBarcode"
             },
             
             "cdb":{
@@ -84,39 +68,43 @@ backend_settings = {
                 "품목별주문번호": "order_part_id",
         
                 "주문일시": "date",
+                "배송시작일":"date_shipping",
                 "결제일시(입금확인일)": "date_payment",
                 "총주문금액(KRW)": "total_original_price",
                 "총배송비(KRW)": "original_shipping_fee",
                 "총결제금액(KRW)": "total_net_price",
+                
                 "회원등급추가할인금액": "total_membership_level_discount",
                 "사용한적립금액": "total_membership_points_discount",
                 "예치금": "total_cash_credit_discount",
                 "쿠폰할인금액": "total_coupon_discount",
                 "결제수단": "payment_method",
+                
+                
                 "주문자휴대전화": "customer_phone_number",
+                "주문자ID": "customer_id",
+                
+                "취소구분":"cancel_status",
         
                 "상품구매금액(KRW)": "product_price",
                 "상품별추가할인금액": "product_standard_discount",
                 "수량": "product_quantity",
+                
                 "주문상품명": "product_name",
                 "상품코드": "product_cafe24_code",
+                "상품옵션":"product_option"
             },
-            "cancel_data": {
-                "주문번호": "order_id",
-                "품목별주문번호": "order_part_id",
-                "취소접수구분": "reason_cancelled",
-                "취소접수일": "date_cancelled"
-            },
-            "shipping_data": {
-                "주문번호": "order_id",
-                "품목별주문번호": "order_part_id",
-                "배송시작일": "date_shipping"
-            },
-            "return_data": {
-                "주문번호": "order_id",
-                "품목별주문번호": "order_part_id",
-                "환불완료일": "date_returned"
-            },
+#            "cancel_data": {
+#                "주문번호": "order_id",
+#                "품목별주문번호": "order_part_id",
+#                "취소접수구분": "reason_cancelled",
+#                "취소접수일": "date_cancelled"
+#            },
+#            "return_data": {
+#                "주문번호": "order_id",
+#                "품목별주문번호": "order_part_id",
+#                "환불완료일": "date_returned"
+#            },
             "traffic_data": {
                 "날짜": "date",
                 "신규방문자": "new_visitors_count",
@@ -138,6 +126,7 @@ backend_settings = {
                 "모바일웹주문건수": "mobile_orders_count",
                 "앱주문건수": "app_orders_count",
             },
+                
             "referral_data": {
                 "날짜": "date",
                 "방문채널": "source_channel",
@@ -147,78 +136,26 @@ backend_settings = {
                 "매출": "revenue"
             },
             "product_data": {
-                "바코드번호(서식)": "sku_code",
-                "상품명": "product_code",
-                "상품공급처명": "vendor_name",
-                "사입상품명": "vendor_code",
-                "옵션내용": "option_text",
-                "원가": "vendor_price",
-                "대표이미지주소": "main_image_url",
+                "product_code": "product_code",
+                "option_text": "option_text",
+                "main_image_url": "main_image_url",
                 "sku_image_url": "sku_image_url",
-                "카테고리": "category"
-            },
-        
-            #   SPECIAL SELLMATE HEADERS (TEMPORARY)
-            "sellmate_order_excel": {
-                "일련번호": "sellmateIndex",
-                "판매처주문번호(서식)": "order_id",
-                "주문일자": "date",
-                "공급처명": "supplier",
-                "주문수량": "orderCnt",
-                "주문금액": "orderAmount",
-                "상품코드": "productCode",
-                "판매처명": "salesChannel",
-                "판매처주문번호서식,": "orderNum",
-                "합포번호": "shippingGroupNum",
-                "판매처상품코드서식,": "productOptionCode",
-                "옵션매칭1,바코드번호": "sellmateBarcode",
-                "옵션매칭1,상품명": "productName",
-                "옵션매칭1,옵션내용": "productOptionName"
-            },
-            "sellmate_cancel_excel": {
-                "일련번호": "sellmateIndex",
-                "취소일자": "date_cancelled",
-            },
-            "sellmate_shipping_excel": {
-                "일련번호": "sellmateIndex",
-                "발송일자": "date_shipping",
-            },
-            "sellmate_stock_excel": {
-                "재고일자": "date",
-                "바코드번호서식": "sellmateBarcode",
-                "현재재고": "stock"
+                "category": "category",
+#                "상품공급처명": "vendor_name",
+#                "사입상품명": "vendor_code",
+                "sku_code": "sku_code",     
+#                "원가": "vendor_price",                      
             },
                     
             "customer_data": {
                 "주문자휴대전화": "customer_phone",
                 "주문자명": "customer_name"
             },
-                    
-            "sellmate_product_excel": {
-                "공급처분류": "supplierGroup",
-                "공급처코드": "supplierCode",
-                "상품공급처명": "supplier",
-                "상품분류": "productGroup",
-                "상품등록일자": "sellmateRegDate",
-                "상품코드": "CafeCode",
-                "바코드번호서식,": "sellmateBarcode",
-                "상품명서식,": "name",
-                "옵션내용": "option",
-                "대표판매가": "price",
-                "사입상품명": "origName",
-                "옵션코드": "optionCode",
-                "현재재고": "stock",
-                "원가": "origPrice",
-                "품절여부": "soldout",
-                "품절일자": "soldoutDate",
-                "상품메모1": "productDBCode",
-                "여분수량": "surplusStock",
-            }
         }              
     },
             
     "multigrapher_config":{
-        
+        "automatic export location":"exports\multigrapher"
     },
             
     "productviewer_config":{
@@ -226,7 +163,7 @@ backend_settings = {
     },
             
     "analysispage_config":{     
-        "automatic export location": ".//exports//graphs",
+        "automatic export location": "exports\search_results",
         "auto_name_exports": True,  
     },
                     

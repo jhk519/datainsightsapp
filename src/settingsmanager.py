@@ -35,13 +35,16 @@ import master_calendar.calendardialog as cal_dialog
 class SettingsManager(ttk.LabelFrame):
     def __init__(self,parent,controller=None,engine="default",config=None):
         super().__init__(parent)
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("Settings Manager Initializing...")
+        
         self.parent = parent
         if not controller:
             self.controller = parent
         else:
             self.controller = controller
+            
+        self.log = logging.getLogger(__name__).info
+        self.log("{} Init.".format(__name__))    
+        self.bug = logging.getLogger(__name__).debug             
             
         if str(engine) == "default":
             self.engine = SettingsManagerEngine()

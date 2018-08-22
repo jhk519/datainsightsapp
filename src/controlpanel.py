@@ -19,7 +19,6 @@ import logging
 # Non-Standard Modules
 from pprint import pprint
 
-
 # Project Modules
 import querypanel
 import master_calendar.calendardialog as cal_dialog
@@ -35,7 +34,8 @@ class ControlPanel(ttk.PanedWindow):
             self.controller = controller
         
         self.log = logging.getLogger(__name__).info
-        self.log("ControlPanel Init.")
+        self.log("{} Init.".format(__name__))    
+        self.bug = logging.getLogger(__name__).debug 
             
         if str(engine) == "default":
             self.engine = ControlPanelEngine()
@@ -96,21 +96,24 @@ class ControlPanel(ttk.PanedWindow):
         self.query_panel.set_cfgvar(new_cfgvar)
             
     def search_call(self):
+        self.log("Search Call Init")
         try:
             self.controller.search_queries
         except AttributeError:
-            print("Not using valid controller")
-            print(str(self.controller)," Not Suitable for .search_queries callback")       
+            self.bug("Not using valid controller")
+            self.bug("{} Not Suitable for .search_queries callback".format(str(self.controller)))
         else:     
+            self.log("Pulling selection pack")
             selection_pack = self.gen_selection_pack()
+            self.log("Received selection_pack. Sending to AnalysisPage controller.")
             self.controller.search_queries(selection_pack)
 
     def export_excel_call(self):
         try:
             self.controller.export_excel
         except AttributeError:
-            print("Not using valid controller")
-            print(str(self.controller)," Not Suitable for .export_excel callback")       
+            self.bug("Not using valid controller")
+            self.bug(str(self.controller)," Not Suitable for .export_excel callback")       
         else:     
             self.controller.export_excel()        
         
@@ -118,10 +121,19 @@ class ControlPanel(ttk.PanedWindow):
         try:
             self.controller.export_png
         except AttributeError:
-            print("Not using valid controller")
-            print(str(self.controller)," Not Suitable for .export_png callback")       
+            self.bug("Not using valid controller")
+            self.bug(str(self.controller)," Not Suitable for .export_png callback")       
         else:     
-            self.controller.export_png()              
+            self.controller.export_png()   
+            
+    def send_to_multigrapher(self):
+        try:
+            self.controller.send_to_multigrapher
+        except AttributeError:
+            self.bug("Not using valid controller")
+            self.bug(str(self.controller)," Not Suitable for .send_to_multigrapher callback")       
+        else:           
+            self.controller.send_to_multigrapher()
 
 #   Called by Querypanel query commands
     def check_autosearch(self):
@@ -150,11 +162,13 @@ class ControlPanel(ttk.PanedWindow):
             },            
         }
         """
-        selection_pack = self.query_panel.get_selection_pack()
-        selection_pack["start"] = self.start_date
-        selection_pack["end"] = self.end_date
-        selection_pack["hold_y"] = self.hold_y_var.get()
-        return selection_pack
+        self.log("Pulling selection_pack from query_panel.")
+        selpack = self.query_panel.get_selection_pack()
+        selpack["start"] = self.start_date
+        selpack["end"] = self.end_date
+        selpack["hold_y"] = self.hold_y_var.get()
+        self.log("Start: {}, End: {}, Hold_y: {}".format(selpack["start"], selpack["end"], selpack["hold_y"] ))
+        return selpack
         
   # ===================================================================
 #       UX EVENT HANDLERS AND HELPERS
@@ -273,6 +287,7 @@ class ControlPanel(ttk.PanedWindow):
             offvalue=False)
         self.should_search_on_query_change.grid(
             row=0, column=0, pady=2, padx=5, sticky="w", columnspan=2)
+        self.should_search_on_query_change.invoke()
 
         self.entry_input_button = ttk.Button(
             self.menu_pane,
@@ -294,7 +309,15 @@ class ControlPanel(ttk.PanedWindow):
             text="Export Graph",
             state="normal")
         self.export_graph_button.grid(
-            row=1, column=2, padx=5, pady=2, sticky="w")        
+            row=1, column=2, padx=5, pady=2, sticky="w")   
+        
+        self.send_to_multigrapher_button = ttk.Button(
+            self.menu_pane,
+            command=self.send_to_multigrapher,
+            text="Send to Multigrapher",
+            state="normal")
+        self.send_to_multigrapher_button.grid(
+            row=1, column=3, padx=5, pady=2, sticky="w")          
         
 if __name__ == "__main__":
     import config2

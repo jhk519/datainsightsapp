@@ -29,30 +29,13 @@ import logging
 import os
 
 # Project Modules    
-from default_engines import SettingsManagerEngine
+from appwidget import AppWidget
 import master_calendar.calendardialog as cal_dialog
 
-class SettingsManager(ttk.LabelFrame):
-    def __init__(self,parent,controller=None,engine="default",config=None):
-        super().__init__(parent)
-        
-        self.parent = parent
-        if not controller:
-            self.controller = parent
-        else:
-            self.controller = controller
-            
-        self.log = logging.getLogger(__name__).info
-        self.log("{} Init.".format(__name__))    
-        self.bug = logging.getLogger(__name__).debug             
-            
-        if str(engine) == "default":
-            self.engine = SettingsManagerEngine()
-        else:
-            self.engine = engine         
-            
-        if config:
-            self.engine.set_build_config(raw_config = config)  
+class SettingsManager(AppWidget):
+    def __init__(self,parent,controller,config,dbvar=None):
+        self.widget_name = "settingsmanager"
+        super().__init__(parent,controller,config,dbvar)
             
         self.parser = configparser.ConfigParser()    
         self.setting_packs = []
@@ -90,9 +73,9 @@ class SettingsManager(ttk.LabelFrame):
             self.controller.propagate_cfg_var_change
             logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
         except:
-            print("No suitable controlelr to propagate_cfg_var")
+            self.bug("No suitable controlelr to propagate_cfg_var")
         else:
-            print("Propagating updated settings to controller")
+            self.bug("Propagating updated settings to controller")
             self.controller.propagate_cfg_var_change(self.engine.get_config())      
                
     def _validate_and_set(self,index):
@@ -123,7 +106,9 @@ class SettingsManager(ttk.LabelFrame):
         self.settings_changed(index)
         return 1
     
-    def set_new_color(self, indexrow, indexcolor):
+    def set_new_color(self, settingrowcolumn):
+        indexrow, indexcolor = settingrowcolumn
+        self.log("Settings new color at indexrow: {}, indexcolor: {}".format(indexrow,indexcolor))
         header, label, stvar, set_type, entry_list = self.setting_packs[indexrow]
         get_color = colorchooser.askcolor()[1]
         stvar.set(get_color)
@@ -137,6 +122,7 @@ class SettingsManager(ttk.LabelFrame):
         curr_section = ""
         for user_setting_tuple in self.engine.user_settings:
             section_header,setting_header,final_val,set_type = user_setting_tuple
+            self.log("Building settings: {}-{} = {}".format(section_header,setting_header,final_val))
             if not curr_section == section_header:
                 curr_section = section_header
                 section_text = section_header.replace("_config","")
@@ -167,9 +153,12 @@ class SettingsManager(ttk.LabelFrame):
         curr_section = ""
         for index, setting_pack in enumerate(self.setting_packs):
             section_header = setting_pack[0]
+            setting_header = setting_pack[1]
             stvar = setting_pack[2] 
             set_type = setting_pack[3] 
             emptywidgetlist = setting_pack[4]
+            
+            self.log("{}. Unpacking: {}-{} = {}".format(index,section_header,setting_header["text"],stvar.get()))
             
             if not curr_section == section_header:
                 curr_section = section_header
@@ -196,8 +185,9 @@ class SettingsManager(ttk.LabelFrame):
             elif set_type == "colors": 
                 split_colors = stvar.get().split("-")
                 for clindex, color in enumerate(split_colors):
-                    color_lambda = lambda clindex = clindex: self.set_new_color(index, clindex)
-                    butt = tk.Button(self, width=2, command=color_lambda,background=split_colors[clindex])
+                    settingrowcolumn = (index,clindex)
+                    color_lambda = lambda settingrowcolumn = settingrowcolumn: self.set_new_color(settingrowcolumn)
+                    butt = tk.Button(self, width=2, command=color_lambda, background=split_colors[clindex])
                     butt.grid(row=iter_row,column=clindex+1,sticky="w",padx=(0,5))
                     emptywidgetlist.append(butt)
                     
@@ -219,7 +209,7 @@ if __name__ == "__main__":
     import config2
     dbcfg = config2.backend_settings
     app = tk.Tk()
-    test_widget = SettingsManager(app, config=dbcfg)
+    test_widget = SettingsManager(app, app, dbcfg)
     test_widget.grid(padx=20)
     app.mainloop()   
         

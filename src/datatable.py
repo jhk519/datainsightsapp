@@ -27,28 +27,15 @@ import pickle
 import numpy as np
 
 # Project Modules
-from default_engines import DataTableEngine
+from appwidget import AppWidget
     
-class DataTable(ttk.Labelframe):
-    def __init__(self,parent,controller=None,engine="default",config=None):
-        super().__init__(parent)
-        self.parent = parent
-        if not controller:
-            self.controller = parent
-        else:
-            self.controller = controller
+class DataTable(AppWidget):
+    def __init__(self,parent,controller,config,dbvar=None):
+        self.widget_name = "datatable"
+        super().__init__(parent,controller,config,dbvar) 
             
-        if str(engine) == "default":
-            self.engine = DataTableEngine()
-        else:
-            self.engine = engine         
-            
-        self.config_key = None   
-        if config and self.config_key:
-            self.engine.set_build_config(raw_config = config[self.config_key]) 
-            
-        self.nav_tree = ttk.Treeview(self)
-        self.nav_tree.pack()
+        self.nav_tree = ttk.Treeview(self,height="4")
+        self.nav_tree.pack(fill="x",expand="false")
 
 # API
 #   We use the "cfg" attribute present in all defaultengines as a convenient way
@@ -58,8 +45,8 @@ class DataTable(ttk.Labelframe):
         if self.nav_tree is not None:
             self.nav_tree.destroy()
             
-        self.nav_tree = ttk.Treeview(self, columns=self.engine.get_cfg_val("line_labels"))
-        self.nav_tree.pack(fill="x")
+        self.nav_tree = ttk.Treeview(self, columns=self.engine.get_cfg_val("line_labels"),height="5",show="headings")
+        self.nav_tree.pack(fill="x",pady=(10,0))
 
         for header in self.engine.get_cfg_val("line_labels"):
             self.nav_tree.heading(header,text=header,
@@ -70,7 +57,7 @@ class DataTable(ttk.Labelframe):
         for row_values in self.engine.get_rows_of_data():
             self.nav_tree.insert("", "end", values=row_values)
 
-        self.nav_tree.column("#0", width=1)
+#        self.nav_tree.column("#0", width=1)
         
 #   UX EVENT HANDLERS AND HELPERS
     def sortby(self, tree, col, descending):

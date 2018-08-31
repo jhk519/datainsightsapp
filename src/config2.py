@@ -5,8 +5,8 @@ Created on Fri Jun 22 00:58:46 2018
 @author: Justin H Kim
 """
 
-import reportlab
-import datetime
+#import reportlab
+#import datetime
 
 #   Settings are divided based on their related page. For settings that users can
 # directly modify, they must be listed in the user_settings.ini file under a 
@@ -15,7 +15,7 @@ import datetime
 # specific setting is not on the .ini file, it will not appear at all in settingsmanager.
 
 backend_settings = {
-    "dbmanager_config":{
+    "dbmanager":{
         "URL for Online DB Download":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
         "automatic db export": True,        
         "automatic export location":".//exports//databases",
@@ -154,27 +154,25 @@ backend_settings = {
         }              
     },
             
-    "multigrapher_config":{
+    "multigrapher":{
         "automatic export location":"exports\multigrapher"
     },
             
-    "productviewer_config":{
+    "productviewer":{
         "automatic export location":".//exports//product_customer_lists"
     },
             
-    "analysispage_config":{     
+    "analysispage":{     
+        "automatic search export": True,
         "automatic export location": "exports\search_results",
         "auto_name_exports": True,  
-    },
-                    
-    "controlpanel_config":{
-        "setdates_on_load": True,
-        "setdates_gap":"14",
-        "setdates_from_date":"20180128",                
-        "auto_query": True,
+        "auto_query": True,        
     },
 
-    "querypanel_config":{
+    "querypanel":{
+        "setdates_on_load": True,
+        "setdates_gap":"14",
+        "setdates_from_date":"20180128",             
         "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
         "categories": ["Orders","Cashflow","Traffic","Logistics","Product Rankings","Cancels"],
         

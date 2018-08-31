@@ -16,40 +16,20 @@ except ImportError:  # Python 3
 # Standard Modules
 from pprint import pprint
 import pickle
+import datetime
 import logging
 
 # Non-standard Modules
 from PIL import ImageTk
 
 #Package Modules
-from default_engines import ProductViewerEngine
-import config2
+from appwidget import AppWidget
 
-class ProductViewer(tk.Frame):
-    def __init__(self,parent,controller=None,engine="default",config=None,dbvar=None):
-        super().__init__(parent)
-        self.parent = parent
-        if not controller:
-            self.controller = parent
-        else:
-            self.controller = controller
-            
-        if str(engine) == "default":
-            self.engine = ProductViewerEngine()
-        else:
-            self.engine = engine         
-            
-        self.log = logging.getLogger(__name__).info
-        self.log("ProductViewer Init.")
-        self.bug = logging.getLogger(__name__).debug    
-        
-        self.config_key = "productviewer_config"    
-        if config:
-            self.engine.set_build_config(raw_config = config[self.config_key])    
-            
-        if dbvar:
-            self.engine.set_dbvar(dbvar)
-            
+
+class ProductViewer(AppWidget):
+    def __init__(self,parent,controller,config,dbvar=None):
+        self.widget_name = "productviewer"
+        super().__init__(parent,controller,config,dbvar)                   
 
         self.product_detail_packs = []
         self.sku_detail_packs = []
@@ -60,69 +40,48 @@ class ProductViewer(tk.Frame):
         self._build_product_info_frame()
         self._build_sku_frame()
         
-#   API
-    def set_dbvar(self,new_dbvar):
-        self.engine.set_dbvar(new_dbvar)
-        
-    def set_cfgvar(self,new_cfgvar):
-        self.engine.set_build_config(new_cfgvar)    
-        
 #   UX EVENT HANDLERS AND HELPERS        
         
     def export_customers(self,code=None):
+#        codetype = self.search_type_menu.get() 
         if code == None:
-            code = self.search_pcode_stvar.get()       
-            code = code.strip().replace(" ", "").replace("\n", "")
-            
-        self.log("Exporting customers for code: {}------END".format(code))
+            code = self.product_detail_packs[0][1].get().strip().replace(" ", "").replace("\n", "")
+        self.log("Exporting orders for product: {}".format(code))
         export_customer_result = self.engine.get_customers_list(code)
         try:
             self.export_to_csv(code,export_customer_result)
         except AttributeError:
             self.bug("export_customer_result is not a df, it is a {}".format(str(type(export_customer_result))))
-
             if export_customer_result == "no_results":
                 self.bug("No Results for Export Customers Search for: {}".format(code))
-                self.popup = tk.Toplevel()
-                self.popup.title("No Results for this Product Code")
-                msg = tk.Message(
-                    self.popup,
-                    text="No results for {} in database.".format(code))
-                msg.pack()
-                okbutton = ttk.Button(
-                    self.popup,
-                    text="OK",
-                    command=self.popup.destroy)
-                okbutton.pack()
+                title = "No Results for this Product Code"
+                text ="No results for {} in database.".format(code)
+                self.create_popup(title,text)
                 return
             elif export_customer_result == "no_code_given":
-                print("No Code Given")
+                self.bug("No code given for product search.")
                 return "no_code_given"
-        
-
+        else:
+            self.log("Completed Customer List export for: {}".format(code))
+            
     def export_to_csv(self,code,dataframe):
         dbstr = "product_customers_{}".format(code)
         fullname = self.engine.get_export_full_name(dbstr,ftype="excel")
         dataframe.to_excel(fullname, sheet_name=code)
         
     def search_product(self,code=None):
+        codetype = self.search_type_menu.get() 
         if code == None:
-            code = self.search_pcode_stvar.get()        
-        search_product_result = self.engine.search_product(code)
+            code = self.search_pcode_stvar.get().strip().replace(" ", "").replace("\n", "")
+        self.log("Searching for product: {} and type: {}".format(code,codetype))
+        search_product_result = self.engine.search_product(code,codetype)
         if search_product_result == "no_results":
-            self.popup = tk.Toplevel()
-            self.popup.title("No Results for This Product Code")
-            msg = tk.Message(
-                self.popup,
-                text="No results for this product code in database.")
-            msg.pack()
-            okbutton = ttk.Button(
-                self.popup,
-                text="OK",
-                command=self.popup.destroy)
-            okbutton.pack()
+            title = "No Results".format(codetype)
+            text ="No Results for {} {} in database.".format(codetype, code)
+            self.create_popup(title,text)            
+            return
         elif search_product_result == "no_code_given":
-            print("No Code Given")
+            self.bug("No code given for product search.")
         else:
             self.update_product_info(search_product_result)     
             
@@ -137,7 +96,8 @@ class ProductViewer(tk.Frame):
 
 #       UPDATE MAIN IMAGE 
         p_url = product_dict["product_info"]["main_image_url"]
-        self._update_label_image(self.main_image_url_label,p_url,0)            
+        self.log("Updating Main Product Image")
+        self._update_label_image(self.main_image_url_label,p_url,0) 
 
 #       UPDATE SKU FRAME
         row_c = 1
@@ -156,13 +116,11 @@ class ProductViewer(tk.Frame):
             
             size_lbl = ttk.Label(self.sku_frame,text=size)     
             size_lbl.grid(row=row_c,column=2,sticky="w",padx=8)
-            
-            if row_c == 1:
-                colorbt.invoke()
             row_c += 1
-            
-            sku_detail_pack = barc_lbl,colorbt,size_lbl
-            self.sku_detail_packs.append(sku_detail_pack)
+
+            self.sku_detail_packs.append((barc_lbl,colorbt,size_lbl))
+        self.log("Invoking first SKU photo button.")
+        self.sku_detail_packs[0][1].invoke()
    
     def _clear_data(self):
         self.main_image_url_label["image"] = ""
@@ -195,30 +153,40 @@ class ProductViewer(tk.Frame):
         self.search_frame.grid(row=0,column=0,sticky="ew",pady=15)
         
         self.search_pcode_stvar = tk.StringVar()   
-        self.search_pcode_stvar.set("GZ1862")
-        self.search_pcode_label = ttk.Label(self.search_frame,text="Search Product Code")
-        self.search_pcode_label.grid(row=0,column=0)
+        self.search_pcode_stvar.set("P000BAZV")
         
+        self.search_pcode_label = ttk.Label(self.search_frame,text="Search")
+        self.search_pcode_label.grid(row=0,column=0)       
+        
+        self.search_type_var = tk.StringVar()
+        
+        self.search_type_menu = ttk.Combobox(self.search_frame, textvariable=self.search_type_var,
+                                          width=17,values=["Product Code","Barcode"],state="readonly")
+        self.search_type_menu.grid(row=0, column=1,columnspan=1,pady=(5,5), sticky="w",
+                                padx=(5,5))
+
+        self.search_type_menu.bind('<<ComboboxSelected>>',self.selclear)
+        self.search_type_menu.current(0)
+        self.search_type_menu.selection_clear()        
+
         self.search_entry = ttk.Entry(
             self.search_frame, 
             width=15, 
             textvariable=self.search_pcode_stvar
         )
-        self.search_entry.grid(row=0, column=1, padx=5,sticky="w")    
+        self.search_entry.grid(row=0, column=2, padx=5,sticky="w")    
         
         self.search_button = ttk.Button(
             self.search_frame,
             text = "Search",
             command = self.search_product
         )
-        self.search_button.grid(row=0,column=2,padx=5,sticky="w")
+        self.search_button.grid(row=0,column=3,padx=5,sticky="w")
         
-        self.export_customers_button = ttk.Button(
-            self.search_frame,
-            text = "Export Customers List",
-            command = self.export_customers
-        )
-        self.export_customers_button.grid(row=0,column=3,padx=5,sticky="w")
+
+        
+    def selclear(self,e):
+        self.search_type_menu.selection_clear()        
         
     def _build_product_info_frame(self):
         self.product_info_frame = ttk.LabelFrame(self,text="Product Information")
@@ -227,13 +195,20 @@ class ProductViewer(tk.Frame):
         self.product_info_frame.columnconfigure(0,weight=0)
         self.product_info_frame.columnconfigure(1,weight=0)        
         self.product_info_frame.columnconfigure(2,weight=1)   
+        
+        self.export_customers_button = ttk.Button(
+            self.product_info_frame,
+            text = "Export Customers List",
+            command = self.export_customers
+        )
+        self.export_customers_button.grid(row=0,column=0,padx=5,sticky="w")
 
         required_details = ["product_code",
 #                            "vendor_name",
 #                            "vendor_code",
 #                            "vendor_price",
                             "category"]
-        start_row = 0   
+        start_row = 1   
         for key in required_details:
             detail_var = tk.StringVar()
             detail_label = ttk.Label(self.product_info_frame,text = key)
@@ -270,11 +245,27 @@ class ProductViewer(tk.Frame):
         
 
 if __name__ == "__main__":
+    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
+    ver = "v0.2.10.7 - 2018/07/22"
+    
+    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
+        level=logging.DEBUG, 
+        format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
+        datefmt='%H:%M:%S')
+    logging.info("-------------------------------------------------------------")
+    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
+    logging.info("VERSION: {}".format(ver))
+    logging.info("AUTHOR:{}".format("Justin H Kim"))
+    logging.info("-------------------------------------------------------------")
+
+    
+    import config2
     dbfile =  open(r"databases/DH_DBS.pickle", "rb")
     dbs = pickle.load(dbfile)  
+#    dbs = None
     app = tk.Tk()
-    analysispage = ProductViewer(app,config=config2.backend_settings,dbvar=dbs)
-    analysispage.grid(padx=20)
+    productviewer = ProductViewer(app,app,config2.backend_settings,dbvar=dbs)
+    productviewer.grid(padx=20)
     app.mainloop()            
          
         

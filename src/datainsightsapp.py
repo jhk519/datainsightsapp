@@ -66,32 +66,29 @@ class DataInsightsApp(tk.Tk):
         
     def _populate_notebook(self):
 #       SETTINGS MANAGER PAGE INIT
-        self.settingsmanager = SettingsManager(self.notebook, self, config=self.init_cfg)
+        self.settingsmanager = SettingsManager(self.notebook, self, self.init_cfg)
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
         curr_config = self.settingsmanager.get_config()
         
 #       DATA MANAGER PAGE INIT 
-        self.dbmanager = DBManager(self.notebook, self, config=curr_config)
+        self.dbmanager = DBManager(self.notebook, self, curr_config)
         self.notebook.add(self.dbmanager,text="DB Manager",sticky="nsew")  
 
 #       PRODUCT VIEWER PAGE INIT
-        self.product_viewer_page = ProductViewer(self.notebook, self, engine="default",
-                                                 dbvar=self.dbmanager.get_dbvar(),
-                                                 config=curr_config)
+        self.product_viewer_page = ProductViewer(self.notebook,self,curr_config,
+                                                 dbvar = self.dbmanager.get_dbvar())
         self.notebook.add(self.product_viewer_page,text="Product Viewer")
         
 #       ANALYSIS PAGE INIT
-        ap = AnalysisPage(self.notebook, self, engine="default", config = curr_config, dbvar = self.dbmanager.get_dbvar())
+        ap = AnalysisPage(self.notebook, self, curr_config, dbvar = self.dbmanager.get_dbvar())
         self.analysispages.append(ap)
         self.notebook.add(ap, text="Analysis",sticky="nsew")
 
 
         
 #       MULTIGRAPHER INIT
-        self.multigrapher = MultiGrapher(self.notebook,self,
-                                         engine="default", 
-                                         config = curr_config)
+        self.multigrapher = MultiGrapher(self.notebook,self, curr_config)
         self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
         
         
@@ -124,7 +121,7 @@ if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
     ver = "v0.2.10.7 - 2018/07/22"
     
-    logging.basicConfig(filename=logname,
+    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
         level=logging.DEBUG, 
         format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
         datefmt='%H:%M:%S')

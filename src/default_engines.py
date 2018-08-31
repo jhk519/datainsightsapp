@@ -37,9 +37,10 @@ class DefaultEngine:
 #   API
     def set_build_config(self,raw_config):
         if self._check_req_headers(config_to_check=raw_config):
+            self.log("Passed Check Req Headers.")
             self.__cfgvar = raw_config
         else:
-            print("New Config is Incompatible. Setting new Config terminated.")
+            self.bug("New Config is Incompatible. Setting new Config terminated.")
             
     def set_dbvar(self,new_dbdata):
         self.__dbvar = new_dbdata    
@@ -52,7 +53,6 @@ class DefaultEngine:
             return copy.deepcopy(self.__cfgvar)
         else:
             return self.__cfgvar
-        return self.__cfgvar
              
     def time_str(self,key="now"):
         if key == "now":
@@ -61,6 +61,7 @@ class DefaultEngine:
     def get_cfg_val(self,key):
         try: 
             value = self.__cfgvar[key]
+            
         except TypeError:
             self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
         return value
@@ -88,7 +89,7 @@ class DefaultEngine:
         passed = True
         for target in self.__req_headers:
             if not config_to_check.get(target,False):
-                print("MISSING HEADER: ", target)
+                self.bug("MISSING HEADER: {}".format(target))
                 passed = False
         return passed
 
@@ -106,8 +107,8 @@ class SettingsManagerEngine(DefaultEngine):
                 try:
                     temp_cfg[section_header]
                 except KeyError:
-                    print(section_header,"from .ini file not found in config.")
-                    print("This will mean updates to ini will not be unpacked and config updated.")
+                    self.bug("{} from .ini file not found in config.".format(section_header))
+                    self.bug("This will mean updates to ini will not be unpacked and config updated.")
                     continue
                 set_val,set_type = setting_str.split("$$")
                 final_val = self._get_clean_val(set_val,set_type)
@@ -122,14 +123,14 @@ class SettingsManagerEngine(DefaultEngine):
             elif setting_val == "False":
                 val = False
             else:
-                print("ERROR, NOT SUITABLE VAL: ", setting_val,"FOR",setting_type)
+                self.bug("ERROR, {} NOT SUITABLE VAL: FOR {}".format(setting_val,setting_type))
                 raise ValueError
         elif setting_type == "int":
             val = int(setting_val)
         elif setting_type in ["list","date","str","dirloc","fileloc","colors"]:
             val = setting_val
         else:
-            print("INVALID TYPE FOR SETTING! - ", setting_type, " - ", setting_val)
+            self.bug("INVALID TYPE FOR SETTING! - ", setting_type, " - ", setting_val)
             val = None   
         return val
 
@@ -152,6 +153,7 @@ class DBManagerEngine(DefaultEngine):
         cdb = adb.drop_duplicates()
         return cdb
     
+#    to get a pdb roughly from an odb
 #    def gen_pdb(self):
 #        odb = self.get_dbvar()["odb"]
 ##        print(odb.head)
@@ -235,7 +237,7 @@ class DBManagerEngine(DefaultEngine):
                 pickle.dump(self.get_dbvar(), dbfile)     
 
     def df2sqlite(self,db_str, db_name="import.sqlite", tbl_name="import"):
-        print("Preparing conversion to sqlite for: ", db_name)
+        self.log("Preparing conversion to sqlite for: {}".format(db_name))
         dataframe = self.get_dbvar()[db_str]
         conn = sqlite3.connect(db_name)
         cur = conn.cursor()
@@ -255,7 +257,7 @@ class DBManagerEngine(DefaultEngine):
         cur.executemany("insert into %s values(%s)" % (tbl_name, wildcards), data)
         conn.commit()
         conn.close()
-        print("Export to Sqlite Completed")    
+        self.log("Export to Sqlite Completed")    
         
 class ProductViewerEngine(DefaultEngine):
     def __init__(self,init_config = None, init_dbvar=None, name="ProductViewer"):
@@ -274,10 +276,16 @@ class ProductViewerEngine(DefaultEngine):
         self.log(".get_orders_by_product locced df length: {}".format(locced.shape[0]))
         return locced
         
-    def get_pdb_product_data(self,pcode):
+    def get_pdb_product_data(self,code,codetype):
+        self.log("Getting pdb data for {}, search_type: {}, objecttype: {}".format(code,codetype,str(type(code))))
         pdb = self.get_dbvar()["pdb"]
-        x = pdb.loc[pdb['product_code'] == pcode]  
-        return x
+        self.log("Orig. pdb length: {}".format(pdb.shape[0]))
+        if codetype == "Product Code":
+            returndf = pdb.loc[pdb['product_code'] == code]  
+        elif codetype == "Barcode":
+            returndf = pdb.loc[pdb['sku_code'] == int(code)]
+        self.log("Locced pdb length: {}".format(returndf.shape[0]))
+        return returndf
     
     def get_customers_list(self,code):
         self.log("Called with code: {}".format(code))
@@ -293,14 +301,18 @@ class ProductViewerEngine(DefaultEngine):
             self.bug("No Code Given")
             return "no_code_given"
         
-    def search_product(self,code):
+    def search_product(self,code,codetype):
+        self.log("Code Search: {}".format(code))
         if not code is None and not code == "":
-            pdb = self.get_pdb_product_data(code)
+            pdb = self.get_pdb_product_data(code, codetype)
         else:
             return "no_code_given"
             
         if pdb.shape[0] < 1:
+            self.bug("Search yielded a DF less than 1 length.")
             return "no_results"
+        else:
+            self.log("Search yielded DF of {} length.".format(pdb.shape[0]))
              
         plist = pdb.to_dict(orient='records')
         
@@ -334,12 +346,16 @@ class ProductViewerEngine(DefaultEngine):
         return final_dict
             
     def get_PIL_image(self,url):
+        return None
+        if url == "DEFAULT URL":
+            self.bug("Received url of default value. Skipping download attempt.")
+            return None
         try:        
             self.log("Trying PIL Image from {}...".format(url))
             raw_data = urllib.request.urlopen(url).read()
             self.log("urllib.request.urlopen(ABOVE URL).read() successfully called.")   
         except ValueError:
-            self.bug("THIS IMAGE AT ",url," IS NOT WORKING!")
+            self.bug("THIS IMAGE AT {} IS NOT WORKING!".format(url))
             return None
         except AttributeError:
             self.bug("CANNOT READ URLOPEN FOR ", url)
@@ -499,11 +515,25 @@ class AnalysisPageEngine(DefaultEngine):
                 }
                 axes_result_packs[ind] = rp          
         return axes_result_packs      
-        
-class ControlPanelEngine(DefaultEngine):
+
+class QueryPanelEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
-        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="ControlPanel")
-        
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="QueryPanel")
+    
+    def get_queries_list(self,category):
+        qlist = []
+        if category:
+            for k,v in self.get_cfg_val("queries_ref").items():
+                if v["category"] == category:
+                    qlist.append(k)    
+        else:
+            qlist = list(self.get_cfg_val("queries_ref").keys())
+        qlist.sort()
+        return qlist
+    
+    def get_colors_preferred(self):
+        return self.get_cfg_val("colors_preferred").split("-")
+    
     def get_set_date_config(self):
         return (self.get_cfg_val("setdates_gap"),self.get_cfg_val("setdates_from_date"))
     
@@ -526,29 +556,7 @@ class ControlPanelEngine(DefaultEngine):
             day = int(from_what_day[6:8]) 
             end_date = datetime.date(year, month, day)
             start_date = end_date - datetime.timedelta(days_back)
-        return start_date,end_date
-
-
-class QueryPanelEngine(DefaultEngine):
-    def __init__(self, init_config=None, init_dbvar=None):
-        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="QueryPanel")
-        
-    def get_categories(self):
-        return self.get_cfg_val("categories")
-    
-    def get_queries_list(self,category):
-        qlist = []
-        if category:
-            for k,v in self.get_cfg_val("queries_ref").items():
-                if v["category"] == category:
-                    qlist.append(k)    
-        else:
-            qlist = list(self.get_cfg_val("queries_ref").keys())
-        qlist.sort()
-        return qlist
-    
-    def get_colors_preferred(self):
-        return self.get_cfg_val("colors_preferred").split("-")
+        return start_date,end_date      
     
 class DataTableEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):

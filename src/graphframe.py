@@ -17,10 +17,14 @@ from matplotlib import ticker
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 from pprint import pprint as PRETTYPRINT
+import logging
 
+log = logging.getLogger(__name__).info
+log("{} Init.".format(__name__))    
+bug = logging.getLogger(__name__).debug   
 
 class GraphFrame(tk.LabelFrame):
-    def __init__(self, parent, wd=9, ht=6):
+    def __init__(self, parent, wd=11, ht=7):
         super().__init__(parent, text='Graph')
 
         self.my_figure = Figure(figsize=(wd, ht), dpi=85)
@@ -42,7 +46,7 @@ class GraphFrame(tk.LabelFrame):
 
     def update_graph(self,analysis_pack ):
         #       CLEAN UP AND RESET
-
+        log("Update graph call.")
         prp, srp, hold_y = analysis_pack      
         prev_prime_y_axis_lims = self.axis_prime.get_ylim()
         prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
@@ -50,7 +54,7 @@ class GraphFrame(tk.LabelFrame):
         try:
             self.my_legend.remove()
         except BaseException:
-            print("My legend doesn't exist yet. Likely first time calling _update_plot()")
+            bug("My legend doesn't exist yet. Likely first time calling _update_plot()")
 
         self.axis_prime.cla()
         self.axis_secondary.cla()
@@ -76,21 +80,14 @@ class GraphFrame(tk.LabelFrame):
             try: 
                 prp["y_data"][0]
             except IndexError:
-                self.popup = tk.Toplevel()
-                self.popup.title("No Results for these Dates")
-                msg = tk.Message(
-                    self.popup,
-                    text="No results for the selected date range filters.")
-                msg.pack()
-                okbutton = ttk.Button(
-                    self.popup,
-                    text="OK",
-                    command=self.popup.destroy)
-                okbutton.pack()
+                title = "No Results for these Dates"
+                text ="No results for the selected date range filters."
+                self.create_popup(title,text)
                 return None
         else:
-            print("WARNING! User searched for no queries in prp")
+            bug("WARNING! User searched for no queries in prp")
             return None
+        
 #       TITLING
         title = prp["met"]
         if srp:
@@ -117,7 +114,7 @@ class GraphFrame(tk.LabelFrame):
                                      prp["y_data"][x],
                                      color=prp_colors[color_c],
                                      ls=linestyle,
-                                     lw=2,
+                                     lw=1.2,
                                      label=prp["line_labels"][x])
                 color_c += 1
 
@@ -149,7 +146,7 @@ class GraphFrame(tk.LabelFrame):
                                              srp["y_data"][x],
                                              color=srp_colors[color_c],
                                              ls=linestyle,
-                                             lw=2,
+                                             lw=1.2,
                                              label=srp["line_labels"][x])
                     color_c += 1
 

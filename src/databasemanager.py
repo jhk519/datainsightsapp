@@ -15,33 +15,17 @@ except ImportError:  # Python 3
 from tkinter import filedialog
 
 # Standard Modules
-import logging
 
 # Project Modules
-from default_engines import DBManagerEngine
+from appwidget import AppWidget
 
-class DBManager(tk.Frame):
-    def __init__(self,parent,controller=None,engine="default",config=None):
-        super().__init__(parent)
-        self.parent = parent
-        if not controller:
-            self.controller = parent
-        else:
-            self.controller = controller
-            
-        self.log = logging.getLogger(__name__).info
-        self.log("{} Init.".format(__name__))    
-        self.bug = logging.getLogger(__name__).debug             
-            
-        if str(engine) == "default":
-            self.engine = DBManagerEngine()
-        else:
-            self.engine = engine    
-            
-        self.config_key = "dbmanager_config"    
-        if config:
-            self.engine.set_build_config(raw_config = config[self.config_key])
-                        
+#class DBManager(tk.Frame):
+class DBManager(AppWidget):
+    def __init__(self,parent,controller,config,dbvar=None):
+        self.widget_name = "dbmanager"
+        super().__init__(parent,controller,config,dbvar)            
+ 
+#       WIDGET SPECIFIC                        
         self.time_created = self.engine.time_str()
         self.online_loaded = tk.IntVar(value=0)
         
@@ -52,13 +36,6 @@ class DBManager(tk.Frame):
 
         if self.engine.get_cfg_val("loaddb_on_load"):
             self._load_offline_dbs(file_loc=self.engine.get_cfg_val("loaddb_loc"))
- 
-#   API       
-    def get_dbvar(self):
-        return self.engine.get_dbvar()
-    
-    def set_cfgvar(self,new_cfgvar):
-        self.engine.set_build_config(raw_config = new_cfgvar[self.config_key])
         
 #   UX EVENT HANDLERS AND HELPERS   
     def _reset_and_gen_all_new_dbs(self):
@@ -100,26 +77,18 @@ class DBManager(tk.Frame):
         self.log("Completed adding to: {}".format(db_str))
 
     def _pick_online_offline(self):
-        self.popup = tk.Toplevel()
-        self.popup.title("Load from Online or from Computer?")
-        msg = tk.Message(
-            self.popup,
-            text="Please Choose to Load DB from Online or Offline.")
-        msg.pack()
-        online_button = ttk.Button(
-            self.popup,
-            text="Online",
-            command=self._load_online_dbs)
-#        online_button["state"] = "disabled"
-        offline_button = ttk.Button(
-            self.popup,
-            text="Offline",
-            command=self._load_offline_dbs)
-        online_button.pack()
-        offline_button.pack()
+        title = "Load from Online or from Computer?"
+        text = "Please Choose to Load DB from Online or Offline."
+        onlineb = ("Online",self._load_online_dbs)
+        offlineb = ("Offline",self._load_offline_dbs)   
+        self.create_popup(title,text,firstb=onlineb,secondb=offlineb)     
+
 
     def _load_online_dbs(self):
-        self.popup.destroy()
+        try:
+            self.popup.destroy()
+        except AttributeError:
+            self.bug("Cannot find popup widget to .destroy()")            
         self.online_loaded.set(0)
         self.load_db_status_value = ttk.Progressbar(self.bottom_frame,maximum=14,
                                                     mode="determinate",variable=self.online_loaded)
@@ -329,7 +298,7 @@ if __name__ == "__main__":
     import config2
     dbcfg = config2.backend_settings
     app = tk.Tk()
-    test_widget = DBManager(app, config=dbcfg)
+    test_widget = DBManager(app,app,dbcfg)
     test_widget.grid(padx=20)
     app.mainloop()        
     

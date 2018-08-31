@@ -22,29 +22,12 @@ import os
 import PIL
 
 # Project Modules
-from default_engines import MultiGrapherEngine
+from appwidget import AppWidget
 
-class MultiGrapher(tk.Frame):
-    def __init__(self,parent,controller=None,engine="default",config=None):
-        super().__init__(parent)
-        self.parent = parent
-        if not controller:
-            self.controller = parent
-        else:
-            self.controller = controller
-            
-        self.log = logging.getLogger(__name__).info
-        self.log("{} Init.".format(__name__))    
-        self.bug = logging.getLogger(__name__).debug            
-            
-        if str(engine) == "default":
-            self.engine = MultiGrapherEngine()
-        else:
-            self.engine = engine    
-            
-        self.config_key = "multigrapher_config"    
-        if config:
-            self.engine.set_build_config(raw_config = config[self.config_key])
+class MultiGrapher(AppWidget):
+    def __init__(self,parent,controller,config,dbvar=None):
+        self.widget_name = "multigrapher"
+        super().__init__(parent,controller,config,dbvar)  
             
         self.slots = []
         
@@ -162,6 +145,6 @@ if __name__ == "__main__":
     import config2
     dbcfg = config2.backend_settings
     app = tk.Tk()
-    test_widget = MultiGrapher(app, config=dbcfg)
+    test_widget = MultiGrapher(app, app,dbcfg)
     test_widget.grid(padx=20)
     app.mainloop()          

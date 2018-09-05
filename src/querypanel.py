@@ -73,14 +73,12 @@ class QueryPanel(AppWidget):
             "left": {
                 "axispanel": None,
                 "gtype":None,
-                "dbtype": None,
                 "metric": None,
                 "queries":[]
             },
             "right": {
                 "axispanel": None,
                 "gtype":None,
-                "dbtype": None,
                 "metric": None,
                 "queries":[]                        
             }
@@ -114,31 +112,33 @@ class QueryPanel(AppWidget):
                 self._set_dates(self.engine.get_set_date_config())            
             
 #   API            
+    def push_search(self):
+        self.log("*** Push Search ***")
+        selection_pack = self.gen_selection_pack()
+        self.controller.request_and_graph_data(selection_pack)
                 
     def gen_selection_pack(self):
         self.log("Starting Selection Pack Gen.")  
         left_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["left"]["queries"])]
         right_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["right"]["queries"])]
         selpack = {
-            "extra":self.extra_var.get(),
+            "extra":self.extra_var.get().strip().replace(" ", "").replace("\n", ""),
             "x_axis_label": self.x_axis_type.get(),
             "mirror_days": self.mirror_days_var.get(),            
             "left": {
                 "gtype":self.axis_panels["left"]["gtype"],
-                "db-type": self.axis_panels["left"]["dbtype"],
                 "metric": self.axis_panels["left"]["metric"],
                 "queries": left_comp,
             },
             "right": {
                 "gtype":self.axis_panels["right"]["gtype"],
-                "db-type": self.axis_panels["right"]["dbtype"],
                 "metric": self.axis_panels["right"]["metric"],
-                "queries": right_comp,
-                #selected_query_pack = [stvar, label, choose_color, delete]      
+                "queries": right_comp,     
             }, 
             "start": self.start_date,
             "end": self.end_date,
-            "hold_y": self.hold_y_var.get()            
+            "hold_y": self.hold_y_var.get(),
+            "title":None,
         }
         self.log("Start: {}, End: {}, Hold_y: {}".format(selpack["start"], selpack["end"], selpack["hold_y"] ))
         return selpack  
@@ -243,14 +243,14 @@ class QueryPanel(AppWidget):
             return False
         elif not targ_metric:
             self.axis_panels[which_axis]["metric"] = query_ref["y-axis-label"]
-            self.axis_panels[which_axis]["gtype"] = query_ref["chart-type"]
-            self.axis_panels[which_axis]["dbtype"] = query_ref["db-req"]
+            self.axis_panels[which_axis]["gtype"] = query_ref["gtype"]
 
         for index, select_pack in enumerate(targ_curr_queries):
             stvar, label, choose_color, delete  = select_pack
             if stvar.get() == "None":
                 stvar.set(query_str)
                 self._update_queries(self.category_var.get())
+                self._check_controller_autosearch()
                 return True
             elif stvar.get() == query_str:
                 self.bug("{} is already Included! It should not have been available to send.".format(
@@ -317,23 +317,18 @@ class QueryPanel(AppWidget):
                     if not found:
                         right_axis["state"] = "normal"
                         
-        self._check_controller_autosearch()
+#        self._check_controller_autosearch()
                         
     def _check_controller_autosearch(self):
         if self.autosearch.get():
             self.push_search()
-    
-    def push_search(self):
-        self.log("*** Push Search ***")
-        selection_pack = self.gen_selection_pack()
-        self.controller.search_queries(selection_pack)
-                    
+
     def _category_changed(self,event=None):
         self._update_queries(self.category_var.get())
         self.category_menu.selection_clear()
         
     def _clear_axis_info(self,axis):
-        for key in ["gtype","db-type","metric"]:
+        for key in ["gtype","metric"]:
             self.axis_panels[axis][key] = None 
 
     def _is_axis_empty(self,axis):

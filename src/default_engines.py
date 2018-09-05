@@ -99,7 +99,8 @@ class SettingsManagerEngine(DefaultEngine):
         super().__init__(init_config=init_config,init_dbvar=init_dbvar,name="SettingsManager")    
         self.user_settings = []
         
-    def load_ini_settings(self,parser_sections):
+    def load_cfg_files_and_set_new_cfg(self,parser_sections):
+#        print(parser_sections)
         temp_cfg = self.get_config(need_copy=True)
         self.user_settings = []
         for section_header,section_cfg in parser_sections.items():
@@ -114,6 +115,11 @@ class SettingsManagerEngine(DefaultEngine):
                 final_val = self._get_clean_val(set_val,set_type)
                 temp_cfg[section_header][setting_header] = final_val
                 self.user_settings.append([section_header,setting_header,final_val,set_type])
+        try:
+            with open('settings//presets.pickle',"rb") as presetlist:
+                temp_cfg["multigrapher"]["presetpages"] = pickle.load(presetlist) 
+        except FileNotFoundError:
+            self.bug("No preset pickle file found. Skipping.")
         self.set_build_config(temp_cfg)   
         
     def _get_clean_val(self,setting_val,setting_type):
@@ -366,8 +372,56 @@ class ProductViewerEngine(DefaultEngine):
             return TKim   
 
 class MultiGrapherEngine(DefaultEngine):
-    def __init__(self, init_config=None, init_dbvar=None):
-        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="MultiGrapher")         
+    def __init__(self, init_config=None, init_dbvar=None,custom_today=True):
+        super().__init__(init_config=init_config, init_dbvar=init_dbvar, name="MultiGrapher")   
+        if not custom_today:
+            self.custom_today = datetime.now.date()
+        else:
+            self.custom_today = datetime.date(2018,8,1)
+        
+    def convert_slot_pack_to_request_pack(self,slot_pack):
+            
+        request_pack = {
+            'start': (self.custom_today - datetime.timedelta(slot_pack["days_back"])),
+            'end': self.custom_today,
+            'extra': slot_pack["extra"],
+            'hold_y': False,
+            'left': {
+                'gtype': slot_pack["left"]["gtype"],
+                'metric': slot_pack["left"]["metric"],
+                'queries': slot_pack["left"]["queries"],
+            },
+            'mirror_days': slot_pack["mirror_days"],
+            'right': {
+                'gtype': slot_pack["right"]["gtype"],
+                'metric': slot_pack["right"]["metric"],
+                'queries': slot_pack["right"]["queries"]
+            },
+            'x_axis_label': 'Date',
+            "title":slot_pack["title"]
+        }
+        return request_pack
+       
+    def convert_request_pack_to_slot_pack(self,request_pack): 
+    
+        slot_pack = {
+                    "extra":request_pack["extra"],
+                    "x_axis_label": request_pack["x_axis_label"],
+                    "mirror_days":request_pack["mirror_days"],            
+                    "left": {
+                        "gtype":request_pack["left"]["gtype"],
+                        "metric": request_pack["left"]["metric"],
+                        "queries": request_pack["left"]["queries"],
+                    },
+                    "right": {
+                        "gtype":request_pack["right"]["gtype"],
+                        "metric": request_pack["right"]["metric"],
+                        "queries": request_pack["right"]["queries"],
+                    }, 
+                    "days_back":((request_pack["end"] - request_pack["start"]).days),
+                    "title": request_pack["title"]
+                 }                   
+        return slot_pack        
         
 class AnalysisPageEngine(DefaultEngine):
     def __init__(self, init_config=None, init_dbvar=None):
@@ -422,27 +476,24 @@ class AnalysisPageEngine(DefaultEngine):
     
     def get_results_packs(self,pack):
         """
-        pack = {
-            "start":start,
-            "end":end,
-            "hold_y":self.hold_y_var         
+        selpack = {
             "extra":self.extra_var.get(),
             "x_axis_label": self.x_axis_type.get(),
-            "mirror_days": self.mirror_days_var.get(),  
+            "mirror_days": self.mirror_days_var.get(),            
             "left": {
-                "frame": None,
-                "gtype":None,
-                "db-type": None,
-                "metric": None,
-                "queries":[(qstr,qcolor),(qstr,qcolor)]
+                "gtype":self.axis_panels["left"]["gtype"],
+                "metric": self.axis_panels["left"]["metric"],
+                "queries": left_comp,
             },
             "right": {
-                "frame": None,
-                "gtype":None,
-                "db-type": None,
-                "metric": None,
-                "queries":[(qstr,qcolor),(qstr,qcolor)] 
-            },            
+                "gtype":self.axis_panels["right"]["gtype"],
+                "metric": self.axis_panels["right"]["metric"],
+                "queries": right_comp,     
+            }, 
+            "start": self.start_date,
+            "end": self.end_date,
+            "title":None,
+            "hold_y": self.hold_y_var.get()            
         }
         """      
        
@@ -512,6 +563,7 @@ class AnalysisPageEngine(DefaultEngine):
                     "x_data": x_data,
                     "y_data": y_data_lists,
                     "colors":colors_to_plot,
+                    "title":pack["title"]
                 }
                 axes_result_packs[ind] = rp          
         return axes_result_packs      

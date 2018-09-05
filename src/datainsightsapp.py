@@ -69,7 +69,7 @@ class DataInsightsApp(tk.Tk):
         self.settingsmanager = SettingsManager(self.notebook, self, self.init_cfg)
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
-        curr_config = self.settingsmanager.get_config()
+        curr_config = self.settingsmanager.get_latest_config()
         
 #       DATA MANAGER PAGE INIT 
         self.dbmanager = DBManager(self.notebook, self, curr_config)
@@ -81,45 +81,47 @@ class DataInsightsApp(tk.Tk):
         self.notebook.add(self.product_viewer_page,text="Product Viewer")
         
 #       ANALYSIS PAGE INIT
-        ap = AnalysisPage(self.notebook, self, curr_config, dbvar = self.dbmanager.get_dbvar())
-        self.analysispages.append(ap)
-        self.notebook.add(ap, text="Analysis",sticky="nsew")
+        self.ap = AnalysisPage(self.notebook, self, curr_config, dbvar = self.dbmanager.get_dbvar())
+#        self.analysispages.append(ap)
+        self.notebook.add(self.ap, text="Analysis",sticky="nsew")
 
 
-        
 #       MULTIGRAPHER INIT
         self.multigrapher = MultiGrapher(self.notebook,self, curr_config)
         self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
-        
         
 #       FINALIZE NOTEBOOK
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
         self.notebook.select(self.dbmanager)
         
-        
 #       API 
     def propagate_db_var_change(self,new_dbvar):       
 #        Required when DBManager does full resets of its dbvar, meaning the 
 #        correct dbvar now has a new id.         
         self.product_viewer_page.set_dbvar(new_dbvar)
-        for ap in self.analysispages:
-            ap.set_dbvar(new_dbvar)
+        self.ap.set_dbvar(new_dbvar)
             
     def propagate_cfg_var_change(self,new_cfgvar):
         self.dbmanager.set_cfgvar(new_cfgvar)
         self.product_viewer_page.set_cfgvar(new_cfgvar)
-        for ap in self.analysispages:
-            ap.set_cfgvar(new_cfgvar)
+        self.ap.set_cfgvar(new_cfgvar)
             
-    def send_to_multigrapher(self,path,slot):
-        self.log("Send_to_multigrapher for path: {} AND slot: {}".format(path,slot))
-        self.multigrapher.receive_image(path,slot)
+    def send_to_multigrapher(self,path,pack,slot): 
+        self.log("Send_to_multigrapher for path: {}".format(path))
+        self.multigrapher.receive_image(path,pack,slot)
+        
+    def get_graph_path(self,request_pack):
+        self.ap.request_and_graph_data(request_pack)
+        return self.ap.export_png(outdir="exports\multigrapher")  
+    
+    def send_new_presets(self,multigrapher_cfg):
+        self.settingsmanager.receive_new_presets(multigrapher_cfg)
         
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.2.10.7 - 2018/07/22"
+    ver = "v0.3.0.0 - 2018/09/05"
     
     logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
         level=logging.DEBUG, 

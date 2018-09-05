@@ -74,6 +74,7 @@ class GraphFrame(tk.LabelFrame):
             "x_data": x_data,
             "y_data": y_data_lists,
             "colors":colors_to_plot,
+            "title": None or string
         }
         """
         if prp:
@@ -89,9 +90,12 @@ class GraphFrame(tk.LabelFrame):
             return None
         
 #       TITLING
-        title = prp["met"]
-        if srp:
-            title += " vs. " + srp["met"]
+        if prp["title"]:
+            title = prp["title"]
+        else:
+            title = prp["met"]
+            if srp:
+                title += " vs. " + srp["met"]
         self.axis_prime.set_title(title)
 
         self.axis_prime.xaxis.set_label_text(prp["str_x"])
@@ -207,5 +211,5 @@ class GraphFrame(tk.LabelFrame):
             "line_labels": labels,
             "data_list_of_lists": datas
         }
-
+        log("Completed merged results pack.")
         return merged_export_results_pack

@@ -18,7 +18,6 @@ from pprint import pprint
 import pickle
 import logging
 import datetime
-import logging
 
 # Project Modules
 from appwidget import AppWidget
@@ -51,29 +50,47 @@ class AnalysisPage(AppWidget):
 # ================================================================
 # ================================================================       
         
-    def search_queries(self,selection_pack):
-        self.log("***START*** search query.")  
-        analysis_pack = self.engine.get_results_packs(selection_pack)
+    def request_and_graph_data(self,request_pack):
+        self.log("***START*** search query.")
+        data_pack = self.get_data(request_pack)
+        if not data_pack:
+            self.bug("Received False from self.get_data")
+            return
+        else:
+            self.last_selection_pack = request_pack
+            self.last_data_pack = data_pack
+            self.last_graph_pack = self.draw_graph(data_pack)
+            
+    def draw_graph(self,data_pack):
+        merged_results_pack = self.graph_frame.update_graph(data_pack)
+        if not merged_results_pack:
+            return False
+        else:
+            return merged_results_pack
         
-        if analysis_pack == "No Date Data":
+    def get_data(self,request_pack):
+#        pprint(request_pack)
+#        print("----------")
+        
+        init_data = self.engine.get_results_packs(request_pack)
+#        pprint(init_data)
+#        print("---")
+        if init_data == "No Date Data":
             self.bug("No results for this date range.")
             title = "No Results for this date range."
             text ="No results for this date range."
-            self.create_popup(title,text)   
-        elif analysis_pack is None:
+            self.create_popup(title,text) 
+            return False
+        elif init_data is None:
             self.bug("self.engine.get_results_packs returned None")
             title = "Search Error"
             text ="Error, please send Debug log to admin."
-            self.create_popup(title,text)           
-        else:
-            self.search_results = self.graph_frame.update_graph(analysis_pack)
-            self.log("***COMPLETED*** Graphing.")
-            if self.search_results:
-                self.datatable.update_table(self.search_results)
-                self.log("Completed Datatable Update.")
+            self.create_popup(title,text)  
+            return False
+        return init_data
 
     def export_excel(self):
-        export_pack = self.engine.get_export_excel_pack(self.search_results)
+        export_pack = self.engine.get_export_excel_pack(self.last_graph_pack)
         fullname,sheetname,newdf = export_pack
         if not fullname:
             file_location = tk.filedialog.asksaveasfilename()
@@ -86,7 +103,7 @@ class AnalysisPage(AppWidget):
         and as a helper for send_to_multigrapher
         """
         if self.engine.get_cfg_val("auto_name_exports"):
-            fullname = self.engine.get_export_full_name(self.search_results["title"],
+            fullname = self.engine.get_export_full_name(self.last_graph_pack["title"],
                                                         ftype="image",
                                                         outdir=outdir)
         else: 
@@ -96,10 +113,11 @@ class AnalysisPage(AppWidget):
         self.log(fullname)
         return fullname
 
-    def send_to_multigrapher(self):
+    def send_to_multigrapher(self,slot = None):
         self.log("Send to multigrapher called.")
+        slot = None
         fullname = self.export_png(outdir="exports\multigrapher")        
-        self.controller.send_to_multigrapher(fullname,0)                     
+        self.controller.send_to_multigrapher(fullname,self.last_selection_pack,slot)                     
 
     def _sortby(self, tree, col, descending):
         """sort tree contents when a column header is clicked on"""
@@ -154,24 +172,7 @@ class AnalysisPage(AppWidget):
             row=1, column=3, padx=5, pady=2, sticky="w")            
         
 if __name__ == "__main__":
-    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.2.10.7 - 2018/07/22"
-    
-    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
-        level=logging.DEBUG, 
-        format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
-        datefmt='%H:%M:%S')
-    logging.info("-------------------------------------------------------------")
-    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
-    logging.info("VERSION: {}".format(ver))
-    logging.info("AUTHOR:{}".format("Justin H Kim"))
-    logging.info("-------------------------------------------------------------")
-    
-    import config2
-    controls_config = config2.backend_settings
-    dbfile =  open(r"databases/DH_DBS.pickle", "rb")
-    dbs = pickle.load(dbfile)  
-    app = tk.Tk()
+ 
     analysispage = AnalysisPage(app,app,controls_config,dbvar=dbs)
     analysispage.grid(padx=20)
     app.mainloop()        

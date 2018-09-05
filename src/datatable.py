@@ -36,7 +36,7 @@ class DataTable(AppWidget):
             
         self.nav_tree = ttk.Treeview(self,height="4")
         self.nav_tree.pack(fill="x",expand="false")
-
+        self.log("DataTable.py init")
 # API
 #   We use the "cfg" attribute present in all defaultengines as a convenient way
 #   to store and access the latest "mrp". 

@@ -27,11 +27,25 @@ import configparser
 from pprint import pprint as PPRINT
 import logging
 import os
+import pickle
+import datetime
 
 # Project Modules    
 from appwidget import AppWidget
 import master_calendar.calendardialog as cal_dialog
+"""
+settingsmanager acts as a way to make changes to the default config2 dictionary. 
+it loads user_settings.ini, and parses the section header and the key:value pairs 
+by config2[SECTION_HEADER][key] = value, it replaces the config2 dict in memory 
+BUT DOES NOT make changes to it directly. 
 
+When user makes change:
+.validate_and_set() - rewrite ini, and replace on disk. 
+.settings_changed()
+    .update_settings
+        .engine.load_ini_settings
+    .controller.propagate_settings()
+"""
 class SettingsManager(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "settingsmanager"
@@ -39,11 +53,14 @@ class SettingsManager(AppWidget):
             
         self.parser = configparser.ConfigParser()    
         self.setting_packs = []
-            
-        self.update_settings()
+        
+        self.parser.read("settings//user_settings.ini")  
+        self.engine.load_cfg_files_and_set_new_cfg(self.parser._sections)
         
         self._build_settings()
         self._build_entries()
+        
+#        pprint(self.engine.get_config()["multigrapher"])
         
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=0)
@@ -59,26 +76,28 @@ class SettingsManager(AppWidget):
         self.columnconfigure(11, weight=1)        
         
 #   API
-    def get_config(self):
-        return self.engine.get_config()        
+    def get_latest_config(self):
+        return self.engine.get_config()   
+
+    def receive_new_presets(self,presetpageslist):
+        with open('settings//presets.pickle', 'wb') as dbfile:
+            pickle.dump(presetpageslist, dbfile) 
+        self.engine.load_cfg_files_and_set_new_cfg(self.parser._sections)
         
 #   UX EVENT HANDLERS AND HELPERS
-    def update_settings(self):
-        self.parser.read("user_settings.ini")       
-        self.engine.load_ini_settings(self.parser._sections)
-
-    def settings_changed(self,index):
-        self.update_settings()
-        try:
-            self.controller.propagate_cfg_var_change
-            logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
-        except:
-            self.bug("No suitable controlelr to propagate_cfg_var")
-        else:
-            self.bug("Propagating updated settings to controller")
-            self.controller.propagate_cfg_var_change(self.engine.get_config())      
-               
+    
+    def set_new_color(self, settingrowcolumn):
+        indexrow, indexcolor = settingrowcolumn
+        self.log("Settings new color at indexrow: {}, indexcolor: {}".format(indexrow,indexcolor))
+        header, label, stvar, set_type, entry_list = self.setting_packs[indexrow]
+        get_color = colorchooser.askcolor()[1]
+        stvar.set(get_color)
+        button = entry_list[indexcolor]
+        button["background"] = get_color
+        self._validate_and_set(indexrow)
+        
     def _validate_and_set(self,index):
+        self.log("Validating and settings for index {}".format(index))
         header, label, stvar, set_type, entry_list = self.setting_packs[index]
         if set_type == "dirloc":
             dirloc = tk.filedialog.askdirectory() 
@@ -100,24 +119,27 @@ class SettingsManager(AppWidget):
                 string = string + "-" + color_button["background"]
             stvar.set(string)
         curr_val = stvar.get()
+        self.log("For setting: {}, curr_val now: {}".format(label["text"],curr_val))
         self.parser.set(header,label["text"],curr_val+"$$"+set_type)
-        with open('user_settings.ini', 'w') as configfile:
+        with open('settings//user_settings.ini', 'w') as configfile:
             self.parser.write(configfile)
-        self.settings_changed(index)
+        self.settings_changed()
         return 1
     
-    def set_new_color(self, settingrowcolumn):
-        indexrow, indexcolor = settingrowcolumn
-        self.log("Settings new color at indexrow: {}, indexcolor: {}".format(indexrow,indexcolor))
-        header, label, stvar, set_type, entry_list = self.setting_packs[indexrow]
-        get_color = colorchooser.askcolor()[1]
-        stvar.set(get_color)
-        button = entry_list[indexcolor]
-        button["background"] = get_color
-        self._validate_and_set(indexrow)
-        
+    def settings_changed(self):
+        self.engine.load_cfg_files_and_set_new_cfg(self.parser._sections)
+        try:
+            self.controller.propagate_cfg_var_change
+            logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
+        except:
+            self.bug("No suitable controlelr to propagate_cfg_var")
+        else:
+            self.bug("Propagating updated settings to controller")
+            self.controller.propagate_cfg_var_change(self.engine.get_config())      
+                               
 #   BUILD FUNCTIONS            
     def _build_settings(self):
+        self.log("Building settings.")
         frame_row = 0
         curr_section = ""
         for user_setting_tuple in self.engine.user_settings:
@@ -146,6 +168,7 @@ class SettingsManager(AppWidget):
             frame_row += 1  
             
     def _build_entries(self):
+        self.log("Building entries")
         #For some reason, in order for the Entry widgets to initialize with
         #their StVars, we have to initialize the two separate, thus,
         #the above workaround   
@@ -206,10 +229,25 @@ class SettingsManager(AppWidget):
             iter_row += 1 
                   
 if __name__ == "__main__":
+    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
+    ver = "v0.2.10.7 - 2018/07/22"
+    
+    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
+        level=logging.DEBUG, 
+        format="%(asctime)s %(filename)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
+        datefmt='%H:%M:%S')
+    logging.info("-------------------------------------------------------------")
+    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
+    logging.info("VERSION: {}".format(ver))
+    logging.info("AUTHOR:{}".format("Justin H Kim"))
+    logging.info("-------------------------------------------------------------")
+    
     import config2
-    dbcfg = config2.backend_settings
+    controls_config = config2.backend_settings
+#    dbfile =  open(r"databases/DH_DBS.pickle", "rb")
+#    dbs = pickle.load(dbfile)  
     app = tk.Tk()
-    test_widget = SettingsManager(app, app, dbcfg)
+    test_widget = SettingsManager(app, app,controls_config)
     test_widget.grid(padx=20)
     app.mainloop()   
         

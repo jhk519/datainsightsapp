@@ -10,7 +10,7 @@ import os
 
 class Dialog(tkinter.Toplevel):
 
-    def __init__(self, parent, title = None):
+    def __init__(self, parent, title = None, **kw):
 
         tkinter.Toplevel.__init__(self, parent)
         self.transient(parent)
@@ -23,7 +23,7 @@ class Dialog(tkinter.Toplevel):
         self.result = None
 
         body = tkinter.Frame(self)
-        self.initial_focus = self.body(body)
+        self.initial_focus = self.body(body,**kw)
         body.pack(padx=5, pady=5)
 
         self.buttonbox()

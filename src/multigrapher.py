@@ -3,6 +3,14 @@
 Created on Tue Apr  3 19:42:58 2018
 
 @author: Justin H Kim
+
+todo:
+rename graph 
+rename page
+add page title to export
+new page
+delete page
+save page
 """
 # Tkinter Modules
 try:
@@ -43,41 +51,6 @@ class MultiGrapher(AppWidget):
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)        
   
-    def refresh_nav_tree(self):
-        cfg = self.engine.get_cfg_val("presetpages")
-        self.nav_tree.delete(*self.nav_tree.get_children())
-        
-        for page in cfg:
-            name = page["pagename"]
-            pagenameid = self.nav_tree.insert("","end",name,text=name,tags=("page"))
-            for index, slot in enumerate(page["slots"]):
-                pcode = slot["extra"]
-                mirror_days = slot["mirror_days"]
-                days_back = slot["days_back"]
-                if slot["title"]:
-                    title = slot["title"]
-                else:
-                    title = ""
-                
-                slottext = "Slot {}".format(str(index))
-                slotval = ["","","",title,pcode,days_back,mirror_days]
-                slotid = self.nav_tree.insert(pagenameid,"end",pagenameid+"_"+str(index),tags=("slot"),
-                                            text=slottext,
-                                            values=slotval)
-
-#                leftid = self.nav_tree.insert(slotid,"end",slotid+"_"+"left",text="Left",tags=("axis"))
-#                rightid = self.nav_tree.insert(slotid,"end",slotid+"_"+"right",text="Right",tags=("axis"))
-                
-                for n,query in enumerate(slot["left"]["queries"]):
-                    padded_columns = ["Left",query[0],query[1]]
-                    self.nav_tree.insert(slotid,"end",slotid+"_L_"+str(n),values=padded_columns,tags=("query"))    
-                for n,query in enumerate(slot["right"]["queries"]):
-                    padded_columns = ["Right",query[0],query[1]]
-                    self.nav_tree.insert(slotid,"end",slotid+"_R_"+str(n),values=padded_columns,tags=("query"))
-        self.nav_tree.tag_configure("page",background="#d3d3d3") 
-        self.nav_tree.tag_configure("slot",background="#f4f4f4")                   
-#        self.nav_tree.tag_configure("axis",background="#f4f4f4")
-
     def get_TKimage(self,path,size):
           self.log("Resizing to: {}".format(size))
           PILim = PIL.Image.open(path)
@@ -144,7 +117,7 @@ class MultiGrapher(AppWidget):
     def export_multigraph(self):
         self.log("Exporting Stiched Graphs")
         result = PIL.Image.new("RGB", (1620, 1020),"white")
-        for index, slot in enumerate(self.slots):
+        for index, slot in enumerate(self.graph_slots):
             self.bug("slot[1] == {}, slot[2] == ".format(slot[1],slot[2]))
             if slot[1] == "IMAGE":
               continue
@@ -161,27 +134,87 @@ class MultiGrapher(AppWidget):
             result.paste(img, (x, y, x + w, y + h))
         result.save(("image.jpg"))
         
+    def refresh_nav_tree(self):
+        cfg = self.engine.get_cfg_val("presetpages")
+        self.nav_tree.delete(*self.nav_tree.get_children())
+        
+        for ind,page in enumerate(cfg):
+            name = page["pagename"]
+            pagenameid = self.nav_tree.insert("","end",name,text=name,tags=("page",str(ind)))
+            for index, slot in enumerate(page["slots"]):
+                pcode = slot["extra"]
+                mirror_days = slot["mirror_days"]
+                days_back = slot["days_back"]
+                if slot["title"]:
+                    slottext = slot["title"]
+                else:
+#                    slottext = "Slot {}".format(str(index+1))
+                    slottext = "Autoname{}".format(str(index+1))
+
+                slotval = ["","","",pcode,days_back,mirror_days]
+                slotid = self.nav_tree.insert(pagenameid,"end",pagenameid+"_"+str(index),tags=("slot"),
+                                            text=slottext,
+                                            values=slotval)
+
+#                leftid = self.nav_tree.insert(slotid,"end",slotid+"_"+"left",text="Left",tags=("axis"))
+#                rightid = self.nav_tree.insert(slotid,"end",slotid+"_"+"right",text="Right",tags=("axis"))
+                
+                for n,query in enumerate(slot["left"]["queries"]):
+                    padded_columns = ["Left",query[0],query[1]]
+                    self.nav_tree.insert(slotid,"end",slotid+"_L_"+str(n),values=padded_columns,tags=("query"))    
+                for n,query in enumerate(slot["right"]["queries"]):
+                    padded_columns = ["Right",query[0],query[1]]
+                    self.nav_tree.insert(slotid,"end",slotid+"_R_"+str(n),values=padded_columns,tags=("query"))
+        self.nav_tree.tag_configure("page",background="#d3d3d3") 
+        self.nav_tree.tag_configure("slot",background="#f4f4f4")                   
+#        self.nav_tree.tag_configure("axis",background="#f4f4f4")   
+        
+    def rename_page(self):
+#        curItemId = 
+        curItemId = self.nav_tree.focus()
+        if curItemId != None:
+            slot_num = self.nav_tree.index(curItemId)
+            newtitlelambda = lambda slot_num = slot_num:self.new_page_title_listener(slot_num)
+            if "page" in self.nav_tree.item(curItemId)["tags"]:
+                title = "Edit Graph Title"
+                text ="Please Enter New Title."
+                self.create_popup(title,text,entrycommand=newtitlelambda)   
+
+    def new_page_title_listener(self,slot_num):
+        self.engine.get_cfg_val("presetpages")[slot_num]["pagename"] = self.popupentryvar.get()
+        self.refresh_nav_tree()
+        self.controller.send_new_presets(self.engine.get_cfg_val("presetpages"))                           
+        
     def build_tree_frame(self):
         self.log("Building Tree Frame")
         
         self.tree_frame = ttk.LabelFrame(self,text="Pages")
-        self.tree_frame.grid(row=0,column=1,sticky="nesw")
+        self.tree_frame.grid(row=0,column=1,sticky="nsew")
         
-        nav_tree_cols = [("AXIS",50),("QUERY",100),("COLOR",50),("NAME",90),("PCODE",80),("DAYS",60),("MIRROR",60)]     
+        nav_tree_cols = [("AXIS",50),("QUERY",100),("COLOR",50),("PCODE",80),("DAYS",60),("MIRROR",60)]     
         
         self.nav_tree = ttk.Treeview(self.tree_frame, columns=[aa[0] for aa in nav_tree_cols])
-        self.nav_tree.pack()
+        self.nav_tree.grid(sticky="news")
   
         for header in nav_tree_cols:
             self.nav_tree.heading(header[0],text=header[0], command=lambda c=header: sortby(self.nav_tree, c, 0))
 #            resizes
             self.nav_tree.column(header[0],
                                  width=header[1],
-                                 anchor="center") 
+                                 minwidth=header[1],
+                                 anchor="center",
+                                 stretch="true") 
 
         self.nav_tree.tag_configure("box_item",background="lightgrey")
-        self.nav_tree.column("#0",width=100)
-        self.nav_tree.heading("#0",text="Page / Slot")                             
+        self.nav_tree.column("#0",width=110)
+        self.nav_tree.heading("#0",text="Page / Graph")     
+                              
+        self.rename_page_button = ttk.Button(
+            self.tree_frame,
+            command=self.rename_page,
+            text="Rename Page")
+        self.rename_page_button.grid(
+            row=1, column=0, padx=0, pady=2, sticky="w")                              
                              
 #        self.vsb = ttk.Scrollbar(self.tree_frame,orient="vertical",
 #            command=self.nav_tree.yview)
@@ -240,6 +273,19 @@ def sortby(tree, col, descending):
     tree.heading(col, command=lambda col=col: sortby(tree, col, int(not descending)))         
         
 if __name__ == "__main__":
+    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
+    ver = "v0.2.10.7 - 2018/07/22"
+    if not os.path.exists(r"debug\\"):
+        os.mkdir(r"debug\\")   
+    logging.basicConfig(filename=r"debug\\{}".format(logname),
+        level=logging.DEBUG, 
+        format="%(asctime)s %(filename)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
+        datefmt='%H:%M:%S')
+    logging.info("-------------------------------------------------------------")
+    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
+    logging.info("VERSION: {}".format(ver))
+    logging.info("AUTHOR:{}".format("Justin H Kim"))
+    logging.info("-------------------------------------------------------------")
     import config2
     dbcfg = config2.backend_settings
     app = tk.Tk()

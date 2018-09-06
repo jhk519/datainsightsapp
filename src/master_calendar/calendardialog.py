@@ -10,8 +10,8 @@ import master_calendar.tkSimpleDialog
 
 class CalendarDialog(master_calendar.tkSimpleDialog.Dialog):
     """Dialog box that displays a calendar and returns the selected date"""
-    def body(self, master):
-        self.calendar = master_calendar.ttkcalendar.Calendar(master)
+    def body(self, master,**kw):
+        self.calendar = master_calendar.ttkcalendar.Calendar(master,**kw)
         self.calendar.pack()
 
     def apply(self):

@@ -417,7 +417,6 @@ backend_settings = {
     "multigrapher":{
         "automatic export location":"exports\multigrapher",
         "presetpages":[
-#                PAGE 1
             {
                 "pagename":"PAGE1",
                 "slots": [

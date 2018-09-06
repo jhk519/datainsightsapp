@@ -119,8 +119,10 @@ class QueryPanel(AppWidget):
                 
     def gen_selection_pack(self):
         self.log("Starting Selection Pack Gen.")  
-        left_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["left"]["queries"])]
-        right_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["right"]["queries"])]
+        left_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["left"]["queries"]) if not p[0].get() == "None" ]
+#        print(left_comp)
+        right_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["right"]["queries"]) if not p[0].get() == "None" ]
+        
         selpack = {
             "extra":self.extra_var.get().strip().replace(" ", "").replace("\n", ""),
             "x_axis_label": self.x_axis_type.get(),
@@ -173,17 +175,19 @@ class QueryPanel(AppWidget):
 
     def _open_start_calendar(self):
         start_calendar = cal_dialog.CalendarDialog(
-            self)
+            self,year=self.start_date.year, month=self.start_date.month)
+        self.log("Getting new start date")
         self.start_date = start_calendar.result.date()
         self.start_textvar.set(str(self.start_date))
         self._check_controller_autosearch()        
 
     def _open_end_calendar(self):
-        end_calendar = cal_dialog.CalendarDialog(self)
+        end_calendar = cal_dialog.CalendarDialog(self,
+            year=self.end_date.year, month=self.end_date.month)
         try:
             self.end_date = end_calendar.result.date()
         except AttributeError:
-            self.info("end_calendar.result.date() Probably Returned NoneType")
+            self.log("end_date is none")
         self.end_textvar.set(str(self.end_date))
         self._check_controller_autosearch()        
 
@@ -515,7 +519,7 @@ class QueryPanel(AppWidget):
         
         self.extra_use_check = ttk.Checkbutton(self.options_menu,text="Filter by Product Code",
               onvalue=True,  offvalue=False, variable=self.use_extra_var,
-              command=lambda x= x:self._use_extra_var_changed())
+              command=lambda x = x:self._use_extra_var_changed())
         self.extra_use_check.grid(row=0,column=0,sticky="w")
         
         self.extra_widget = ttk.Entry(self.options_menu, width=15, textvariable=self.extra_var)

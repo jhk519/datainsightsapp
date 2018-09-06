@@ -20,6 +20,7 @@ class AppWidget(tk.Frame):
         self.controller = controller
         
         self.config_chain = []
+        self.popupentryvar = tk.StringVar()
             
         self.log = logging.getLogger(self.widget_name).info
         self.log("{} Init.".format(__name__ + "-" + self.widget_name))
@@ -70,15 +71,17 @@ class AppWidget(tk.Frame):
         for widget in self.config_chain:
             widget.set_cfgvar(new_cfgvar)
         
-    def create_popup(self,title,text,firstb=None,secondb=None):
+    def create_popup(self,title,text,entrycommand=False,firstb=None,secondb=None):
+        #firstb secondb is ("BUTTONTEXT",BUTTONCOMMAND)        
         self.popup = tk.Toplevel()
         self.popup.title(title)
         tk.Message(self.popup,text=text).pack()
-        if firstb:
+        if firstb and secondb:
             tk.Button(self.popup,text=firstb[0],command=firstb[1]).pack()
-        if secondb:
             tk.Button(self.popup,text=secondb[0],command=secondb[1]).pack()
-            return
-        tk.Button(self.popup,text="OK",command=self.popup.destroy).pack()
-        return
-        
+            tk.Button(self.popup,text="OK",command=self.popup.destroy).pack()
+        if entrycommand:
+            tk.Entry(self.popup,textvariable=self.popupentryvar).pack()
+            tk.Button(self.popup,text="Set",command=entrycommand).pack()
+            tk.Button(self.popup,text="Close",command=self.popup.destroy).pack()
+                

@@ -63,6 +63,7 @@ class AppWidget(tk.Frame):
         return self.engine.get_dbvar()
     
     def set_dbvar(self,new_dbvar):
+        self.log("Set new dbvar")
         self.engine.set_dbvar(new_dbvar)
         
     def set_cfgvar(self,new_cfgvar):
@@ -84,4 +85,22 @@ class AppWidget(tk.Frame):
             tk.Entry(self.popup,textvariable=self.popupentryvar).pack()
             tk.Button(self.popup,text="Set",command=entrycommand).pack()
             tk.Button(self.popup,text="Close",command=self.popup.destroy).pack()
+            
+    def _sortby(self, tree, col, descending):
+        """sort tree contents when a column header is clicked on"""
+        # grab values to sort
+        data = [(tree.set(child, col), child)
+                for child in tree.get_children('')]
+        # if the data to be sorted is numeric change to float
+        #data =  change_numeric(data)
+        # now sort the data in place
+        data.sort(reverse=descending)
+        for ix, item in enumerate(data):
+            tree.move(item[1], '', ix)
+        # switch the heading so it will sort in the opposite direction
+        tree.heading(
+            col, command=lambda col=col: self.sortby(
+                tree, col, int(
+                    not descending)))   
+            
                 

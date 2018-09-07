@@ -15,7 +15,8 @@ except ImportError:  # Python 3
     import tkinter.font as tkFont
     import tkinter.ttk as ttk
     
-# Standard Modules    
+# Standard Modules   
+    import os
 import logging   
 import datetime
 import pprint as PRETTYPRINTTHIS
@@ -98,9 +99,16 @@ class DataInsightsApp(tk.Tk):
 #       API 
     def propagate_db_var_change(self,new_dbvar):       
 #        Required when DBManager does full resets of its dbvar, meaning the 
-#        correct dbvar now has a new id.         
-        self.product_viewer_page.set_dbvar(new_dbvar)
-        self.ap.set_dbvar(new_dbvar)
+#        correct dbvar now has a new id.
+        try:         
+            self.product_viewer_page.set_dbvar(new_dbvar)
+        except AttributeError:
+            self.bug("Tried to send new db to productviewer, but it does not exist yet.")
+        try:         
+            self.ap.set_dbvar(new_dbvar)
+        except AttributeError:
+            self.bug("Tried to send new db to productviewer, but it does not exist yet.")            
+        
             
     def propagate_cfg_var_change(self,new_cfgvar):
         self.dbmanager.set_cfgvar(new_cfgvar)
@@ -121,9 +129,10 @@ class DataInsightsApp(tk.Tk):
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.3.0.0 - 2018/09/05"
-    
-    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
+    ver = "v0.2.10.1 - 2018/09/07"
+    if not os.path.exists(r"debug\\"):
+        os.mkdir(r"debug\\")
+    logging.basicConfig(filename=r"debug\\{}".format(logname),
         level=logging.DEBUG, 
         format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
         datefmt='%H:%M:%S')

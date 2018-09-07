@@ -56,22 +56,5 @@ class DataTable(AppWidget):
           
         for row_values in self.engine.get_rows_of_data():
             self.nav_tree.insert("", "end", values=row_values)
-
-#        self.nav_tree.column("#0", width=1)
-        
-#   UX EVENT HANDLERS AND HELPERS
-    def sortby(self, tree, col, descending):
-        """sort tree contents when a column header is clicked on"""
-        # grab values to sort
-        data = [(tree.set(child, col), child)
-                for child in tree.get_children('')]
-        # if the data to be sorted is numeric change to float
-        #data =  change_numeric(data)
-        # now sort the data in place
-        data.sort(reverse=descending)
-        for ix, item in enumerate(data):
-            tree.move(item[1], '', ix)
-        # switch the heading so it will sort in the opposite direction
-        tree.heading(col,
-                     command=lambda col=col: self.sortby(tree, col, int(not descending)))                      
+            
                     

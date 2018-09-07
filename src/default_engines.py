@@ -407,7 +407,8 @@ class MultiGrapherEngine(DefaultEngine):
         slot_pack = {
                     "extra":request_pack["extra"],
                     "x_axis_label": request_pack["x_axis_label"],
-                    "mirror_days":request_pack["mirror_days"],            
+                    "mirror_days":request_pack["mirror_days"],      
+                    "last_path":None,
                     "left": {
                         "gtype":request_pack["left"]["gtype"],
                         "metric": request_pack["left"]["metric"],

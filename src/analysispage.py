@@ -57,15 +57,33 @@ class AnalysisPage(AppWidget):
         
     def request_and_graph_data(self,request_pack):
         self.log("***START*** search query.")
-        data_pack = self.get_data(request_pack)
-        if not data_pack:
-            self.bug("Received False from self.get_data")
-            return
+        data_pack = None
+        init_data = self.engine.get_results_packs(request_pack)
+        self.log("Received Data")
+        if init_data == "No Date Data":
+            self.bug("No results for this date range.")
+            title = "No Results for this date range."
+            text ="No results for this date range."
+            self.create_popup(title,text) 
+        elif init_data is None:
+            self.bug("self.engine.get_results_packs returned None")
+            title = "Search Error"
+            text ="Error, please send Debug log to admin."
+            self.create_popup(title,text) 
+#            data_[a]
         else:
-            self.last_selection_pack = request_pack
-            self.last_data_pack = data_pack
-            self.last_graph_pack = self.draw_graph(data_pack)
-            self.log("***END*** Search Query")
+            data_pack = init_data
+
+        self.last_selection_pack = request_pack
+        self.last_data_pack = data_pack
+        self.last_graph_pack = self.draw_graph(data_pack)
+        self.log("***END*** Search Query")
+        
+# ================================================================
+# ================================================================
+#       Helper Functions
+# ================================================================
+# ================================================================  
             
     def draw_graph(self,data_pack):
         merged_results_pack = self.graph_frame.update_graph(data_pack)
@@ -75,23 +93,11 @@ class AnalysisPage(AppWidget):
         else:
             return merged_results_pack
         
-    def get_data(self,request_pack):
-        self.log("Getting data...")
-        init_data = self.engine.get_results_packs(request_pack)
-        self.log("Received Data")
-        if init_data == "No Date Data":
-            self.bug("No results for this date range.")
-            title = "No Results for this date range."
-            text ="No results for this date range."
-            self.create_popup(title,text) 
-            return False
-        elif init_data is None:
-            self.bug("self.engine.get_results_packs returned None")
-            title = "Search Error"
-            text ="Error, please send Debug log to admin."
-            self.create_popup(title,text)  
-            return False
-        return init_data
+# ================================================================
+# ================================================================
+#       UX FUNCTIONS
+# ================================================================
+# ================================================================          
 
     def export_excel(self):
         export_pack = self.engine.get_export_excel_pack(self.last_graph_pack)
@@ -121,12 +127,19 @@ class AnalysisPage(AppWidget):
         self.log("Send to multigrapher called.")
         slot = None
         fullname = self.export_png(outdir="exports\multigrapher")        
-        self.controller.send_to_multigrapher(fullname,self.last_selection_pack,slot)                   
-        
+        self.controller.send_to_multigrapher(fullname,self.last_selection_pack,slot)      
+
+                     
     def receive_new_title(self):
         title = "Edit Graph Title"
         text ="Please Enter New Title."
-        self.create_popup(title,text,entrycommand=self.new_title_listener)    
+        self.create_popup(title,text,entrycommand=self.new_title_listener)  
+
+# ================================================================
+# ================================================================
+#       UX HELPERS
+# ================================================================
+# ================================================================      
 
     def new_title_listener(self):
         try: 
@@ -138,22 +151,6 @@ class AnalysisPage(AppWidget):
             self.request_and_graph_data(self.last_selection_pack)
         self.popup.destroy()        
         
-    def _sortby(self, tree, col, descending):
-        """sort tree contents when a column header is clicked on"""
-        # grab values to sort
-        data = [(tree.set(child, col), child)
-                for child in tree.get_children('')]
-        # if the data to be sorted is numeric change to float
-        #data =  change_numeric(data)
-        # now sort the data in place
-        data.sort(reverse=descending)
-        for ix, item in enumerate(data):
-            tree.move(item[1], '', ix)
-        # switch the heading so it will sort in the opposite direction
-        tree.heading(
-            col, command=lambda col=col: self.sortby(
-                tree, col, int(
-                    not descending)))   
 
     def b_queries_pane(self,config=None):
         self.query_panel = querypanel.QueryPanel(
@@ -190,12 +187,12 @@ class AnalysisPage(AppWidget):
         self.send_to_multigrapher_button.grid(
             row=1, column=3, padx=5, pady=2, sticky="w") 
 
-        self.send_to_multigrapher_button = ttk.Button(
+        self.new_title_button = ttk.Button(
             self.menu_pane,
             command=self.receive_new_title,
             text="Change Title",
             state="normal")
-        self.send_to_multigrapher_button.grid(
+        self.new_title_button.grid(
             row=1, column=4, padx=5, pady=2, sticky="w")  
         
 if __name__ == "__main__":

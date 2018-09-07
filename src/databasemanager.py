@@ -44,7 +44,7 @@ class DBManager(AppWidget):
         self.engine.reset_and_gen_all_dbs(dir_loc)
         self.gen_db_status_value["text"] = "Generated new DBs at " + self.engine.time_str()
         self._update_statuses()
-        self.controller.propagate_db_var_change(self.get_dbvar())
+#        self.controller.propagate_db_var_change(self.get_dbvar())
         self.log("Completed Generated New Dbs")
         
     def _reset_and_gen(self,db_str,dir_list = None):
@@ -185,6 +185,7 @@ class DBManager(AppWidget):
 
             db_pack[1]["text"] = line1 + line2
             db_pack[1]["fg"] = "green"
+        self.controller.propagate_db_var_change(self.get_dbvar())               
 
 #   BUILD FUNCTIONS
     def _build_top_frame(self):

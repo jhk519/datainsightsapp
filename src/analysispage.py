@@ -65,11 +65,13 @@ class AnalysisPage(AppWidget):
             title = "No Results for this date range."
             text ="No results for this date range."
             self.create_popup(title,text) 
+            return
         elif init_data is None:
             self.bug("self.engine.get_results_packs returned None")
             title = "Search Error"
             text ="Error, please send Debug log to admin."
             self.create_popup(title,text) 
+            return
 #            data_[a]
         else:
             data_pack = init_data
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
     ver = "v0.2.10.7 - 2018/07/22"
     
-    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
+    logging.basicConfig(filename=r"debug\\{}".format(logname),
         level=logging.DEBUG, 
         format="%(asctime)s %(filename)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
         datefmt='%H:%M:%S')

@@ -75,6 +75,7 @@ class GraphFrame(tk.LabelFrame):
             "y_data": y_data_lists,
             "colors":colors_to_plot,
             "title": None or string
+            "linestyles":[STYLESTR,STYLESTR]
         }
         """
         if prp:
@@ -111,14 +112,14 @@ class GraphFrame(tk.LabelFrame):
         if prp["gtype"] == "line":
             for x in range(0, len(prp["y_data"])):
                 if "_Mirror" in prp["line_labels"][x]:
-                    linestyle = "--"
+                    linewidth = 0.85
                 else:
-                    linestyle = "-"
+                    linewidth = 1.45
                 self.axis_prime.plot(prp["x_data"],
                                      prp["y_data"][x],
                                      color=prp_colors[color_c],
-                                     ls=linestyle,
-                                     lw=1.2,
+                                     ls=prp["linestyles"][x],
+                                     lw=linewidth,
                                      label=prp["line_labels"][x])
                 color_c += 1
 
@@ -143,14 +144,14 @@ class GraphFrame(tk.LabelFrame):
             if srp["gtype"] == "line":
                 for x in range(0, len(srp["y_data"])):
                     if "_Mirror" in srp["line_labels"][x]:
-                        linestyle = "--"
+                        linewidth = 0.85
                     else:
-                        linestyle = "-"                    
+                        linewidth = 1.45                 
                     self.axis_secondary.plot(srp["x_data"],
                                              srp["y_data"][x],
                                              color=srp_colors[color_c],
-                                             ls=linestyle,
-                                             lw=1.2,
+                                             ls=srp["linestyles"][x],
+                                             lw=linewidth,
                                              label=srp["line_labels"][x])
                     color_c += 1
 

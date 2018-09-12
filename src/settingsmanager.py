@@ -29,6 +29,7 @@ import logging
 import os
 import pickle
 import datetime
+import copy 
 
 # Project Modules    
 from appwidget import AppWidget
@@ -76,7 +77,9 @@ class SettingsManager(AppWidget):
         self.columnconfigure(11, weight=1)        
         
 #   API
-    def get_latest_config(self):
+    def get_latest_config(self,needcopy=False):
+        if needcopy:
+            return copy.deepcopy(self.engine.get_config())
         return self.engine.get_config()   
 
     def receive_new_presets(self,presetpageslist):
@@ -108,7 +111,10 @@ class SettingsManager(AppWidget):
             fileloc = os.path.relpath(fileloc)
             stvar.set(fileloc)            
         elif set_type == "date":
-            date_calendar = cal_dialog.CalendarDialog(self)
+            last_dt = stvar.get()
+            yr,mo = int(last_dt[0:4]),int(last_dt[4:6])
+            date_calendar = cal_dialog.CalendarDialog(self,year=yr, 
+                                                      month=mo)
             new_date = date_calendar.result.date()
             stvar.set(str(new_date).replace("-",""))
         elif set_type == "colors":

@@ -56,9 +56,9 @@ class MultiGrapher(AppWidget):
 
         self.build_tree_frame()
         self.build_graphs_frame()
-        
+
         self.refresh_nav_tree() 
-#        self.update_all_graph_slots(0)
+        
         
         self.rowconfigure(0, weight=0)
         self.rowconfigure(1, weight=0)   
@@ -73,7 +73,14 @@ class MultiGrapher(AppWidget):
         
     def receive_image(self,path,request_pack,slotnum=None):
         self.log("Received image from path: {} and slotnum {}".format(path,slotnum))
+        pages_cfg = self.engine.get_cfg_val("presetpages")
+        if len(pages_cfg) == 0:
+            self.bug("No pages in presetpages!")
+            self.create_popup("No page selected to add image.")
+            return
+        slots_cfg = pages_cfg[self.curr_pageslotindex]["slots"]
         the_graph_slot = None
+#        print(request_pack)
         slot_pack = self.engine.convert_request_pack_to_slot_pack(request_pack)
         slot_pack["last_path"] = path
 
@@ -82,32 +89,36 @@ class MultiGrapher(AppWidget):
         if not slotnum:
             self.log("No slotnum given")
             for index,slot in enumerate(self.graph_slots):
-                if not slot[1] == "IMAGE":
+                if not slot[1] == "IMAGEPLACEHOLDER":
                     self.bug("Slot in index: {} skipping because not 'image'.".format(str(index)))
                     continue
-                else:
+                elif slot[1] == "IMAGEPLACEHOLDER":
                     the_graph_slot = slot
             #       Edit cfg with new slot_pack
                     try:
-                        self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]["slots"][index] = slot_pack
+                        slots_cfg[index] = slot_pack
                     except IndexError:
                         self.bug("No slot currently in config. Appending to list.")
-                        self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]["slots"].append(slot_pack)                       
+                        slots_cfg.append(slot_pack)                       
                     break
         elif slotnum:
             the_graph_slot = self.graph_slots[slotnum]    
 
         self.load_graph_in_slot(path,the_graph_slot)
-        self.send_presets_and_refresh()        
+        self.refresh_nav_tree()           
         
     def send_presets_and_refresh(self):
+        self.send_presets()
+        self.refresh_nav_tree() 
+                
+    def send_presets(self,e=None):
+        self.log("Sending presets.")
         try:
             self.controller.send_new_presets
         except AttributeError:
             self.bug("No controller to send new presets.")
         else:
             self.controller.send_new_presets(self.engine.get_cfg_val("presetpages")) 
-        self.refresh_nav_tree()    
         
 # ================================================================
 # ================================================================
@@ -116,20 +127,20 @@ class MultiGrapher(AppWidget):
 # ================================================================ 
           
     def update_all_graph_slots(self):
-        self.log("APPLY ALL SLOTS")        
+        self.log("Updating graph on all slots.")        
         page =  self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]
         for index,slot_pack in enumerate(page["slots"]):
             self.log("Applying for slot index {}.".format(index ))
             request_pack = self.engine.convert_slot_pack_to_request_pack(slot_pack)
             new_path = self.update_graph(request_pack,index)
             slot_pack["last_path"] = new_path      
-          
+            
     def export_multigraph(self):
         self.log("Exporting Stiched Graphs")
         result = PIL.Image.new("RGB", (1620, 1020),"white")
         for index, slot in enumerate(self.graph_slots):
             self.bug("slot[1] == {}".format(slot[1]))
-            if slot[1] == "IMAGE":
+            if slot[1] == "IMAGEPLACEHOLDER":
               continue
             path = self.engine.get_cfg_val("presetpages")[0]["slots"][index]["last_path"]
             try:
@@ -159,11 +170,12 @@ class MultiGrapher(AppWidget):
     def load_graph_in_slot(self,path,graphslot):
         self.log("Loading path")
         canvas = graphslot[0]
+        canvas.delete("all")
         canvas.update_idletasks()
         size = 400,250
         im = self.get_TKimage(path,size)
         graphslot[1] = im
-        cimg = canvas.create_image(0, 0, image=im, anchor="nw", tags="IMG")
+        canvas.create_image(0, 0, image=im, anchor="nw", tags="IMG")
         
     def get_TKimage(self,path,size):
           self.log("Resizing to: {}".format(size))
@@ -172,29 +184,27 @@ class MultiGrapher(AppWidget):
           TKim = PIL.ImageTk.PhotoImage(image=PILim)         
           return TKim   
          
-    def load_previews(self,pageindex):
-#        print("----")
-        self.curr_pageslotindex = pageindex
+    def load_preview_at_page_index(self,pageindex):
         cur_page = self.engine.get_cfg_val("presetpages")[pageindex]
 
         for ind,graph_slot in enumerate(self.graph_slots):
             canvas = graph_slot[0]
-            graph_slot[1] = "IMAGE"
+            canvas.delete("all")
+            graph_slot[1] = "IMAGEPLACEHOLDER"
+            #listvar to hold text items in memory (tk issue)            
             graph_slot[2] = []
-            self.clear_canvas(canvas)
+            
             try:
                 cfg = cur_page["slots"][ind]
             except IndexError:
-                self.bug("No more slots left in config.")
                 continue
-            else: 
-                graph_slot[1] = "PREVIEW"
+            
+#            if cfg["last_path"] == None or cfg["last_path"] == "None":
+            if True:
                 self.recursive_unpack(canvas,cfg,graph_slot[2])
-#                path = cfg["last_path"]
-#                if path:
-#                    self.load_graph_in_slot(path,graph_slot)
-#                else:
-#                    self.recursive_unpack(canvas,cfg,graph_slot[2])
+                graph_slot[1] = "PREVIEW"
+            else:
+                self.load_graph_in_slot(cfg["last_path"],graph_slot)
             canvas.update_idletasks()
         
     def recursive_unpack(self, canvas, obj,var_ref):
@@ -205,22 +215,11 @@ class MultiGrapher(AppWidget):
                     var_ref.append(self.gen_canvas_text(canvas,len(var_ref), key=k,value=v))
                 elif typev is list:
                     for tupleitem in v:
-                        var_ref.append(self.gen_canvas_text(canvas, len(var_ref),key=tupleitem[0]))
+                        var_ref.append(self.gen_canvas_text(canvas, len(var_ref),key=tupleitem))
                 elif typev is dict:
                     var_ref.append(self.gen_canvas_text(canvas, len(var_ref),key=k))
                     self.recursive_unpack(canvas,v,var_ref) 
-#        else:
-#            return        
-            
-    def clear_canvas(self,canvas):
-        canvas.delete("all")
-#        for graphslot in self.graph_slots:
-#            slot
-    #        allitems = canvas.find_all()
-#        print(allitems)
-#        for item in allitems:
-#            canvas.delete(item)
-#            
+
     def gen_canvas_text(self,canvas,row,key="",value=""):
 #        self.log("{} {} {}".format(self.preview_row,key,value))
         ypos = (row * 25 + 15)
@@ -246,28 +245,85 @@ class MultiGrapher(AppWidget):
         self.send_presets_and_refresh()
 
     def rename_page(self):
-        curItemId = self.nav_tree.focus()
-        if curItemId != None:
-            slot_num = self.nav_tree.index(curItemId)
-            newtitlelambda = lambda slot_num = slot_num:self.new_page_title_listener(slot_num)
-            if "page" in self.nav_tree.item(curItemId)["tags"]:
-                title = "Edit Graph Title"
-                text = "Please Enter New Title."
-                self.create_popup(title,text,entrycommand=newtitlelambda)   
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "page":
+            newtitlelambda = lambda iindex = iindex:self.new_page_title_listener(iindex)
+            title = "Edit Graph Title"
+            text = "Please Enter New Title."
+            self.create_popup(title,text,entrycommand=newtitlelambda)   
 
-    def preview_page(self,e=None):
-        curItemId = self.nav_tree.focus()
-        self.log("Previewing pageid {}".format(curItemId))
-        if curItemId != None and "page" in self.nav_tree.item(curItemId)["tags"]:
-            pageindex = self.nav_tree.index(curItemId)
-            self.log("Current tree focus is a page at index {}".format(pageindex))
-            self.load_previews(pageindex)  
-                
+    def preview_page_at_selection(self,e=None):
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "page":
+            self.curr_pageslotindex = iindex
+            self.log("Current curr_pageslotindex set to {}".format(self.curr_pageslotindex))
+            self.load_preview_at_page_index(self.curr_pageslotindex)     
+            
+    def reload_defaults(self):
+        defaultcfg = self.controller.get_default_presets()
+        self.engine.set_build_config(defaultcfg)
+        self.refresh_nav_tree()
+
+    def shift_slot_up(self):            
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "slot":
+            self.log("Switching current item at index: {} to new index {}".format(iindex,iindex-1))
+            self.switch_slots(iindex,iindex-1)
+            self.load_preview_at_page_index(self.curr_pageslotindex) 
+            self.send_presets_and_refresh()
+            
+    def shift_slot_down(self):
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "slot":
+            self.log("Switching current item at index: {} to new index {}".format(iindex,iindex-1))
+            self.switch_slots(iindex,iindex+1)
+            self.load_previews(self.curr_pageslotindex) 
+            self.send_presets_and_refresh()     
+            
+    def delete_slot(self):
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "slot":
+            pgid,slotnum = iid.split("_")
+            pgindex = self.nav_tree.index(pgid)
+            pgs = self.engine.get_cfg_val("presetpages")
+            pgs[pgindex]["slots"].pop(int(slotnum))
+            self.send_presets_and_refresh() 
+            
+    def delete_page(self):
+        itype,iindex,iid = self.get_type_index_current_item()
+        if itype == "page":
+            self.log("Deleting Page")
+            pgs = self.engine.get_cfg_val("presetpages")
+            pgs.pop(iindex)
+            self.send_presets_and_refresh()                   
+            
+        
+    def switch_slots(self,slotindex1,slotindex2):
+        self.bug("switching slotindex {} and {}".format(slotindex1,slotindex2))
+        cur_slots_list = self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]["slots"]
+        cur_slots_list[slotindex1], cur_slots_list[slotindex2] = cur_slots_list[slotindex2], cur_slots_list[slotindex1]   
+        
 # ================================================================
 # ================================================================
 #      TREEVIEW HELPERS
 # ================================================================
-# ================================================================          
+# ================================================================    
+        
+    def get_type_index_current_item(self):
+        curItemId = self.nav_tree.selection()[0]
+#        print("TYPE {}".format(curItemId))
+#        self.log("Current Selection at id {}".format(curItemId))
+        if curItemId != None:
+            if "page" in self.nav_tree.item(curItemId)["tags"]:
+                itemtype = "page"
+            elif "slot" in self.nav_tree.item(curItemId)["tags"]:
+                itemtype = "slot"
+            else:
+                itemtype = "unknown"
+            indexn = self.nav_tree.index(curItemId)
+            return itemtype,indexn,curItemId
+        else:
+            return None
         
     def new_page_title_listener(self,slot_num):
         new_name = self.popupentryvar.get()
@@ -280,36 +336,43 @@ class MultiGrapher(AppWidget):
     def refresh_nav_tree(self):
         cfg = self.engine.get_cfg_val("presetpages")
         self.nav_tree.delete(*self.nav_tree.get_children())
-        
-        for ind,page in enumerate(cfg):
-            name = page["pagename"]
-            pagenameid = self.nav_tree.insert("","end",name,text=name,tags=("page",str(ind)))
-            for index, slot in enumerate(page["slots"]):
-                pcode = slot["extra"]
-                mirror_days = slot["mirror_days"]
-                days_back = slot["days_back"]
-                if slot["title"]:
-                    slottext = slot["title"]
-                else:
-#                    slottext = "Slot {}".format(str(index+1))
-                    slottext = "Autoname{}".format(str(index+1))
+        if type(cfg) is list and len(cfg) == 0:
+            self.bug("Presetpages cfg is empty list.")
+        elif type(cfg) is list and len(cfg) > 0:
+            for ind,page in enumerate(cfg):
+                name = page["pagename"]
+                pagenameid = self.nav_tree.insert("","end",name,text=name,tags=("page",str(ind)))
+                for index, slot in enumerate(page["slots"]):
+                    pcode = slot["extra"]
+                    mirror_days = slot["mirror_days"]
+                    days_back = slot["days_back"]
+                    
+                    if slot["title"]:
+                        slottext = slot["title"]
+                    else:
+                        slottext = "Autoname{}".format(str(index+1))
+    
+                    slotval = ["","","",pcode,days_back,mirror_days]
+                    slotid = self.nav_tree.insert(pagenameid,"end",pagenameid+"_"+str(index),tags=("slot"),
+                                                text=slottext,
+                                                values=slotval)
+                    for n,query in enumerate(slot["left"]["queries"]):
+                        padded_columns = ["Left",query[0],query[1]]
+                        self.nav_tree.insert(slotid,"end",slotid+"_L_"+str(n),values=padded_columns,tags=("query"))    
+                    for n,query in enumerate(slot["right"]["queries"]):
+                        padded_columns = ["Right",query[0],query[1]]
+                        self.nav_tree.insert(slotid,"end",slotid+"_R_"+str(n),values=padded_columns,tags=("query"))
+            self.nav_tree.selection_set(self.nav_tree.get_children("")[0])
+        else:
+            self.bug("Presetpages cfg is somehow not a list!")
+                                    
+# ================================================================
+# ================================================================
+#      UX Helpers
+# ================================================================
+# ================================================================  
 
-                slotval = ["","","",pcode,days_back,mirror_days]
-                slotid = self.nav_tree.insert(pagenameid,"end",pagenameid+"_"+str(index),tags=("slot"),
-                                            text=slottext,
-                                            values=slotval)
-
-#                leftid = self.nav_tree.insert(slotid,"end",slotid+"_"+"left",text="Left",tags=("axis"))
-#                rightid = self.nav_tree.insert(slotid,"end",slotid+"_"+"right",text="Right",tags=("axis"))
-                
-                for n,query in enumerate(slot["left"]["queries"]):
-                    padded_columns = ["Left",query[0],query[1]]
-                    self.nav_tree.insert(slotid,"end",slotid+"_L_"+str(n),values=padded_columns,tags=("query"))    
-                for n,query in enumerate(slot["right"]["queries"]):
-                    padded_columns = ["Right",query[0],query[1]]
-                    self.nav_tree.insert(slotid,"end",slotid+"_R_"+str(n),values=padded_columns,tags=("query"))
-        self.nav_tree.tag_configure("page",background="#d3d3d3") 
-        self.nav_tree.tag_configure("slot",background="#f4f4f4")   
+                                       
                                     
 # ================================================================
 # ================================================================
@@ -324,15 +387,14 @@ class MultiGrapher(AppWidget):
         self.graphs_frame.grid(row=0,column=0)
         
         for n in range(0,4):
-            self.bug("MG Build n={}".format(n))
             slot = tk.LabelFrame(self.graphs_frame,text=str(n+1))
             rowx = int(n/2)
             colx = int(n%2)
-            self.bug("Rowx {}, colx {}".format(str(rowx),str(colx)))
+            self.bug("Build slot n={} - Rowx {}, colx {}".format(n,str(rowx),str(colx)))
             slot.grid(row=rowx,column=colx,sticky="nw",pady=0)
             
-            slot.columnconfigure(0, weight=1)
-            slot.rowconfigure(0, weight=1)
+            slot.columnconfigure(0, weight=0)
+            slot.rowconfigure(0, weight=0)
           
             canvas = tk.Canvas(slot,bg='#FFFFFF') 
             hbar=tk.Scrollbar(slot,orient=tk.HORIZONTAL)
@@ -341,10 +403,10 @@ class MultiGrapher(AppWidget):
             vbar=tk.Scrollbar(slot,orient=tk.VERTICAL)
             vbar.pack(side=tk.RIGHT,fill=tk.Y)
             vbar.config(command=canvas.yview)
-#            canvas.config(width=300,height=300)
-            canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
+            canvas.config(width=450,height=300)
+            canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,scrollregion=(0, 0, 450, 300))
                        
-            self.graph_slots.append([canvas,"IMAGE",[]])  
+            self.graph_slots.append([canvas,"IMAGEPLACEHOLDER",[]])  
             
         self.export_png = ttk.Button(
             self.graphs_frame,
@@ -358,7 +420,7 @@ class MultiGrapher(AppWidget):
             canvas.pack(side=tk.LEFT,expand=True,fill=tk.BOTH) 
             canvas.update_idletasks()
             wd = canvas.winfo_width()
-            self.bug(str(wd) + " width")        
+#            self.bug(str(wd) + " width")        
             
         self.update_graphs_button = ttk.Button(
             self.graphs_frame,
@@ -377,7 +439,7 @@ class MultiGrapher(AppWidget):
         
         self.nav_tree = ttk.Treeview(self.tree_frame, columns=[aa[0] for aa in nav_tree_cols])
         self.nav_tree.grid(sticky="news")
-        self.nav_tree.bind("<<TreeviewSelect>>", self.preview_page)
+        self.nav_tree.bind("<<TreeviewSelect>>", self.preview_page_at_selection)
   
         for header in nav_tree_cols:
             self.nav_tree.heading(header[0],text=header[0], command=lambda c=header: self.sortby(self.nav_tree, c, 0))
@@ -390,28 +452,68 @@ class MultiGrapher(AppWidget):
 
         self.nav_tree.tag_configure("box_item",background="lightgrey")
         self.nav_tree.column("#0",width=110)
-        self.nav_tree.heading("#0",text="Page / Graph") 
+        self.nav_tree.heading("#0",text="Page / Graph")
                               
+        self.nav_tree.tag_configure("page",background="#d3d3d3") 
+        self.nav_tree.tag_configure("slot",background="#f4f4f4"   )     
+
+        rown = 0
+        
+        rown += 1
         self.create_new_page_button = ttk.Button(
             self.tree_frame,
             command=self.create_new_page,
             text="New Page")
         self.create_new_page_button.grid(
-            row=1, column=0, padx=0, pady=2, sticky="w")                              
+            row=rown, column=0, padx=0, pady=2, sticky="w")                              
                               
+        rown += 1
         self.rename_page_button = ttk.Button(
             self.tree_frame,
             command=self.rename_page,
             text="Rename Page")
         self.rename_page_button.grid(
-            row=2, column=0, padx=0, pady=2, sticky="w")   
-        
-        self.preview_page_button = ttk.Button(
+            row=rown, column=0, padx=0, pady=2, sticky="w")   
+                              
+        rown += 1        
+        self.save_page_button = ttk.Button(
             self.tree_frame,
-            command=self.preview_page,
-            text="Preview Page")
-        self.preview_page_button.grid(
-            row=3, column=0, padx=0, pady=2, sticky="w")           
+            command=self.send_presets_and_refresh,
+            text="Save Pages")
+        self.save_page_button.grid(
+            row=rown, column=0, padx=0, pady=2, sticky="w")   
+                              
+        rown += 1
+        self.reload_defaults_button = ttk.Button(
+            self.tree_frame,
+            command=self.reload_defaults,
+            text="Reload Default")
+        self.reload_defaults_button.grid(
+            row=rown, column=0, padx=0, pady=2, sticky="w")         
+                               
+        rown += 1       
+        self.swap_slots_buttons = ttk.Button(
+            self.tree_frame,
+            command=self.shift_slot_up,
+            text="Move Slot Up")
+        self.swap_slots_buttons.grid(
+            row=rown, column=0, padx=0, pady=2, sticky="w")   
+
+        rown += 1       
+        self.delete_slot_button = ttk.Button(
+            self.tree_frame,
+            command=self.delete_slot,
+            text="Delete Slot")
+        self.delete_slot_button.grid(
+            row=rown, column=0, padx=0, pady=2, sticky="w")  
+        
+        rown += 1       
+        self.delete_page_button = ttk.Button(
+            self.tree_frame,
+            command=self.delete_page,
+            text="Delete Page")
+        self.delete_page_button.grid(
+            row=rown, column=0, padx=0, pady=2, sticky="w")          
 
 #        self.vsb = ttk.Scrollbar(self.tree_frame,orient="vertical",
 #            command=self.nav_tree.yview)

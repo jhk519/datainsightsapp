@@ -108,6 +108,7 @@ class Calendar(ttk.Frame):
 
     def __config_calendar(self):
         cols = self._cal.formatweekheader(3).split()
+#        print(cols)
         self._calendar['columns'] = cols
         self._calendar.tag_configure('header', background='grey90')
         self._calendar.insert('', 'end', values=cols, tag='header')
@@ -139,6 +140,7 @@ class Calendar(ttk.Frame):
         cal = self._cal.monthdayscalendar(year, month)
         for indx, item in enumerate(self._items):
             week = cal[indx] if indx < len(cal) else []
+#            print(week)
             fmt_week = [('%02d' % day) if day else '' for day in week]
             self._calendar.item(item, values=fmt_week)
 

@@ -19,7 +19,7 @@ except ImportError:  # Python 3
     import os
 import logging   
 import datetime
-import pprint as PRETTYPRINTTHIS
+from pprint import pprint as PRETTYPRINTTHIS
 
 # Project Mpdules
 import config2
@@ -70,7 +70,7 @@ class DataInsightsApp(tk.Tk):
         self.settingsmanager = SettingsManager(self.notebook, self, self.init_cfg)
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
-        curr_config = self.settingsmanager.get_latest_config()
+        curr_config = self.settingsmanager.get_latest_config(needcopy=True)
         
 #       DATA MANAGER PAGE INIT 
         self.dbmanager = DBManager(self.notebook, self, curr_config)
@@ -125,6 +125,11 @@ class DataInsightsApp(tk.Tk):
     
     def send_new_presets(self,multigrapher_cfg):
         self.settingsmanager.receive_new_presets(multigrapher_cfg)
+        
+    def get_default_presets(self):
+        what = self.settingsmanager.get_latest_config()["multigrapher"]
+#        PRETTYPRINTTHIS(what)
+        return self.settingsmanager.get_latest_config()["multigrapher"]
         
 if __name__ == "__main__":
     

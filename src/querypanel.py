@@ -96,9 +96,9 @@ class QueryPanel(AppWidget):
         self.populate_query_menu()
         self.build_left_queries()
         self.build_right_queries()
-        self.populate_queries()
+        self.populate_axis_panels()
         self.build_options()
-        self._update_queries(self.category_var.get()) 
+        self._update_queries_menu(self.category_var.get()) 
         
         self.columnconfigure(0,weight=1)
         self.rowconfigure(0,weight=1) 
@@ -119,9 +119,14 @@ class QueryPanel(AppWidget):
                 
     def gen_selection_pack(self):
         self.log("Starting Selection Pack Gen.")  
-        left_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["left"]["queries"]) if not p[0].get() == "None" ]
-#        print(left_comp)
-        right_comp = [(p[0].get(), p[2]["background"]) for i,p in enumerate(self.axis_panels["right"]["queries"]) if not p[0].get() == "None" ]
+#        a single query tuple = stvar, label, choose_color, delete
+        left_comp = [(p[0].get(), p[1]["background"],p[2].get())
+                     for i,p in enumerate(self.axis_panels["left"]["queries"]) 
+                     if not p[0].get() == "None" ]
+
+        right_comp = [(p[0].get(), p[1]["background"],p[2].get()) 
+                     for i,p in enumerate(self.axis_panels["right"]["queries"]) 
+                     if not p[0].get() == "None" ]
         
         selpack = {
             "extra":self.extra_var.get().strip().replace(" ", "").replace("\n", ""),
@@ -153,7 +158,7 @@ class QueryPanel(AppWidget):
         colors = self.engine.get_colors_preferred()
         all_query_slots = self.axis_panels["left"]["queries"] + self.axis_panels["right"]["queries"]
         for query_index, query_slot_pack in enumerate(all_query_slots):
-            color_button = query_slot_pack[2]
+            color_button = query_slot_pack[1]
             color_button["background"] = colors[query_index]
             
     def _set_dates(self,date_cfg_pack):
@@ -210,7 +215,7 @@ class QueryPanel(AppWidget):
         else:
             self.extra_widget.grid_remove()
             self.extra_var.set("")
-        self._update_queries(self.category_var.get())
+        self._update_queries_menu(self.category_var.get())
         
     def _use_mirror_var_changed(self):
         need_use = self.use_mirror_var.get()
@@ -250,13 +255,13 @@ class QueryPanel(AppWidget):
             self.axis_panels[which_axis]["gtype"] = query_ref["gtype"]
 
         for index, select_pack in enumerate(targ_curr_queries):
-            stvar, label, choose_color, delete  = select_pack
-            if stvar.get() == "None":
-                stvar.set(query_str)
-                self._update_queries(self.category_var.get())
+            lbl_stvar = select_pack[0]
+            if lbl_stvar.get() == "None":
+                lbl_stvar.set(query_str)
+                self._update_queries_menu(self.category_var.get())
                 self._check_controller_autosearch()
                 return True
-            elif stvar.get() == query_str:
+            elif lbl_stvar.get() == query_str:
                 self.bug("{} is already Included! It should not have been available to send.".format(
                         query_str))
                 return False
@@ -264,7 +269,7 @@ class QueryPanel(AppWidget):
                 self.bug("Cannot find a select_pack to change to {}!".format(query_str))
                 return False
         
-    def _update_queries(self, category):
+    def _update_queries_menu(self, category):
         self.log(".update_queries called for category {}".format(category))
         req_queries = self.engine.get_queries_list(category)
 
@@ -328,7 +333,7 @@ class QueryPanel(AppWidget):
             self.push_search()
 
     def _category_changed(self,event=None):
-        self._update_queries(self.category_var.get())
+        self._update_queries_menu(self.category_var.get())
         self.category_menu.selection_clear()
         
     def _clear_axis_info(self,axis):
@@ -369,13 +374,15 @@ class QueryPanel(AppWidget):
             self._clear_axis_info("right")
         if self._is_axis_empty("left") and self._is_axis_empty("right"):
             self.x_axis_type.set("None")
-        self._update_queries(self.category_var.get())
+        self._update_queries_menu(self.category_var.get())
             
     def _choose_colors(self, axis_index):
         get_color = colorchooser.askcolor()[1]
         axis,index = axis_index
         pack = self.axis_panels[axis]["queries"][index]
-        pack[2]["background"] = get_color
+        pack[1]["background"] = get_color
+        
+
         
 #   BUILD FUNCTIONS
         
@@ -472,15 +479,19 @@ class QueryPanel(AppWidget):
             self.axis_panels["left"]["axispanel"] = left_query_panel
             
     def build_right_queries(self):
-            right_query_panel = ttk.LabelFrame(self,text="Right Axis")
-            right_query_panel.grid(row=2,column=1,sticky="wn",padx=(5,5),pady=(8,8))  
-            right_clear_all = tk.Button(right_query_panel,text="Clear",foreground="red",
-                                       command=lambda: self._clear_all_queries("right"),
-                                       relief="groove",font="Helvetica 7",width=4)      
-            right_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
-            self.axis_panels["right"]["axispanel"] = right_query_panel
+        right_query_panel = ttk.LabelFrame(self,text="Right Axis")
+        right_query_panel.grid(row=2,column=1,sticky="wn",padx=(5,5),pady=(8,8))  
+        right_clear_all = tk.Button(right_query_panel,text="Clear",foreground="red",
+                                   command=lambda: self._clear_all_queries("right"),
+                                   relief="groove",font="Helvetica 7",width=4)      
+        right_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
+        self.axis_panels["right"]["axispanel"] = right_query_panel
             
-    def populate_queries(self):        
+    def _choose_linestyle(self,event,args=None,):
+        axis,index,style_stvar = args
+        self.log("New style: {}".format(style_stvar.get()))
+                    
+    def populate_axis_panels(self):        
             available_colors = self.engine.get_colors_preferred() 
             for axis in ["left","right"]:        
                 for index in range(0,4):
@@ -492,24 +503,39 @@ class QueryPanel(AppWidget):
                     
                     currframe = self.axis_panels[axis]["axispanel"]
                     
-                    stvar = tk.StringVar()
-                    stvar.set("None")
-                    label = tk.Label(currframe,textvariable=stvar,wraplength=110,anchor="w",
+                    lbl_stvar = tk.StringVar()
+                    lbl_stvar.set("None")
+                    label = tk.Label(currframe,textvariable=lbl_stvar, wraplength=110, anchor="w",
                                      justify="left",width=15,height=2)
                     label.grid(row=rownum,column=0,padx=(10,0),sticky="w")
                     
                     axis_index = axis,index
-                    choose_color = tk.Button(currframe,width=1,height=1,
-                         command=lambda axis_index =axis_index :self._choose_colors(axis_index))
-                    choose_color.grid(row=rownum,column=1,padx=(10,0))
-                    choose_color.configure(background=available_colors[colorindex]) 
-    
+                    clr_btn = tk.Button(currframe,width=1,height=1,command=lambda axis_index=axis_index:self._choose_colors(axis_index))
+                    clr_btn.grid(row=rownum,column=1,padx=(10,0))
+                    clr_btn.configure(background=available_colors[colorindex])
+                    
+                    styvar = tk.StringVar()
+                    menu_args = (axis,index, styvar)
+                    linestyle_menu = ttk.Combobox(currframe, textvariable =styvar,
+                                                      width=2)
+                    linestyle_menu.grid(row=rownum, column=2,columnspan=1, sticky="w",
+                                            padx=(5,5))       
+                    
+                    
+                    
+                    linestyle_menu["values"] = ["-","--","-.",":"]
+                    linestyle_menu.current(0)         
+                    #event handlers can only pass one argument, the event. 
+                    #so, we tell the lambda function to set a default value for argument abc
+                    linestyle_menu.bind('<<ComboboxSelected>>',lambda evt,abc=menu_args :self._choose_linestyle(evt,abc))
+                    linestyle_menu["state"] = "readonly"                      
+#                    print(linestyle_menu.config)   
                     delete = tk.Button(currframe,width=1, text="x",
                         command=lambda axis_index=axis_index:self._delete_query(axis_index),
                         font="Helvetica 7")
-                    delete.grid(row=rownum, column=2,padx=(10,10),pady=(5,0),sticky="ne")
+                    delete.grid(row=rownum, column=3,padx=(10,10),pady=(5,0),sticky="ne")
                     
-                    selected_query_pack = [stvar, label, choose_color, delete]
+                    selected_query_pack = [lbl_stvar, clr_btn, styvar]
                     self.axis_panels[axis]["queries"].append(selected_query_pack)
                 
     def build_options(self):

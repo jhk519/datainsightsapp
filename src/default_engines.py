@@ -66,7 +66,7 @@ class DefaultEngine:
             self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
         return value
     
-    def get_export_full_name(self,db_str,ftype="excel",outdir=None):
+    def get_export_full_name(self,base_string,ftype="excel",outdir=None):
         if ftype == "excel":
             ext = ".xlsx"
         elif ftype =="image":
@@ -74,7 +74,7 @@ class DefaultEngine:
         elif ftype =="sqlite":
             ext = ".db"
             
-        outname = db_str + self.time_str() + ext
+        outname = base_string + self.time_str() + ext
         if not outdir:
             outdir = self.get_cfg_val("automatic export location")
             self.log("outdir from config: {}".format(outdir))
@@ -377,7 +377,7 @@ class MultiGrapherEngine(DefaultEngine):
         if not custom_today:
             self.custom_today = datetime.now.date()
         else:
-            self.custom_today = datetime.date(2018,8,1)
+            self.custom_today = datetime.date(2018,4,1)
         
     def convert_slot_pack_to_request_pack(self,slot_pack):
             
@@ -403,7 +403,20 @@ class MultiGrapherEngine(DefaultEngine):
         return request_pack
        
     def convert_request_pack_to_slot_pack(self,request_pack): 
-    
+        if request_pack["title"] == None:
+            le = request_pack["left"]["queries"]
+            ri = request_pack["right"]["queries"]
+            if ri:
+                if le:
+                    newtitle = "{} vs {}".format(le[0][0],ri[0][0])
+                else:
+                    newtitle = ri[0][0]
+            else:
+                newtitle = le[0][0]
+
+            self.log("New title {}".format(newtitle))
+        else:
+            newtitle = request_pack["title"] 
         slot_pack = {
                     "extra":request_pack["extra"],
                     "x_axis_label": request_pack["x_axis_label"],
@@ -420,7 +433,7 @@ class MultiGrapherEngine(DefaultEngine):
                         "queries": request_pack["right"]["queries"],
                     }, 
                     "days_back":((request_pack["end"] - request_pack["start"]).days),
-                    "title": request_pack["title"]
+                    "title": newtitle
                  }                   
         return slot_pack        
         
@@ -484,7 +497,7 @@ class AnalysisPageEngine(DefaultEngine):
             "left": {
                 "gtype":self.axis_panels["left"]["gtype"],
                 "metric": self.axis_panels["left"]["metric"],
-                "queries": left_comp,
+                "queries": [(QRY_NAME,LINE_COLOR,LINE_STYLE)]
             },
             "right": {
                 "gtype":self.axis_panels["right"]["gtype"],
@@ -512,6 +525,7 @@ class AnalysisPageEngine(DefaultEngine):
                 x_data = []
                 y_data_lists = []
                 colors_to_plot = []
+                styles_to_plot = []
                 
                 for index,query_tuple in enumerate(axis["queries"]):
                     
@@ -519,6 +533,7 @@ class AnalysisPageEngine(DefaultEngine):
                     if not query_tuple[0] == "None":
                         ls_queries.append(query_tuple[0])
                         colors_to_plot.append(query_tuple[1])
+                        styles_to_plot.append(query_tuple[2])
                         xandy = queries.main(query_tuple[0],
                             self.get_dbvar(),start,end,extra=pack["extra"])
                         self.bug("xandy type: {}".format(type(xandy)))
@@ -537,6 +552,7 @@ class AnalysisPageEngine(DefaultEngine):
                         if bool(pack["mirror_days"]):
                             ls_queries.append(query_tuple[0] + "_Mirror")
                             colors_to_plot.append(query_tuple[1])
+                            styles_to_plot.append(query_tuple[2])
                             xandy = queries.main(query_tuple[0],
                                 self.get_dbvar(),m_start,m_end,extra=pack["extra"])
                             self.bug("xandy type: {}".format(type(xandy)))
@@ -553,7 +569,7 @@ class AnalysisPageEngine(DefaultEngine):
                             y_data_lists.append(queryy)                            
                         
                     
-                rp  = {
+                axis_pack  = {
                     "start":start,
                     "end":end,
                     "met": axis["metric"],
@@ -564,9 +580,10 @@ class AnalysisPageEngine(DefaultEngine):
                     "x_data": x_data,
                     "y_data": y_data_lists,
                     "colors":colors_to_plot,
+                    "linestyles": styles_to_plot,
                     "title":pack["title"]
                 }
-                axes_result_packs[ind] = rp          
+                axes_result_packs[ind] = axis_pack          
         return axes_result_packs      
 
 class QueryPanelEngine(DefaultEngine):

@@ -87,7 +87,7 @@ class QueryPanel(AppWidget):
 #       Set Build Config and Update
         self.config_key = "querypanel"    
         if config:
-            self.engine.set_build_config(raw_config = config[self.config_key])  
+            self.set_build_config(raw_config = config[self.config_key])  
             
 #        Build Skeleton UI
 
@@ -108,8 +108,9 @@ class QueryPanel(AppWidget):
         
 #       CONFIG
         if config:
-            if self.engine.get_cfg_val("setdates_on_load"):
-                self._set_dates(self.engine.get_set_date_config())            
+            if self.get_cfg_val("setdates_on_load"):
+                self._set_dates(self.get_cfg_val("setdates_gap"),
+                                 self.get_cfg_val("setdates_from_date"))            
             
 #   API            
     def push_search(self):
@@ -152,17 +153,17 @@ class QueryPanel(AppWidget):
     
     def set_cfgvar(self,new_cfgvar):
         self.log("Changing cfg.")
-        self.engine.set_build_config(new_cfgvar[self.widget_name]) 
+        self.set_build_config(new_cfgvar[self.widget_name]) 
         for widget in self.config_chain:
             widget.set_cfgvar(new_cfgvar)
-        colors = self.engine.get_colors_preferred()
+        colors = self.get_cfg_val("colors_preferred").split("-")
         all_query_slots = self.axis_panels["left"]["queries"] + self.axis_panels["right"]["queries"]
         for query_index, query_slot_pack in enumerate(all_query_slots):
             color_button = query_slot_pack[1]
             color_button["background"] = colors[query_index]
             
-    def _set_dates(self,date_cfg_pack):
-        self.start_date,self.end_date = self.engine.set_end_date(date_cfg_pack)
+    def _set_dates(self,setdates_gap,setdates_from_date):
+        self.start_date, self.end_date = self.engine.get_start_and_end(setdates_gap,setdates_from_date)
         self.start_textvar.set(str(self.start_date))
         self.end_textvar.set(str(self.end_date))              
             
@@ -210,7 +211,7 @@ class QueryPanel(AppWidget):
                     qstr = pack[0].get()
                     if qstr == "None":
                         continue
-                    if self.engine.get_cfg_val("queries_ref")[qstr]["can_filter"] == None:
+                    if self.get_cfg_val("queries_ref")[qstr]["can_filter"] == None:
                         self._delete_query((axis,ind))
         else:
             self.extra_widget.grid_remove()
@@ -228,7 +229,7 @@ class QueryPanel(AppWidget):
 
     def _send_to_axis(self,which_axis,index):
         query_str = self.ls_query_packs[index][0].get()
-        query_ref = self.engine.get_cfg_val("queries_ref")[query_str]
+        query_ref = self.get_cfg_val("queries_ref")[query_str]
         
         curr_x = self.x_axis_type.get()
         targ_metric = self.axis_panels[which_axis]["metric"]
@@ -271,7 +272,8 @@ class QueryPanel(AppWidget):
         
     def _update_queries_menu(self, category):
         self.log(".update_queries called for category {}".format(category))
-        req_queries = self.engine.get_queries_list(category)
+        
+        req_queries = self.engine.get_queries_list(category,self.get_cfg_val("queries_ref"))
 
         try:
             self.hold_y_var
@@ -295,7 +297,7 @@ class QueryPanel(AppWidget):
                 continue
             
             query_str = req_queries[q_count]
-            query_ref = self.engine.get_cfg_val("queries_ref")[query_str]
+            query_ref = self.get_cfg_val("queries_ref")[query_str]
             query_var.set(query_str)
 
             curr_x = self.x_axis_type.get()
@@ -439,7 +441,7 @@ class QueryPanel(AppWidget):
         self.category_menu.grid(row=1, column=1,columnspan=2,pady=(5,5), sticky="w",
                                 padx=(0,5))
         
-        self.category_menu["values"] = self.engine.get_cfg_val("categories")
+        self.category_menu["values"] = self.get_cfg_val("categories")
         self.category_menu.current(0)         
         self.category_menu.bind('<<ComboboxSelected>>',self._category_changed)
         self.category_menu["state"] = "readonly"  
@@ -492,7 +494,7 @@ class QueryPanel(AppWidget):
         self.log("New style: {}".format(style_stvar.get()))
                     
     def populate_axis_panels(self):        
-            available_colors = self.engine.get_colors_preferred() 
+            available_colors = self.get_cfg_val("colors_preferred").split("-")
             for axis in ["left","right"]:        
                 for index in range(0,4):
                     rownum = index + 1

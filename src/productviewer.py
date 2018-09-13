@@ -47,7 +47,8 @@ class ProductViewer(AppWidget):
         if code == None:
             code = self.product_detail_packs[0][1].get().strip().replace(" ", "").replace("\n", "")
         self.log("Exporting orders for product: {}".format(code))
-        export_customer_result = self.engine.get_customers_list(code)
+        temp_odb = self.get_dbvar()["odb"]
+        export_customer_result = self.engine.get_customers_list(temp_odb, code)
         try:
             self.export_to_csv(code,export_customer_result)
         except AttributeError:
@@ -66,7 +67,7 @@ class ProductViewer(AppWidget):
             
     def export_to_csv(self,code,dataframe):
         dbstr = "product_customers_{}".format(code)
-        fullname = self.engine.get_export_full_name(dbstr,ftype="excel")
+        fullname = self.get_export_full_name(dbstr,ftype="excel")
         dataframe.to_excel(fullname, sheet_name=code)
         
     def search_product(self,code=None):
@@ -74,7 +75,8 @@ class ProductViewer(AppWidget):
         if code == None:
             code = self.search_pcode_stvar.get().strip().replace(" ", "").replace("\n", "")
         self.log("Searching for product: {} and type: {}".format(code,codetype))
-        search_product_result = self.engine.search_product(code,codetype)
+        pdb = self.get_dbvar()["pdb"]
+        search_product_result = self.engine.search_product(pdb,code,codetype)
         if search_product_result == "no_results":
             title = "No Results".format(codetype)
             text ="No Results for {} {} in database.".format(codetype, code)

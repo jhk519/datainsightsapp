@@ -15,6 +15,7 @@ except ImportError:  # Python 3
 from tkinter import filedialog
 
 # Standard Modules
+import pickle
 
 # Project Modules
 from appwidget import AppWidget
@@ -26,7 +27,7 @@ class DBManager(AppWidget):
         super().__init__(parent,controller,config,dbvar)            
  
 #       WIDGET SPECIFIC                        
-        self.time_created = self.engine.time_str()
+        self.time_created = self.get_time_str()
         self.online_loaded = tk.IntVar(value=0)
         
         self.db_panel_packs = []
@@ -34,17 +35,26 @@ class DBManager(AppWidget):
         self._build_middle_frame()
         self._build_bottom_frame()
 
-        if self.engine.get_cfg_val("loaddb_on_load"):
-            self._load_offline_dbs(file_loc=self.engine.get_cfg_val("loaddb_loc"))
+        if self.get_cfg_val("loaddb_on_load"):
+            self._load_offline_dbs(file_loc=self.get_cfg_val("loaddb_loc"))
         
 #   UX EVENT HANDLERS AND HELPERS   
     def _reset_and_gen_all_new_dbs(self):
         self.log("Resetting All DBs.")
-        dir_loc = filedialog.askdirectory()
-        self.engine.reset_and_gen_all_dbs(dir_loc)
-        self.gen_db_status_value["text"] = "Generated new DBs at " + self.engine.time_str()
+        dir_list = [filedialog.askdirectory(),]
+        self.set_dbvar(self.engine.gen_bare_dbs())
+        for db_str in self.get_dbvar():
+            if db_str == "cdb":
+                self.get_dbvar()[db_str] = self.engine.get_cdb(self.get_dbvar()["odb"])
+#            elif db_str == "pdb":
+#                self.get_dbvar()[db_str] = self.engine.get_pdb(self.get_dbvar()["odb"])                
+            else:
+                self.get_dbvar()[db_str] = self.engine.gen_single_db(
+                        self.get_cfg_val("db_build_config")[db_str],
+                        dir_list,
+                        self.get_cfg_val("header_ref"))      
+        self.gen_db_status_value["text"] = "Generated new DBs at " + self.get_time_str()
         self._update_statuses()
-#        self.controller.propagate_db_var_change(self.get_dbvar())
         self.log("Completed Generated New Dbs")
         
     def _reset_and_gen(self,db_str,dir_list = None):
@@ -54,15 +64,26 @@ class DBManager(AppWidget):
             pathstr_tuple = filedialog.askopenfilenames()
             dir_list = list(pathstr_tuple)
             self.bug(".reset_and_gen called. Filedialog returns: {}".format(dir_list))
-        self.engine.reset_and_gen_single_db(db_str, dir_list=dir_list)
+            
+        if db_str == "cdb":
+            self.get_dbvar()[db_str] = self.engine.get_cdb(self.get_dbvar()["odb"])
+#        elif db_str == "pdb":
+#            self.get_dbvar()[db_str] = self.engine.get_pdb(self.get_dbvar()["odb"])
+        else:            
+            self.get_dbvar()[db_str] = self.engine.gen_single_db(
+                            self.get_cfg_val("db_build_config")[db_str],
+                            dir_list,
+                            self.get_cfg_val("header_ref")) 
+            
         self._update_statuses()
-        self.log("Completed resetting and generating: ".format(db_str))
+        self.log("Completed resetting and generating: {}".format(db_str))
 
     def _add_data_to_all_dbs(self):
         self.log("Adding Data to All DBs.")
         dir_loc = filedialog.askdirectory()
-        self.engine.update_data_all_dbs(dir_loc)
-        self.add_db_status_value["text"] = "Add new DBs at " + self.engine.time_str()
+        for db_str in self.get_dbvar():
+            self.engine.update_single_db(db_str,dir_loc) 
+        self.add_db_status_value["text"] = "Add new DBs at " + self.get_time_str()
         self._update_statuses()        
         self.log("Completed Adding Data to All Dbs")      
 
@@ -72,7 +93,9 @@ class DBManager(AppWidget):
             pathstr_tuple = filedialog.askopenfilenames()
             dir_list = list(pathstr_tuple)
             self.bug("Filedialog returns: {}".format(dir_list))
-        self.engine.update_single_db(db_str,dir_list)
+        db_ref = self.get_cfg_val("db_build_config")[db_str]
+        header_ref = self.get_cfg_val("header_ref")
+        self.get_dbvar()[db_str] = self.engine.update_single_db(db_str,dir_list,db_ref,self.get_dbvar()[db_str],header_ref)
         self._update_statuses()
         self.log("Completed adding to: {}".format(db_str))
 
@@ -83,6 +106,26 @@ class DBManager(AppWidget):
         offlineb = ("Offline",self._load_offline_dbs)   
         self.create_popup(title,text,firstb=onlineb,secondb=offlineb)     
 
+    def _load_offline_dbs(self,file_loc=None):
+        try:
+            self.popup.destroy()
+        except AttributeError:
+            self.bug("Cannot find popup widget to .destroy()")
+            
+        if file_loc:
+            dir_loc = file_loc
+        else:
+            dir_loc = filedialog.askopenfilename()
+            
+        with open(dir_loc, "rb") as dbfile:
+            try:
+                self.set_dbvar(pickle.load(dbfile))
+            except:
+                print("Likely in-compatible DB file.")
+
+        self.load_db_status_value["text"] = "Loaded at DBs at " + self.get_time_str()
+        self._update_statuses()
+        self.log("Loaded DBs.")
 
     def _load_online_dbs(self):
         try:
@@ -92,36 +135,22 @@ class DBManager(AppWidget):
         self.online_loaded.set(0)
         self.load_db_status_value = ttk.Progressbar(self.bottom_frame,maximum=14,
                                                     mode="determinate",variable=self.online_loaded)
-        self.load_db_status_value.grid(row=2, column=1, sticky="e", padx=15)
+        self.load_db_status_value.grid(row=2, column=1, sticky="e", padx=15) 
+        self.set_dbvar(pickle.load(self.engine.load_online_dbs(counter=self.online_loaded,ticker=self.load_db_status_value)))
+        self._update_statuses()
+        self.log("Loaded DBs.")
         
-        self.engine.load_online_dbs(counter=self.online_loaded,ticker=self.load_db_status_value)        
-        self._update_statuses()
-        self.log("Loaded DBs.")
-
-    def _load_offline_dbs(self,file_loc=None):
-        try:
-            self.popup.destroy()
-        except AttributeError:
-            self.bug("Cannot find popup widget to .destroy()")
-        if file_loc:
-            dir_loc = file_loc
-        else:
-            dir_loc = filedialog.askopenfilename()
-        self.engine.load_offline_dbs(dir_loc)
-
-        self.load_db_status_value["text"] = "Loaded at DBs at " + self.engine.time_str()
-        self._update_statuses()
-        self.log("Loaded DBs.")
-
     def _save_dbs(self, save_type):
-        self.engine.save_all_dbs(save_type)
-        self.save_db_status_value["text"] = "Saved DBs at " + self.engine.time_str()
+        if save_type == "pickled_dataframe":
+            with open('databases//DH_DBS.pickle', 'wb') as dbfile:
+                pickle.dump(self.get_dbvar(), dbfile)           
+        self.save_db_status_value["text"] = "Saved DBs at " + self.get_time_str()
         self._update_statuses()
 
     def _export_db_csv(self, db_str):
         self.log("Export DB CSV for {}".format(db_str))
-        if self.engine.get_cfg_val("automatic db export"):
-            fullname = self.engine.get_export_full_name(db_str)
+        if self.get_cfg_val("automatic db export"):
+            fullname = self.get_export_full_name(db_str)
             self.bug(".export_db_csb auto-fullname: {}".format(fullname))
         else:
             self.bug("No automatic db export given, asking dialog.")
@@ -129,17 +158,17 @@ class DBManager(AppWidget):
             fullname = dir_loc + ".xlsx"
             self.bug("_export_db_csv manual fullname: {}".format(fullname))
         self.log("Start Excel conversion")
-        self.engine.get_dbvar()[db_str].to_excel(fullname)
+        self.get_dbvar()[db_str].to_excel(fullname)
         self.log("End Excel Conversion")
 
     def _export_db_sqlite(self, db_str):
         self.log("Export DB to SQlite")
-        if self.engine.get_cfg_val("automatic db export"):
-            fullname = self.engine.get_export_full_name(db_str,ftype="sqlite")
+        if self.get_cfg_val("automatic db export"):
+            fullname = self.get_export_full_name(db_str,ftype="sqlite")
         else:
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".db"
-        self.engine.df2sqlite(db_str, fullname)
+        self.engine.df2sqlite(self.get_dbvar()[db_str], fullname)
         self.log(".export_db_sqlite resolved.")
 
     def _update_statuses(self):
@@ -152,7 +181,7 @@ class DBManager(AppWidget):
         for db_pack in self.db_panel_packs:
             # (curr_db, db_title,db_status,db_export_csv,db_export_sqlite)
             try:
-                specific_db = self.engine.get_dbvar()[db_pack[0]]
+                specific_db = self.get_dbvar()[db_pack[0]]
             except KeyError:
                 db_pack[1]["text"] = "Database is Missing!"
                 db_pack[1]["fg"] = "red"
@@ -185,7 +214,13 @@ class DBManager(AppWidget):
 
             db_pack[1]["text"] = line1 + line2
             db_pack[1]["fg"] = "green"
-        self.controller.propagate_db_var_change(self.get_dbvar())               
+        try:
+            self.controller.propagate_db_var_change 
+        except AttributeError:
+            self.bug("No controller to propagate_db_var_change.")
+        else:
+            self.controller.propagate_db_var_change(self.get_dbvar())          
+#        self.controller.propagate_db_var_change(self.get_dbvar())               
 
 #   BUILD FUNCTIONS
     def _build_top_frame(self):
@@ -218,7 +253,7 @@ class DBManager(AppWidget):
         self.status_header.grid(
             row=row_c, column=2, columnspan=2)
 
-        for db_str,curr_db in self.engine.get_cfg_val("db_build_config").items():
+        for db_str,curr_db in self.get_cfg_val("db_build_config").items():
             row_c += 1
             ttk.Label(self.middle_frame, text=curr_db["proper_title"]).grid(row=row_c, column=0, sticky="w", padx=15,pady=(5,20))
 

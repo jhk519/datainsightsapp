@@ -27,6 +27,7 @@ import datatable
 
 class AnalysisPage(AppWidget):
     last_selection_pack= None
+    
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "analysispage"
         super().__init__(parent,controller,config,dbvar)   
@@ -58,7 +59,8 @@ class AnalysisPage(AppWidget):
     def request_and_graph_data(self,request_pack):
         self.log("***START*** search query.")
         data_pack = None
-        init_data = self.engine.get_results_packs(request_pack)
+        
+        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar())
         self.log("Received Data")
         if init_data == "No Date Data":
             self.bug("No results for this date range.")
@@ -67,7 +69,7 @@ class AnalysisPage(AppWidget):
             self.create_popup(title,text) 
             return
         elif init_data is None:
-            self.bug("self.engine.get_results_packs returned None")
+            self.bug("engine's get_results_packs returned None")
             title = "Search Error"
             text ="Error, please send Debug log to admin."
             self.create_popup(title,text) 
@@ -102,11 +104,14 @@ class AnalysisPage(AppWidget):
 # ================================================================          
 
     def export_excel(self):
-        export_pack = self.engine.get_export_excel_pack(self.last_graph_pack)
-        fullname,sheetname,newdf = export_pack
+        if self.get_cfg_val("automatic search export"):
+            fullname = self.get_export_full_name(self.last_graph_pack["title"])
+        else:    
+            fullname = None        
+        sheetname,newdf = self.engine.get_export_excel_pack(self.last_graph_pack)
         if not fullname:
             file_location = tk.filedialog.asksaveasfilename()
-            fullname = file_location + self.engine.time_str() + ".xlsx"
+            fullname = file_location + self.get_time_str() + ".xlsx"
         newdf.to_excel(fullname, sheet_name=sheetname)    
 
     def export_png(self,outdir=None):
@@ -114,13 +119,13 @@ class AnalysisPage(AppWidget):
         Currently called by controlpanel's export function
         and as a helper for send_to_multigrapher
         """
-        if self.engine.get_cfg_val("auto_name_exports"):
-            fullname = self.engine.get_export_full_name(self.last_graph_pack["title"],
+        if self.get_cfg_val("auto_name_exports"):
+            fullname = self.get_export_full_name(self.last_graph_pack["title"],
                                                         ftype="image",
                                                         outdir=outdir)
         else: 
             file_location = tk.filedialog.asksaveasfilename()
-            fullname = file_location + self.engine.time_str() + ".png"
+            fullname = file_location + self.get_time_str() + ".png"
         self.graph_frame.my_figure.savefig(fullname) 
         self.log(fullname)
         return fullname

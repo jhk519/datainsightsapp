@@ -45,16 +45,16 @@ class DataTable(AppWidget):
         if self.nav_tree is not None:
             self.nav_tree.destroy()
             
-        self.nav_tree = ttk.Treeview(self, columns=self.engine.get_cfg_val("line_labels"),height="5",show="headings")
+        self.nav_tree = ttk.Treeview(self, columns=self.get_cfg_val("line_labels"),height="5",show="headings")
         self.nav_tree.pack(fill="x",pady=(10,0))
 
-        for header in self.engine.get_cfg_val("line_labels"):
+        for header in self.get_cfg_val("line_labels"):
             self.nav_tree.heading(header,text=header,
                                   command=lambda c=header: self.sortby(self.nav_tree,c,1))
             self.nav_tree.column(header, minwidth=20, anchor="center", stretch=False,
                                  width=125)
-          
-        for row_values in self.engine.get_rows_of_data():
+         
+        for row_values in self.engine.get_rows_of_data(self.get_cfg_val("data_list_of_lists")):
             self.nav_tree.insert("", "end", values=row_values)
             
                     

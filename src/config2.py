@@ -15,6 +15,10 @@ Created on Fri Jun 22 00:58:46 2018
 # specific setting is not on the .ini file, it will not appear at all in settingsmanager.
 
 backend_settings = {
+    "settingsmanager":{
+        "none":""
+    },
+            
     "dbmanager":{
         "URL for Online DB Download":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
         "automatic db export": True,        
@@ -414,6 +418,7 @@ backend_settings = {
             },
         }
     },
+            
     "multigrapher":{
         "automatic export location":"exports\multigrapher",
         "presetpages":[
@@ -423,7 +428,8 @@ backend_settings = {
                  ]
              }
         ]
-    }            
+    },
+#    "datatable":{}
 }
     
            

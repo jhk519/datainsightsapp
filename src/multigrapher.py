@@ -49,6 +49,10 @@ class MultiGrapher(AppWidget):
     curr_pageslotindex = 0
     graph_slots = [] #[canvas,"IMAGE","CONFIG"]
     preview_row = 0 
+#    if not custom_today:
+#    self.custom_today = datetime.now.date()
+#    else:
+    custom_today = datetime.date(2018,4,1)    
     
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "multigrapher"
@@ -73,7 +77,7 @@ class MultiGrapher(AppWidget):
         
     def receive_image(self,path,request_pack,slotnum=None):
         self.log("Received image from path: {} and slotnum {}".format(path,slotnum))
-        pages_cfg = self.engine.get_cfg_val("presetpages")
+        pages_cfg = self.get_cfg_val("presetpages")
         if len(pages_cfg) == 0:
             self.bug("No pages in presetpages!")
             self.create_popup("No page selected to add image.")
@@ -81,7 +85,7 @@ class MultiGrapher(AppWidget):
         slots_cfg = pages_cfg[self.curr_pageslotindex]["slots"]
         the_graph_slot = None
 #        print(request_pack)
-        slot_pack = self.engine.convert_request_pack_to_slot_pack(request_pack)
+        slot_pack = self.engine.convert_request_pack_to_slot_pack(request_pack,self.custom_today)
         slot_pack["last_path"] = path
 
 #       Locate the required graph slot we need to change. If none given, find
@@ -118,7 +122,7 @@ class MultiGrapher(AppWidget):
         except AttributeError:
             self.bug("No controller to send new presets.")
         else:
-            self.controller.send_new_presets(self.engine.get_cfg_val("presetpages")) 
+            self.controller.send_new_presets(self.get_cfg_val("presetpages")) 
         
 # ================================================================
 # ================================================================
@@ -128,10 +132,10 @@ class MultiGrapher(AppWidget):
           
     def update_all_graph_slots(self):
         self.log("Updating graph on all slots.")        
-        page =  self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]
+        page =  self.get_cfg_val("presetpages")[self.curr_pageslotindex]
         for index,slot_pack in enumerate(page["slots"]):
             self.log("Applying for slot index {}.".format(index ))
-            request_pack = self.engine.convert_slot_pack_to_request_pack(slot_pack)
+            request_pack = self.engine.convert_slot_pack_to_request_pack(slot_pack,self.custom_today)
             new_path = self.update_graph(request_pack,index)
             slot_pack["last_path"] = new_path      
             
@@ -142,7 +146,7 @@ class MultiGrapher(AppWidget):
             self.bug("slot[1] == {}".format(slot[1]))
             if slot[1] == "IMAGEPLACEHOLDER":
               continue
-            path = self.engine.get_cfg_val("presetpages")[0]["slots"][index]["last_path"]
+            path = self.get_cfg_val("presetpages")[0]["slots"][index]["last_path"]
             try:
               img = PIL.Image.open(path)
             except FileNotFoundError:
@@ -185,7 +189,7 @@ class MultiGrapher(AppWidget):
           return TKim   
          
     def load_preview_at_page_index(self,pageindex):
-        cur_page = self.engine.get_cfg_val("presetpages")[pageindex]
+        cur_page = self.get_cfg_val("presetpages")[pageindex]
 
         for ind,graph_slot in enumerate(self.graph_slots):
             canvas = graph_slot[0]
@@ -199,8 +203,8 @@ class MultiGrapher(AppWidget):
             except IndexError:
                 continue
             
-#            if cfg["last_path"] == None or cfg["last_path"] == "None":
-            if True:
+            if cfg["last_path"] == None or cfg["last_path"] == "None":
+#            if True:
                 self.recursive_unpack(canvas,cfg,graph_slot[2])
                 graph_slot[1] = "PREVIEW"
             else:
@@ -234,7 +238,7 @@ class MultiGrapher(AppWidget):
 
     def create_new_page(self):
         self.log("Creating new page...")
-        pgs = self.engine.get_cfg_val("presetpages")
+        pgs = self.get_cfg_val("presetpages")
         pgnm = "PAGE{}".format(str(len(pgs)))
         cnt = 1
         while self.nav_tree.exists(pgnm):
@@ -261,7 +265,7 @@ class MultiGrapher(AppWidget):
             
     def reload_defaults(self):
         defaultcfg = self.controller.get_default_presets()
-        self.engine.set_build_config(defaultcfg)
+        self.set_build_config(defaultcfg)
         self.refresh_nav_tree()
 
     def shift_slot_up(self):            
@@ -285,7 +289,7 @@ class MultiGrapher(AppWidget):
         if itype == "slot":
             pgid,slotnum = iid.split("_")
             pgindex = self.nav_tree.index(pgid)
-            pgs = self.engine.get_cfg_val("presetpages")
+            pgs = self.get_cfg_val("presetpages")
             pgs[pgindex]["slots"].pop(int(slotnum))
             self.send_presets_and_refresh() 
             
@@ -293,14 +297,14 @@ class MultiGrapher(AppWidget):
         itype,iindex,iid = self.get_type_index_current_item()
         if itype == "page":
             self.log("Deleting Page")
-            pgs = self.engine.get_cfg_val("presetpages")
+            pgs = self.get_cfg_val("presetpages")
             pgs.pop(iindex)
             self.send_presets_and_refresh()                   
             
         
     def switch_slots(self,slotindex1,slotindex2):
         self.bug("switching slotindex {} and {}".format(slotindex1,slotindex2))
-        cur_slots_list = self.engine.get_cfg_val("presetpages")[self.curr_pageslotindex]["slots"]
+        cur_slots_list = self.get_cfg_val("presetpages")[self.curr_pageslotindex]["slots"]
         cur_slots_list[slotindex1], cur_slots_list[slotindex2] = cur_slots_list[slotindex2], cur_slots_list[slotindex1]   
         
 # ================================================================
@@ -330,11 +334,11 @@ class MultiGrapher(AppWidget):
         if self.nav_tree.exists(new_name):  
             self.bug("{} already exists. Cannot rename at slot_num: {}".format(new_name,slot_num))
         else:
-            self.engine.get_cfg_val("presetpages")[slot_num]["pagename"] = self.popupentryvar.get()
+            self.get_cfg_val("presetpages")[slot_num]["pagename"] = self.popupentryvar.get()
             self.send_presets_and_refresh()
 
     def refresh_nav_tree(self):
-        cfg = self.engine.get_cfg_val("presetpages")
+        cfg = self.get_cfg_val("presetpages")
         self.nav_tree.delete(*self.nav_tree.get_children())
         if type(cfg) is list and len(cfg) == 0:
             self.bug("Presetpages cfg is empty list.")

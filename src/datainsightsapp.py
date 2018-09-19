@@ -67,12 +67,12 @@ class DataInsightsApp(tk.Tk):
         
     def _populate_notebook(self):
 #       SETTINGS MANAGER PAGE INIT
-        self.settingsmanager = SettingsManager(self.notebook, self, self.init_cfg)
+        self.settingsmanager = SettingsManager(self.notebook, self, self.init_cfg, dbvar=None)
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
         curr_config = self.settingsmanager.get_latest_config(needcopy=True)
         
-#       DATA MANAGER PAGE INIT 
+#        DATA MANAGER PAGE INIT 
         self.dbmanager = DBManager(self.notebook, self, curr_config)
         self.notebook.add(self.dbmanager,text="DB Manager",sticky="nsew")  
 
@@ -95,7 +95,7 @@ class DataInsightsApp(tk.Tk):
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
         self.notebook.select(self.dbmanager)
-        
+        #           
 #       API 
     def propagate_db_var_change(self,new_dbvar):       
 #        Required when DBManager does full resets of its dbvar, meaning the 
@@ -124,7 +124,7 @@ class DataInsightsApp(tk.Tk):
         return self.ap.export_png(outdir="exports\multigrapher")  
     
     def send_new_presets(self,multigrapher_cfg):
-        self.settingsmanager.receive_new_presets(multigrapher_cfg)
+        self.settingsmanager.set_new_presets(multigrapher_cfg)
         
     def get_default_presets(self):
         what = self.settingsmanager.get_latest_config()["multigrapher"]

@@ -38,7 +38,7 @@ import datetime
 import copy 
 
 # Project Modules    
-from appwidget import AppWidget
+from appwidget import AppWidget,CreateToolTip
 import master_calendar.calendardialog as cal_dialog
 
 class SettingsManager(AppWidget):
@@ -173,12 +173,16 @@ class SettingsManager(AppWidget):
                 
                 section_label = tk.Label(self,text=section_text,font=("Helvetica", 12))
                 section_label.grid(row=frame_row, column=0, sticky="wn", padx=(0,25)) 
+                
+                
                 frame_row += 1
             stvar_check_var = tk.StringVar()
             stvar_check_var.set(str(final_val))
             
             title_label = ttk.Label(self,text=setting_header)
             title_label.grid(row=frame_row, column=0, sticky="nw", padx=(15,25),pady=7)
+            
+            s = CreateToolTip(title_label, self.get_cfg_val(section_header)[setting_header])
             
             new_pack = [section_header, title_label, stvar_check_var, set_type, []]
             self.setting_packs.append(new_pack)
@@ -229,6 +233,9 @@ class SettingsManager(AppWidget):
                     color_lambda = lambda settingrowcolumn = settingrowcolumn: self.set_new_color(settingrowcolumn)
                     butt = tk.Button(self, width=2, command=color_lambda, background=split_colors[clindex])
                     butt.grid(row=iter_row,column=clindex+1,sticky="w",padx=(0,5))
+                    
+#                    
+                    
                     emptywidgetlist.append(butt)
                     
             elif set_type == "date":
@@ -251,7 +258,7 @@ if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
     ver = "v0.2.10.7 - 2018/07/22"
     
-    logging.basicConfig(filename=r"debuglogs\\{}".format(logname),
+    logging.basicConfig(filename=r"debug\\{}".format(logname),
         level=logging.DEBUG, 
         format="%(asctime)s %(filename)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
         datefmt='%H:%M:%S')

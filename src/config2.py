@@ -16,7 +16,28 @@ Created on Fri Jun 22 00:58:46 2018
 
 backend_settings = {
     "settingsmanager":{
-        "none":""
+        "dbmanager": {
+            "loaddb_on_load":"Automatically load database file on app startup.",
+            "loaddb_loc":"File location for automatic load database on startup.",
+            "automatic db export":"Automatically choose file location for database export.",
+            "automatic export location":"File location for automatic database export",
+        },
+        "analysispage": {
+            "automatic search export": "Automatically choose file location export search results.",
+            "automatic export location": "File location for automatic search result export.",
+            "setdates_on_load": "Automatically set dates on loading.",
+        },
+        "querypanel": {
+            "colors_preferred": "Default colors for graphing queries.",
+            "setdates_gap": "The required number of days between automatic date setting on startup.",
+            "setdates_from_date": "The end date for automatic date settings on startup."
+        },
+        "productviewer": {
+            "automatic export location": "File location for exporting customer order lists."
+        }
+        
+        
+        
     },
             
     "dbmanager":{
@@ -140,7 +161,7 @@ backend_settings = {
                 "매출": "revenue"
             },
             "product_data": {
-                "product_code": "product_code",
+                "product_code": "product_cafe24_code",
                 "option_text": "option_text",
                 "main_image_url": "main_image_url",
                 "sku_image_url": "sku_image_url",
@@ -188,7 +209,8 @@ backend_settings = {
         "automatic search export": True,
         "automatic export location": "exports\search_results",
         "auto_name_exports": True,  
-        "auto_query": True,        
+        "auto_query": True, 
+        "event_dates": [("20180425","20180428"),("20180501","20180506"),("20180522","20180524")]
     },
 
     "querypanel":{
@@ -196,17 +218,33 @@ backend_settings = {
         "setdates_gap":"14",
         "setdates_from_date":"20180128",             
         "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
-        "categories": ["Orders","Cashflow","Traffic","Logistics","Product Rankings","Cancels"],
+        "categories": ["Orders","Cashflow","Traffic","Logistics","Rankings","Cancels"],
         
         "queries_ref": {
             "Average Order Size":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Order Size (Part-Orders)",
+                "category": "Orders",
+                "x-axis-label": "Date",
+                "y-axis-label": "Order Size (Part-Orders)",
+                "can_filter":None,
+                "gtype": "line",
+                "db-req": "odb"
+            },
+            "Top 10 Categories (Orders)":{
+            	"category": "Rankings",
+            	"x-axis-label": "Category",
+            	"y-axis-label": "Order Quantity",
             	"can_filter":None,
-            	"gtype": "line",
+            	"gtype": "bar",
             	"db-req": "odb"
             },
+            "Top 10 Categories (Revenue)":{
+            	"category": "Rankings",
+            	"x-axis-label": "Category",
+            	"y-axis-label": "Order Quantity",
+            	"can_filter":None,
+            	"gtype": "bar",
+            	"db-req": "odb"
+            },                    
             "Average Order Value":{
             	"category": "Orders",
             	"x-axis-label": "Date",
@@ -384,7 +422,7 @@ backend_settings = {
             	"db-req": "odb"
             },
             "Top 10 By Orders":{
-            	"category": "Product Rankings",
+            	"category": "Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
             	"can_filter":None,
@@ -393,7 +431,7 @@ backend_settings = {
             },
             
             "Top 10 By Returns":{
-            	"category": "Product Rankings",
+            	"category": "Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
             	"can_filter":None,

@@ -36,44 +36,98 @@ dates =  [
 
 def main(st_query_name, di_dbs, start, end, extra=None):
     queries_ref = {
-        "Total Orders By Item":[order_quantity,"odb"],
-        "Total Returns By Item":[return_quantity,"odb"],
-        "Total Cancels By Item":[cancel_quantity,"odb"],
-        "Cancel Reasons":[cancel_reasons,"odb"],
-        "Net Payments Received":[net_payment,"odb"],
-        "Net Discount Given":[net_discount,"odb"],
-        "Average Order Value":[aov,"odb"],
-        "Average Order Size":[aos,"odb"],
-        "Sent Orders Days To Ship":[days_to_ship,"odb"],
-        "Unsent Orders Days To Ship":[days_unsent,"odb"],  
-        "Top 10 By Orders":[topten_by_orders,"odb"],
-        "Top 10 By Returns":[topten_by_returns,"odb"],        
-        "Revenue By Mobile":[revenue_mobile,"tdb"],
-        "Revenue By All Devices":[revenue_all,"tdb"],
-        "Revenue By PC":[revenue_pc,"tdb"],
-        "Revenue By Kooding":[revenue_kooding,"tdb"],
-        "Revenue By App":[revenue_app,"tdb"],
-        "Total Pageviews":[pageviews,"tdb"],
-        "Visitors By Mobile":[visitors_mobile,"tdb"],
-        "Visitors By PC":[visitors_pc,"tdb"],
-        "Visitors By App":[visitors_app,"tdb"],
-        "Visitors By All Devices":[visitors_all,"tdb"],
-        "Orders By App":[orders_app,"tdb"],
-        "Orders By PC":[orders_pc,"tdb"],
-        "Orders By Mobile":[orders_mobile,"tdb"],
-        "Orders By All Devices":[orders_all,"tdb"],   
-        "Conversion Rate":[conversion_rate,"tdb"]
+        "Total Orders By Item":[order_quantity,["odb",]],
+        "Total Returns By Item":[return_quantity,["odb",]],
+        "Total Cancels By Item":[cancel_quantity,["odb",]],
+        "Cancel Reasons":[cancel_reasons,["odb",]],
+        "Net Payments Received":[net_payment,["odb",]],
+        "Net Discount Given":[net_discount,["odb",]],
+        "Average Order Value":[aov,["odb",]],
+        "Average Order Size":[aos,["odb",]],
+        "Sent Orders Days To Ship":[days_to_ship,["odb",]],
+        "Unsent Orders Days To Ship":[days_unsent,["odb",]],  
+        "Top 10 By Orders":[topten_by_orders,["odb",]],
+        "Top 10 By Returns":[topten_by_returns,["odb",]],        
+        "Revenue By Mobile":[revenue_mobile,["tdb",]],
+        "Revenue By All Devices":[revenue_all,["tdb",]],
+        "Revenue By PC":[revenue_pc,["tdb",]],
+        "Revenue By Kooding":[revenue_kooding,["tdb",]],
+        "Revenue By App":[revenue_app,["tdb",]],
+        "Total Pageviews":[pageviews,["tdb",]],
+        "Visitors By Mobile":[visitors_mobile,["tdb",]],
+        "Visitors By PC":[visitors_pc,["tdb",]],
+        "Visitors By App":[visitors_app,["tdb",]],
+        "Visitors By All Devices":[visitors_all,["tdb",]],
+        "Orders By App":[orders_app,["tdb",]],
+        "Orders By PC":[orders_pc,["tdb",]],
+        "Orders By Mobile":[orders_mobile,["tdb",]],
+        "Orders By All Devices":[orders_all,["tdb",]],   
+        "Conversion Rate":[conversion_rate,["tdb",]],
+        "Top 10 Categories (Orders)":[top10_categories_orders,["odb","pdb"]],
+        "Top 10 Categories (Revenue)":[top10_categories_revenue,["odb","pdb"]],
     }
-    db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
-    db = apply_mask(db,start,end)
-    if db.shape[0] <= 1:
-        return "No Date Data"
+    log("Requesting query {} at start {} and end {}".format(st_query_name,start,end))
+#    db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
+    dbs_needed = queries_ref[st_query_name][1]
+    db = None
+    if len(dbs_needed) == 1:
+        log("Queries using one db")
+        db = di_dbs[dbs_needed[0]].copy()
+        dbs = apply_mask(db,start,end)
+        if dbs.shape[0] <= 1:
+            return "No Date Data"
+    elif len(dbs_needed) > 1:
+        log("Queries using more than one db.")
+        dbs = []
+        for ind,db_str in enumerate(dbs_needed):
+            db = di_dbs[db_str].copy()
+            db = apply_mask(db,start,end)
+            if db.shape[0] <= 1:
+                bug("DB too small.")
+                return "No Date Data"
+            dbs.append(db)
     func = queries_ref[st_query_name][0]
-    returnval = func(db, start, end, extra=extra)
+    returnval = func(dbs, start, end, extra=extra)
     if returnval:
         return list(returnval)
     else:
         return None
+    
+def top10_categories_orders(dbs,start,end,extra=None):
+    odb = dbs[0]
+    pdb = dbs[1]
+    new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)
+    count_db = new_df["category"].value_counts().head(10)
+    x_axis_labels = []
+    y_axis_values = []
+    for index,value in count_db.iteritems():
+        x_axis_labels.append(index)
+        y_axis_values.append(value)
+    return x_axis_labels, y_axis_values    
+
+def top10_categories_revenue(dbs,start,end,extra=None):
+    odb = dbs[0]
+#    print(odb.head(15))
+    pdb = dbs[1]
+#    print(pdb.head(10))
+#    odb["category"] = odb.product_cafe24_code.map(pdb.product_cafe24_code)
+#    print(odb.category)
+#    count_db = odb["category"].value_counts().head(10)
+#    print("----")
+#    print(count_db.head(10))
+#    odb.merge(pdb, on='product_cafe24_code', how='left')
+    new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)   
+    groups = new_df.groupby(['category'])['total_net_price'].agg('sum')
+    topten = groups.nlargest(10)
+    
+    x_axis_labels = []
+    y_axis_values = []
+    for index,value in topten.iteritems():
+        x_axis_labels.append(index)
+        y_axis_values.append(value)
+    return x_axis_labels, y_axis_values    
+    
+    
 
 def cancel_quantity(db, start, end, extra=None):
     if extra is not None and not extra == "":
@@ -542,8 +596,12 @@ def topten_by_returns(db, start, end, extra=None):
     
 def apply_mask(source,start,end):
     db = source.copy(deep=True)
-    mask = (db['date'] >= start) & (
-        db['date'] <= end)
+    try:
+        mask = (db['date'] >= start) & (
+            db['date'] <= end)
+    except KeyError:
+        log("Requested DB has no date columns to mask on. Returning orig db")
+        return source
     return db.loc[mask]    
 
 def _gen_dates(start, end, init_kvs=[]):

@@ -85,7 +85,7 @@ class MultiGrapher(AppWidget):
         slots_cfg = pages_cfg[self.curr_pageslotindex]["slots"]
         the_graph_slot = None
 #        print(request_pack)
-        slot_pack = self.engine.convert_request_pack_to_slot_pack(request_pack,self.custom_today)
+        slot_pack = self.engine.convert_request_pack_to_slot_pack(request_pack, self.custom_today)
         slot_pack["last_path"] = path
 
 #       Locate the required graph slot we need to change. If none given, find
@@ -178,12 +178,19 @@ class MultiGrapher(AppWidget):
         canvas.update_idletasks()
         size = 400,250
         im = self.get_TKimage(path,size)
+        if not im:
+            self.bug("Received false from .get_TKimage, skipping to preview.")
+            return False
         graphslot[1] = im
         canvas.create_image(0, 0, image=im, anchor="nw", tags="IMG")
         
     def get_TKimage(self,path,size):
           self.log("Resizing to: {}".format(size))
-          PILim = PIL.Image.open(path)
+          try:
+              PILim = PIL.Image.open(path)
+          except FileNotFoundError:
+              self.bug("Last path: {} no longer exists.".format(path))
+              return False
           PILim = PILim.resize(size,PIL.Image.ANTIALIAS)
           TKim = PIL.ImageTk.PhotoImage(image=PILim)         
           return TKim   
@@ -208,12 +215,15 @@ class MultiGrapher(AppWidget):
                 self.recursive_unpack(canvas,cfg,graph_slot[2])
                 graph_slot[1] = "PREVIEW"
             else:
-                self.load_graph_in_slot(cfg["last_path"],graph_slot)
+                if self.load_graph_in_slot(cfg["last_path"],graph_slot) == False:
+                    graph_slot[2].append(self.gen_canvas_text(canvas, 0, key="Previous image no longer exists, showing text preview."))
+                    self.recursive_unpack(canvas,cfg,graph_slot[2])
+                    graph_slot[1] = "PREVIEW"                    
             canvas.update_idletasks()
         
-    def recursive_unpack(self, canvas, obj,var_ref):
-        if type(obj) is dict:
-            for k,v in obj.items():
+    def recursive_unpack(self, canvas, cfg_dict,var_ref):
+        if type(cfg_dict) is dict:
+            for k,v in cfg_dict.items():
                 typev = type(v)
                 if typev is str or typev is int:   
                     var_ref.append(self.gen_canvas_text(canvas,len(var_ref), key=k,value=v))
@@ -227,7 +237,9 @@ class MultiGrapher(AppWidget):
     def gen_canvas_text(self,canvas,row,key="",value=""):
 #        self.log("{} {} {}".format(self.preview_row,key,value))
         ypos = (row * 25 + 15)
-        textv = "{} - {}".format(key,value)
+        textv = "{}".format(key)
+        if value:
+            textv = textv + " - {}".format(value)
         textid = canvas.create_text(20,ypos,text=textv,anchor="w")  
         return textid
 # ================================================================
@@ -408,7 +420,7 @@ class MultiGrapher(AppWidget):
             vbar.pack(side=tk.RIGHT,fill=tk.Y)
             vbar.config(command=canvas.yview)
             canvas.config(width=450,height=300)
-            canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,scrollregion=(0, 0, 450, 300))
+            canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,scrollregion=(0, 0, 450, 600))
                        
             self.graph_slots.append([canvas,"IMAGEPLACEHOLDER",[]])  
             

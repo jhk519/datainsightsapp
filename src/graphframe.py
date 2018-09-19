@@ -18,6 +18,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 from pprint import pprint as PRETTYPRINT
 import logging
+import datetime
 
 log = logging.getLogger(__name__).info
 log("{} Init.".format(__name__))    
@@ -47,7 +48,7 @@ class GraphFrame(tk.LabelFrame):
     def update_graph(self,analysis_pack ):
         #       CLEAN UP AND RESET
         log("Update graph call.")
-        prp, srp, hold_y = analysis_pack      
+        prp, srp= analysis_pack      
         prev_prime_y_axis_lims = self.axis_prime.get_ylim()
         prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
 
@@ -76,6 +77,7 @@ class GraphFrame(tk.LabelFrame):
             "colors":colors_to_plot,
             "title": None or string
             "linestyles":[STYLESTR,STYLESTR]
+            "event_dates":[('20180522',1),('20180601',5)]
         }
         """
         if prp:
@@ -165,26 +167,40 @@ class GraphFrame(tk.LabelFrame):
 
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
-            if hold_y:
-                self.axis_prime.set_ylim(prev_prime_y_axis_lims)
-                self.axis_secondary.set_ylim(prev_secondary_y_axis_lims)
-    
-            if self.axis_prime.get_ylim()[0] <= 0:
-                self.axis_prime.set_ylim(bottom=0)
-            if self.axis_secondary.get_ylim()[0] <= 0:
-                self.axis_secondary.set_ylim(bottom=0)
-    
+            # Y-AXIS FORMATTING            
+            if prp["set_y"][0]:
+                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
+            elif not prp["set_y"][0]:
+                if self.axis_prime.get_ylim()[1] >= 1000:
+                    self.axis_prime.get_yaxis().set_major_formatter(
+                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
+                if self.axis_prime.get_ylim()[0] <= 0:
+                    self.axis_prime.set_ylim(bottom=0)       
+                    
+            if srp:
+                if srp["set_y"][0]:
+                    self.axis_secondary.set_ylim(bottom=srp["set_y"][1],top=srp["set_y"][2])
+                elif not srp["set_y"][0]:
+                    if self.axis_secondary.get_ylim()[1] >= 1000:
+                        self.axis_secondary.get_yaxis().set_major_formatter(
+                        ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
+                    if self.axis_secondary.get_ylim()[0] <= 0:
+                        self.axis_secondary.set_ylim(bottom=0)                     
             for tick in self.axis_prime.get_xticklabels():
                 tick.set_fontsize(8)
                 tick.set_rotation(30)
                 
-            if self.axis_prime.get_ylim()[1] >= 1000:
-                self.axis_prime.get_yaxis().set_major_formatter(
-                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-            if self.axis_secondary.get_ylim()[1] >= 1000:           
-                self.axis_secondary.get_yaxis().set_major_formatter(
-                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-    
+            # EVENT HIGHLIGHTS
+            for date_tuple in prp["event_dates"]:
+                start_str = date_tuple[0]
+                end_str = date_tuple[1]
+                start_date = datetime.date(int(start_str[0:4]),int(start_str[4:6]),int(start_str[6:8]))
+                end_date = datetime.date(int(end_str[0:4]),int(end_str[4:6]),int(end_str[6:8]))
+                
+                self.axis_prime.axvspan(start_date, end_date, alpha=0.3, color='red',lw=4)
+#            self.axis_prime.axvspan(datetime(2018,4,29), datetime(2018,5,20), alpha=0.5, color='blue')
+            
+            
     #       GENERAL FORMATTING
             self.axis_prime.grid(b=True)
             self.axis_secondary.grid(b=False)
@@ -195,6 +211,7 @@ class GraphFrame(tk.LabelFrame):
                 borderaxespad=0.5,
                 framealpha=0.85
             )
+
         self.canvas.draw()
 
 #        PREP FINAL MERGED DATA PACK

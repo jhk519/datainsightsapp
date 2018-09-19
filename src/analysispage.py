@@ -57,10 +57,11 @@ class AnalysisPage(AppWidget):
 # ================================================================       
         
     def request_and_graph_data(self,request_pack):
+#        pprint(request_pack)
         self.log("***START*** search query.")
         data_pack = None
         
-        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar())
+        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar(),self.get_cfg_val("event_dates"))
         self.log("Received Data")
         if init_data == "No Date Data":
             self.bug("No results for this date range.")

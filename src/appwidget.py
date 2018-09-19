@@ -96,6 +96,9 @@ class AppWidget(tk.Frame):
             value = self.__cfgvar[key]
         except TypeError:
             self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
+        except KeyError:
+            self.bug("This key is not found in cfg! {}".format(key))
+            return None
         return value
     
     def get_export_full_name(self,base_string,ftype="excel",outdir=None):
@@ -164,6 +167,61 @@ class AppWidget(tk.Frame):
             col, command=lambda col=col: self.sortby(
                 tree, col, int(
                     not descending)))   
+        
+class CreateToolTip(object):
+    """
+    create a tooltip for a given widget
+    CREDIT FOR THIS CLASS HERE:
+        crxguy52 @ https://stackoverflow.com/questions/3221956/how-do-i-display-tooltips-in-tkinter
+    """
+    def __init__(self, widget, text='widget info'):
+        self.waittime = 500     #miliseconds
+        self.wraplength = 180   #pixels
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.showtip)
+
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+
+    def showtip(self, event=None):
+        x = y = 0
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = tk.Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tw, text=self.text, justify='left',
+                       background="#ffffff", relief='solid', borderwidth=1,
+                       wraplength = self.wraplength)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tw
+        self.tw= None
+        if tw:
+            tw.destroy()        
             
 class SettingsManagerEngine():
     def __init__(self):    
@@ -425,27 +483,29 @@ class MultiGrapherEngine():
     def convert_slot_pack_to_request_pack(self,slot_pack,custom_today):
             
         request_pack = {
-            'start': (custom_today - datetime.timedelta(slot_pack["days_back"])),
-            'end': custom_today,
-            'extra': slot_pack["extra"],
-            'hold_y': False,
-            'left': {
-                'gtype': slot_pack["left"]["gtype"],
-                'metric': slot_pack["left"]["metric"],
-                'queries': slot_pack["left"]["queries"],
+            "start": (custom_today - datetime.timedelta(slot_pack["days_back"])),
+            "end": custom_today,
+            "extra": slot_pack["extra"],
+            "left": {
+                "gtype": slot_pack["left"]["gtype"],
+                "metric": slot_pack["left"]["metric"],
+                "queries": slot_pack["left"]["queries"],
+                "set_y": slot_pack["left"]["set_y"]
+                
             },
-            'mirror_days': slot_pack["mirror_days"],
-            'right': {
-                'gtype': slot_pack["right"]["gtype"],
-                'metric': slot_pack["right"]["metric"],
-                'queries': slot_pack["right"]["queries"]
+            "mirror_days": slot_pack["mirror_days"],
+            "right": {
+                "gtype": slot_pack["right"]["gtype"],
+                "metric": slot_pack["right"]["metric"],
+                "queries": slot_pack["right"]["queries"],
+                "set_y": slot_pack["right"]["set_y"]
             },
-            'x_axis_label': 'Date',
+            "x_axis_label": slot_pack["x_axis_label"],
             "title":slot_pack["title"]
         }
         return request_pack
        
-    def convert_request_pack_to_slot_pack(self,request_pack): 
+    def convert_request_pack_to_slot_pack(self,request_pack,custom_today=None): 
         if request_pack["title"] == None:
             le = request_pack["left"]["queries"]
             ri = request_pack["right"]["queries"]
@@ -469,12 +529,15 @@ class MultiGrapherEngine():
                         "gtype":request_pack["left"]["gtype"],
                         "metric": request_pack["left"]["metric"],
                         "queries": request_pack["left"]["queries"],
+                        "set_y": request_pack["left"]["set_y"]
                     },
                     "right": {
                         "gtype":request_pack["right"]["gtype"],
                         "metric": request_pack["right"]["metric"],
                         "queries": request_pack["right"]["queries"],
+                        "set_y": request_pack["right"]["set_y"]
                     }, 
+                    "custom_today":custom_today,
                     "days_back":((request_pack["end"] - request_pack["start"]).days),
                     "title": newtitle
                  }                   
@@ -486,33 +549,29 @@ class AnalysisPageEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug   
         
-    def get_results_packs(self,pack,dbvar):
+    def get_results_packs(self,pack,dbvar,event_dates):
         """
         selpack = {
-            "extra":self.extra_var.get(),
-            "x_axis_label": self.x_axis_type.get(),
-            "mirror_days": self.mirror_days_var.get(),            
-            "left": {
-                "gtype":self.axis_panels["left"]["gtype"],
-                "metric": self.axis_panels["left"]["metric"],
-                "queries": [(QRY_NAME,LINE_COLOR,LINE_STYLE)]
-            },
-            "right": {
-                "gtype":self.axis_panels["right"]["gtype"],
-                "metric": self.axis_panels["right"]["metric"],
-                "queries": right_comp,     
-            }, 
-            "start": self.start_date,
-            "end": self.end_date,
-            "title":None,
-            "hold_y": self.hold_y_var.get()            
-        }
+         "end": datetime.date(2018, 1, 28),
+         "extra": "",
+         "left": {"gtype": "line",
+                  "metric": "Order Value (KRW)",
+                  "queries": [("Average Order Value", "firebrick", "-")],
+                  "set_y": [False, 0, 0]},
+         "mirror_days": 0,
+         "right": {"gtype": None,
+                   "metric": None,
+                   "queries": [],
+                   "set_y": [False, 0, 0]},
+         "start": datetime.date(2018, 1, 14),
+         "title": None,
+         "x_axis_label": "Date"}
         """      
        
         start = pack["start"]       
         end = pack["end"]
         axes_select_packs = self._determine_left_right_axis(pack)
-        axes_result_packs = [None,None,pack["hold_y"]]
+        axes_result_packs = [None,None]
         if bool(pack["mirror_days"]):
             m_start = (start - datetime.timedelta(pack["mirror_days"]))
             m_end = (end - datetime.timedelta(pack["mirror_days"]))
@@ -566,12 +625,13 @@ class AnalysisPageEngine():
                                 first_found = False
                             y_data_lists.append(queryy)                            
                         
-                    
+#            print(axis["set_y"])
                 axis_pack  = {
                     "start":start,
                     "end":end,
                     "met": axis["metric"],
                     "gtype": axis["gtype"],
+                    "set_y":axis["set_y"],
                     "str_x": pack["x_axis_label"],
                     "str_y": axis["metric"],
                     "line_labels":ls_queries,
@@ -579,7 +639,9 @@ class AnalysisPageEngine():
                     "y_data": y_data_lists,
                     "colors":colors_to_plot,
                     "linestyles": styles_to_plot,
-                    "title":pack["title"]
+                    "title":pack["title"],
+                    "event_dates": event_dates
+                    
                 }
                 axes_result_packs[ind] = axis_pack          
         return axes_result_packs             

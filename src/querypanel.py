@@ -23,6 +23,8 @@ import datetime
 # Project Modules
 from appwidget import AppWidget
 import master_calendar.calendardialog as cal_dialog
+
+vardict = {"left"}
    
 class QueryPanel(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
@@ -41,22 +43,22 @@ class QueryPanel(AppWidget):
 #        lock/unlock y-axis when skipping by week or month
 #        autosearch on query change
         self.autosearch = tk.BooleanVar()
-        self.autosearch.set(False)          
+        self.autosearch.set(False)        
         
-        self.hold_y_var = tk.BooleanVar()
-        self.hold_y_var.set(False)
-        
+        #CALENDAR; START END
         self.start_textvar = tk.StringVar()
         self.start_textvar.set("Pick Start Date")    
-        
         self.end_textvar = tk.StringVar()
         self.end_textvar.set("Pick End Date")  
 
+        #QUERY MENU
         self.category_menu = None
         self.max_num_queries = 11
-        self.use_extra_var = tk.BooleanVar()
-        self.use_extra_var.set(False)
-        self.extra_var = tk.StringVar()
+        
+        #USE PRODUCT FILTER
+        self.use_product_filter = tk.BooleanVar()
+        self.use_product_filter.set(False)
+        self.product_filter_var = tk.StringVar()
         
         self.category_var = tk.StringVar() 
         self.ls_query_packs = []
@@ -69,18 +71,21 @@ class QueryPanel(AppWidget):
         
         self.mirror_days_var = tk.IntVar()
         self.mirror_days_var.set(0)
+        
         self.axis_panels = {
             "left": {
                 "axispanel": None,
                 "gtype":None,
                 "metric": None,
-                "queries":[]
+                "queries":[],
+                "set_y":[tk.BooleanVar(), tk.IntVar(0), tk.IntVar(value=100)]
             },
             "right": {
                 "axispanel": None,
                 "gtype":None,
                 "metric": None,
-                "queries":[]                        
+                "queries":[],
+                "set_y":[tk.BooleanVar(), tk.IntVar(0), tk.IntVar(value=100)]                       
             }
         }
         
@@ -129,26 +134,32 @@ class QueryPanel(AppWidget):
                      for i,p in enumerate(self.axis_panels["right"]["queries"]) 
                      if not p[0].get() == "None" ]
         
+        left_set_y = [ p.get() for i,p in enumerate(self.axis_panels["left"]["set_y"]) ]
+        
+        right_set_y = [ p.get() for i,p in enumerate(self.axis_panels["right"]["set_y"]) ]
+        
         selpack = {
-            "extra":self.extra_var.get().strip().replace(" ", "").replace("\n", ""),
+            "extra":self.product_filter_var.get().strip().replace(" ", "").replace("\n", ""),
             "x_axis_label": self.x_axis_type.get(),
             "mirror_days": self.mirror_days_var.get(),            
             "left": {
                 "gtype":self.axis_panels["left"]["gtype"],
                 "metric": self.axis_panels["left"]["metric"],
                 "queries": left_comp,
+                "set_y": left_set_y
             },
             "right": {
                 "gtype":self.axis_panels["right"]["gtype"],
                 "metric": self.axis_panels["right"]["metric"],
-                "queries": right_comp,     
+                "queries": right_comp,  
+                "set_y": right_set_y    
             }, 
             "start": self.start_date,
             "end": self.end_date,
-            "hold_y": self.hold_y_var.get(),
             "title":None,
         }
-        self.log("Start: {}, End: {}, Hold_y: {}".format(selpack["start"], selpack["end"], selpack["hold_y"] ))
+            
+#        pprint(selpack)
         return selpack  
     
     def set_cfgvar(self,new_cfgvar):
@@ -202,8 +213,8 @@ class QueryPanel(AppWidget):
         self.extra_date = ref_calendar.result.date()
         self.extra_textvar.set(str(self.extra_date))
             
-    def _use_extra_var_changed(self):
-        need_use = self.use_extra_var.get()
+    def _use_product_filter_changed(self):
+        need_use = self.use_product_filter.get()
         if need_use:
             self.extra_widget.grid()
             for axis in ["left","right"]:
@@ -215,7 +226,7 @@ class QueryPanel(AppWidget):
                         self._delete_query((axis,ind))
         else:
             self.extra_widget.grid_remove()
-            self.extra_var.set("")
+            self.product_filter_var.set("")
         self._update_queries_menu(self.category_var.get())
         
     def _use_mirror_var_changed(self):
@@ -226,6 +237,17 @@ class QueryPanel(AppWidget):
         else:
             self.mirror_days_entry.grid_remove()
             self.mirror_days_var.set(0)
+            
+    def _use_set_y_axis_vars_changed(self,axis):
+        self.log("set_y_axis toggled for {} axis.".format(axis))
+#        axis_vars = self.axis_panels[axis]["set_y"]
+#        need_use = axis_vars[0].get()
+#        if need_use:
+#            axis_vars[1]["state"] = "normal"
+#            axis_vars[2]["state"] = "normal"
+#        else:
+#            axis_vars[1]["state"] = "disabled"
+#            axis_vars[2]["state"] = "disabled"     
 
     def _send_to_axis(self,which_axis,index):
         query_str = self.ls_query_packs[index][0].get()
@@ -272,15 +294,8 @@ class QueryPanel(AppWidget):
         
     def _update_queries_menu(self, category):
         self.log(".update_queries called for category {}".format(category))
-        
         req_queries = self.engine.get_queries_list(category,self.get_cfg_val("queries_ref"))
-
-        try:
-            self.hold_y_var
-        except AttributeError:
-            self.bug("{} not suitable for .hold_y_var callback".format(str(self.controller)))   
-        else:     
-            self.hold_y_var.set(False)
+#        self.set_y_axis_var.set(False)
                 
         q_count = 0
         for index,pack in enumerate(self.ls_query_packs):
@@ -304,7 +319,7 @@ class QueryPanel(AppWidget):
             q_count += 1 
             
             #if cannot use product filter, and product filter input exists       
-            if self.use_extra_var.get() == True and query_ref["can_filter"] == None:
+            if self.use_product_filter.get() == True and query_ref["can_filter"] == None:
                 continue    
             
             if curr_x == "None" or curr_x == query_ref["x-axis-label"]:
@@ -491,25 +506,41 @@ class QueryPanel(AppWidget):
             
     def _choose_linestyle(self,event,args=None,):
         axis,index,style_stvar = args
-        self.log("New style: {}".format(style_stvar.get()))
-                    
+        self.log("New style: {}".format(style_stvar.get())) 
+#                    
     def populate_axis_panels(self):        
             available_colors = self.get_cfg_val("colors_preferred").split("-")
-            for axis in ["left","right"]:        
+            for axis in ["left","right"]:   
+                currframe = self.axis_panels[axis]["axispanel"]
+                set_y_vars = self.axis_panels[axis]["set_y"]
+                set_y_axis_button = ttk.Checkbutton(
+                    currframe,
+                    text="Lock Y-Axis Limits",
+                    variable=set_y_vars[0],
+                    onvalue=True,
+                    offvalue=False,
+                    command=lambda axis= axis:self._use_set_y_axis_vars_changed(axis))
+                set_y_axis_button.grid(row=6,column=0,sticky="w",padx=(5,0),
+                    columnspan=1)      
+                
+                set_y_axis_entry_low = ttk.Entry(currframe, width=3, textvariable=set_y_vars[1])
+                set_y_axis_entry_low.grid(row=6, column=2,columnspan=1, sticky="w",padx=(0,5))  
+                
+                set_y_axis_entry_high = ttk.Entry(currframe, width=5, textvariable=set_y_vars[2])
+                set_y_axis_entry_high.grid(row=6, column=3,columnspan=1, sticky="w") 
+                 
                 for index in range(0,4):
-                    rownum = index + 1
+                    #TODO: Refactor below axis generation into a separate function or class
+                    rownum = index
                     colorindex = index
-                    
                     if axis == "right":
-                        colorindex = index + 4   
-                    
-                    currframe = self.axis_panels[axis]["axispanel"]
-                    
+                        colorindex = index + 4        
+
                     lbl_stvar = tk.StringVar()
                     lbl_stvar.set("None")
                     label = tk.Label(currframe,textvariable=lbl_stvar, wraplength=110, anchor="w",
                                      justify="left",width=15,height=2)
-                    label.grid(row=rownum,column=0,padx=(10,0),sticky="w")
+                    label.grid(row=rownum,column=0,padx=(5,0),sticky="w")
                     
                     axis_index = axis,index
                     clr_btn = tk.Button(currframe,width=1,height=1,command=lambda axis_index=axis_index:self._choose_colors(axis_index))
@@ -524,18 +555,16 @@ class QueryPanel(AppWidget):
                                             padx=(5,5))       
                     
                     
-                    
                     linestyle_menu["values"] = ["-","--","-.",":"]
                     linestyle_menu.current(0)         
                     #event handlers can only pass one argument, the event. 
                     #so, we tell the lambda function to set a default value for argument abc
                     linestyle_menu.bind('<<ComboboxSelected>>',lambda evt,abc=menu_args :self._choose_linestyle(evt,abc))
-                    linestyle_menu["state"] = "readonly"                      
-#                    print(linestyle_menu.config)   
+                    linestyle_menu["state"] = "readonly"                         
                     delete = tk.Button(currframe,width=1, text="x",
                         command=lambda axis_index=axis_index:self._delete_query(axis_index),
                         font="Helvetica 7")
-                    delete.grid(row=rownum, column=3,padx=(10,10),pady=(5,0),sticky="ne")
+                    delete.grid(row=rownum, column=3,padx=(5,10),pady=(5,0),sticky="ne")
                     
                     selected_query_pack = [lbl_stvar, clr_btn, styvar]
                     self.axis_panels[axis]["queries"].append(selected_query_pack)
@@ -546,11 +575,11 @@ class QueryPanel(AppWidget):
         self.options_menu.grid(row=3,column=0,sticky="nwse",columnspan=2,padx=(5,5),pady=(8,8))
         
         self.extra_use_check = ttk.Checkbutton(self.options_menu,text="Filter by Product Code",
-              onvalue=True,  offvalue=False, variable=self.use_extra_var,
-              command=lambda x = x:self._use_extra_var_changed())
+              onvalue=True,  offvalue=False, variable=self.use_product_filter,
+              command=lambda x = x:self._use_product_filter_changed())
         self.extra_use_check.grid(row=0,column=0,sticky="w")
         
-        self.extra_widget = ttk.Entry(self.options_menu, width=15, textvariable=self.extra_var)
+        self.extra_widget = ttk.Entry(self.options_menu, width=15, textvariable=self.product_filter_var)
         self.extra_widget.grid(row=0, column=1,columnspan=1, pady=2, sticky="w")
         self.extra_widget.grid_remove()
             
@@ -563,14 +592,7 @@ class QueryPanel(AppWidget):
         self.mirror_days_entry.grid(row=1, column=1,columnspan=2, sticky="w")
         self.mirror_days_entry.grid_remove()     
         
-        self.hold_y_axis_button = ttk.Checkbutton(
-            self.options_menu,
-            text="Lock Y-Axis",
-            variable=self.hold_y_var,
-            onvalue=True,
-            offvalue=False)
-        self.hold_y_axis_button.grid(row=2,column=0,sticky="w",
-            columnspan=1)      
+        
         
         self.should_search_on_query_change = ttk.Checkbutton(
             self.options_menu,
@@ -579,14 +601,14 @@ class QueryPanel(AppWidget):
             onvalue=True,
             offvalue=False)
         self.should_search_on_query_change.grid(
-            row=3, column=0,sticky="w")
+            row=4, column=0,sticky="w")
         self.should_search_on_query_change.invoke()
 
         self.entry_input_button = ttk.Button(
             self.options_menu,
             command=self.push_search,
             text="Search")
-        self.entry_input_button.grid(row=4, column=0,sticky="w")        
+        self.entry_input_button.grid(row=5, column=0,sticky="w")        
                         
 #if __name__ == "__main__":
 #    import config2

@@ -34,7 +34,7 @@ dates =  [
         "2018-12-25"
     ]
 
-def main(st_query_name, di_dbs, start, end, extra=None):
+def main(st_query_name, di_dbs, start, end, extra=None, n_rankings=10):
     queries_ref = {
         "Total Orders By Item":[order_quantity,["odb",]],
         "Total Returns By Item":[return_quantity,["odb",]],
@@ -46,8 +46,9 @@ def main(st_query_name, di_dbs, start, end, extra=None):
         "Average Order Size":[aos,["odb",]],
         "Sent Orders Days To Ship":[days_to_ship,["odb",]],
         "Unsent Orders Days To Ship":[days_unsent,["odb",]],  
-        "Top 10 By Orders":[topten_by_orders,["odb",]],
-        "Top 10 By Returns":[topten_by_returns,["odb",]],        
+        "Top Products (Orders)":[topten_by_orders,["odb",]],
+        "Top Products (Revenue)":[topten_by_returns,["odb",]],  
+        "Daily Sales (Top Products)":[daily_sales_top_products,["odb",]],
         "Revenue By Mobile":[revenue_mobile,["tdb",]],
         "Revenue By All Devices":[revenue_all,["tdb",]],
         "Revenue By PC":[revenue_pc,["tdb",]],
@@ -63,8 +64,8 @@ def main(st_query_name, di_dbs, start, end, extra=None):
         "Orders By Mobile":[orders_mobile,["tdb",]],
         "Orders By All Devices":[orders_all,["tdb",]],   
         "Conversion Rate":[conversion_rate,["tdb",]],
-        "Top 10 Categories (Orders)":[top10_categories_orders,["odb","pdb"]],
-        "Top 10 Categories (Revenue)":[top10_categories_revenue,["odb","pdb"]],
+        "Top Categories (Orders)":[top10_categories_orders,["odb","pdb"]],
+        "Top Categories (Revenue)":[top10_categories_revenue,["odb","pdb"]],
     }
     log("Requesting query {} at start {} and end {}".format(st_query_name,start,end))
 #    db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
@@ -87,25 +88,49 @@ def main(st_query_name, di_dbs, start, end, extra=None):
                 return "No Date Data"
             dbs.append(db)
     func = queries_ref[st_query_name][0]
-    returnval = func(dbs, start, end, extra=extra)
+    returnval = func(dbs, start, end, extra=extra,n_rankings=n_rankings)
     if returnval:
         return list(returnval)
     else:
         return None
     
-def top10_categories_orders(dbs,start,end,extra=None):
+def daily_sales_top_products(db, start, end, extra=None,n_rankings=3):
+    count_db = db["product_cafe24_code"].value_counts().head(n_rankings)
+    list_of_product_daily_sales = []
+    for pcode,value in count_db.iteritems():
+#        print(pcode,value)
+        product_daily_sales = []
+        temp_db = db.loc[db['product_cafe24_code'] == pcode] 
+        date_dict = _gen_dates(start, end, init_kvs=[("net_payment", 0)])
+        date_dict = collections.OrderedDict(sorted(date_dict.items()))
+        
+        for index, row in temp_db.iterrows():
+            temp_date = row["date_payment"]
+            if temp_date in date_dict:
+                date_dict[temp_date]["net_payment"] += row["product_price"]   
+        for date_obj in date_dict:
+            product_daily_sales.append(date_dict[date_obj]["net_payment"])
+        list_of_product_daily_sales.append((product_daily_sales,pcode))
+                
+    x_axis_labels = []
+    
+    for date_obj in date_dict:
+        x_axis_labels.append(date_obj)
+    return "MULTIPLE PLOTS", x_axis_labels, list_of_product_daily_sales   
+    
+def top10_categories_orders(dbs,start,end,extra=None,n_rankings=10):
     odb = dbs[0]
     pdb = dbs[1]
     new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)
-    count_db = new_df["category"].value_counts().head(10)
+    count_db = new_df["category"].value_counts().head(n_rankings)
     x_axis_labels = []
     y_axis_values = []
-    for index,value in count_db.iteritems():
-        x_axis_labels.append(index)
+    for cat,value in count_db.iteritems():
+        x_axis_labels.append(cat)
         y_axis_values.append(value)
     return x_axis_labels, y_axis_values    
 
-def top10_categories_revenue(dbs,start,end,extra=None):
+def top10_categories_revenue(dbs,start,end,extra=None,n_rankings=10):
     odb = dbs[0]
 #    print(odb.head(15))
     pdb = dbs[1]
@@ -118,7 +143,7 @@ def top10_categories_revenue(dbs,start,end,extra=None):
 #    odb.merge(pdb, on='product_cafe24_code', how='left')
     new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)   
     groups = new_df.groupby(['category'])['total_net_price'].agg('sum')
-    topten = groups.nlargest(10)
+    topten = groups.nlargest(n_rankings)
     
     x_axis_labels = []
     y_axis_values = []
@@ -129,7 +154,7 @@ def top10_categories_revenue(dbs,start,end,extra=None):
     
     
 
-def cancel_quantity(db, start, end, extra=None):
+def cancel_quantity(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
         
@@ -151,7 +176,7 @@ def cancel_quantity(db, start, end, extra=None):
     return date_list, cancels_list
 
 
-def return_quantity(db, start, end, extra=None):
+def return_quantity(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
 
@@ -171,7 +196,7 @@ def return_quantity(db, start, end, extra=None):
     return date_list, returns_list
 
 
-def order_quantity(db, start, end, extra=None):
+def order_quantity(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
 
@@ -187,7 +212,7 @@ def order_quantity(db, start, end, extra=None):
     return date_list, orders_list
 
 
-def cancel_reasons(db, start, end, extra=None):
+def cancel_reasons(db, start, end, extra=None,n_rankings=10):
 
 #    EXTRACT AND FILTER DB IF NECC.
     if extra is not None and not extra == "":
@@ -213,7 +238,7 @@ def cancel_reasons(db, start, end, extra=None):
     return list_of_unique_reasons, counts_of_reasons
 
 
-def revenue_all(db, start, end, extra=None):
+def revenue_all(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
     for index, row in db.iterrows():
@@ -223,7 +248,7 @@ def revenue_all(db, start, end, extra=None):
 
     return date_list, revenues_list
 
-def revenue_kooding(db, start, end, extra=None):
+def revenue_kooding(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
     for index, row in db.iterrows():
@@ -234,7 +259,7 @@ def revenue_kooding(db, start, end, extra=None):
     return date_list, revenues_list
 
 
-def revenue_pc(db, start, end, extra=None):
+def revenue_pc(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
     for index, row in db.iterrows():
@@ -245,7 +270,7 @@ def revenue_pc(db, start, end, extra=None):
     return date_list, revenues_list
 
 
-def revenue_mobile(db, start, end, extra=None):
+def revenue_mobile(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
     for index, row in db.iterrows():
@@ -256,7 +281,7 @@ def revenue_mobile(db, start, end, extra=None):
     return date_list, revenues_list
 
 
-def revenue_app(db, start, end, extra=None):
+def revenue_app(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
     for index, row in db.iterrows():
@@ -267,7 +292,7 @@ def revenue_app(db, start, end, extra=None):
     return date_list, revenues_list
 
 
-def pageviews(db, start, end, extra=None):
+def pageviews(db, start, end, extra=None,n_rankings=10):
     date_list = []
     pageviews_list = []
     for index, row in db.iterrows():
@@ -276,7 +301,7 @@ def pageviews(db, start, end, extra=None):
     return date_list, pageviews_list
 
 
-def visitors_all(db, start, end, extra=None):
+def visitors_all(db, start, end, extra=None,n_rankings=10):
     date_list = []
     visitors_list = []
     types_of_visitors_list = [
@@ -293,7 +318,7 @@ def visitors_all(db, start, end, extra=None):
     return date_list, visitors_list
 
 
-def visitors_app(db, start, end, extra=None):
+def visitors_app(db, start, end, extra=None,n_rankings=10):
     date_list = []
     visitors_list = []
     for index, row in db.iterrows():
@@ -302,7 +327,7 @@ def visitors_app(db, start, end, extra=None):
     return date_list, visitors_list
 
 
-def visitors_mobile(db, start, end, extra=None):
+def visitors_mobile(db, start, end, extra=None,n_rankings=10):
     date_list = []
     visitors_list = []
 
@@ -312,7 +337,7 @@ def visitors_mobile(db, start, end, extra=None):
 
     return date_list, visitors_list
 
-def orders_mobile(db, start, end, extra=None):
+def orders_mobile(db, start, end, extra=None,n_rankings=10):
     date_list = []
     ls_y_data = []
 
@@ -322,7 +347,7 @@ def orders_mobile(db, start, end, extra=None):
 
     return date_list, ls_y_data
 
-def orders_app(db, start, end, extra=None):
+def orders_app(db, start, end, extra=None,n_rankings=10):
     date_list = []
     ls_y_data = []
 
@@ -332,7 +357,7 @@ def orders_app(db, start, end, extra=None):
 
     return date_list, ls_y_data
 
-def orders_pc(db, start, end, extra=None):
+def orders_pc(db, start, end, extra=None,n_rankings=10):
     date_list = []
     ls_y_data = []
 
@@ -342,7 +367,7 @@ def orders_pc(db, start, end, extra=None):
 
     return date_list, ls_y_data
 
-def orders_all(db, start, end, extra=None):
+def orders_all(db, start, end, extra=None,n_rankings=10):
     date_list = []
     total_data_list = []
     types_of_data_list = [
@@ -359,7 +384,7 @@ def orders_all(db, start, end, extra=None):
     return date_list, total_data_list
 
 
-def visitors_pc(db, start, end, extra=None):
+def visitors_pc(db, start, end, extra=None,n_rankings=10):
     date_list = []
     visitors_list = []
 
@@ -370,7 +395,7 @@ def visitors_pc(db, start, end, extra=None):
     return date_list, visitors_list
 
 
-def net_payment(db, start, end, extra=None):
+def net_payment(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
 
@@ -395,7 +420,7 @@ def net_payment(db, start, end, extra=None):
     return x_axis_labels, y_axis_values_1
 
 
-def net_discount(db, start, end, extra=None):
+def net_discount(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
     
@@ -429,7 +454,7 @@ def net_discount(db, start, end, extra=None):
     return x_axis_labels, y_axis_values_1
 
 
-def aov(db, start, end, extra=None):
+def aov(db, start, end, extra=None,n_rankings=10):
 #   make a separate db without duplicate order_ids.
     db = db.drop_duplicates(subset="order_id")
 
@@ -454,7 +479,7 @@ def aov(db, start, end, extra=None):
     return x_axis_labels, y_axis_values_1
 
 
-def aos(db, start, end, extra=None):
+def aos(db, start, end, extra=None,n_rankings=10):
 # this gives us a reference of how many rows had this order_id giving us
 # size of each order.
     count_db = db["order_id"].value_counts()
@@ -486,7 +511,7 @@ def aos(db, start, end, extra=None):
     return x_axis_labels, y_axis_values_1
 
 
-def days_to_ship(db, start, end, extra=None):
+def days_to_ship(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
 
@@ -511,7 +536,7 @@ def days_to_ship(db, start, end, extra=None):
     return x_axis_labels, y_axis_values
 
 
-def days_unsent(db, start, end, extra=None):
+def days_unsent(db, start, end, extra=None,n_rankings=10):
 
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]      
@@ -541,7 +566,7 @@ def days_unsent(db, start, end, extra=None):
         y_axis_values.append(counter_dict_of_diffs[diff_day])
     return x_axis_labels, y_axis_values
 
-def conversion_rate(db,start,end,extra=None):
+def conversion_rate(db,start,end,extra=None,n_rankings=10):
     date_dict = _gen_dates(start, end, init_kvs=[("cr",0)])
     date_dict = collections.OrderedDict(sorted(date_dict.items()))
     for index, row in db.iterrows():
@@ -561,8 +586,8 @@ def conversion_rate(db,start,end,extra=None):
         y_axis_values_1.append(dd["cr"])
     return x_axis_labels, y_axis_values_1    
 
-def topten_by_orders(db, start, end, extra=None):
-    count_db = db["product_cafe24_code"].value_counts().head(10)
+def topten_by_orders(db, start, end, extra=None,n_rankings=10):
+    count_db = db["product_cafe24_code"].value_counts().head(n_rankings)
     x_axis_labels = []
     y_axis_values = []
     for index,value in count_db.iteritems():
@@ -570,7 +595,7 @@ def topten_by_orders(db, start, end, extra=None):
         y_axis_values.append(value)
     return x_axis_labels, y_axis_values
 
-def topten_by_returns(db, start, end, extra=None):
+def topten_by_returns(db, start, end, extra=None,n_rankings=10):
     temp = {}
     for index,row in db.iterrows():
         
@@ -585,7 +610,7 @@ def topten_by_returns(db, start, end, extra=None):
     
     temp_df = pd.DataFrame.from_dict(temp,orient="index")
     temp_df = temp_df.sort_values(0,ascending=False)
-    temp_df = temp_df.head(10)
+    temp_df = temp_df.head(n_rankings)
     
     x_axis_labels = []
     y_axis_values = []

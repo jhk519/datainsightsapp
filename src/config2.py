@@ -16,28 +16,28 @@ Created on Fri Jun 22 00:58:46 2018
 
 backend_settings = {
     "settingsmanager":{
-        "dbmanager": {
-            "loaddb_on_load":"Automatically load database file on app startup.",
-            "loaddb_loc":"File location for automatic load database on startup.",
-            "automatic db export":"Automatically choose file location for database export.",
-            "automatic export location":"File location for automatic database export",
-        },
-        "analysispage": {
-            "automatic search export": "Automatically choose file location export search results.",
-            "automatic export location": "File location for automatic search result export.",
-            "setdates_on_load": "Automatically set dates on loading.",
-        },
-        "querypanel": {
-            "colors_preferred": "Default colors for graphing queries.",
-            "setdates_gap": "The required number of days between automatic date setting on startup.",
-            "setdates_from_date": "The end date for automatic date settings on startup."
-        },
-        "productviewer": {
-            "automatic export location": "File location for exporting customer order lists."
+        "descriptions": {
+            "dbmanager": {
+                "loaddb_on_load":"Automatically load database file on app startup.",
+                "loaddb_loc":"File location for automatic load database on startup.",
+                "automatic db export":"Automatically choose file location for database export.",
+                "automatic export location":"File location for automatic database export",
+            },
+            "analysispage": {
+                "automatic search export": "Automatically choose file location export search results.",
+                "automatic export location": "File location for automatic search result export.",
+                "setdates_on_load": "Automatically set dates on loading.",
+                "event_list": "List of Events"
+            },
+            "querypanel": {
+                "colors_preferred": "Default colors for graphing queries.",
+                "setdates_gap": "The required number of days between automatic date setting on startup.",
+                "setdates_from_date": "The end date for automatic date settings on startup."
+            },
+            "productviewer": {
+                "automatic export location": "File location for exporting customer order lists."
+            }
         }
-        
-        
-        
     },
             
     "dbmanager":{
@@ -210,14 +210,17 @@ backend_settings = {
         "automatic export location": "exports\search_results",
         "auto_name_exports": True,  
         "auto_query": True, 
-        "event_dates": [("20180425","20180428"),("20180501","20180506"),("20180522","20180524")]
+#        "event_list": [("20180429","20180429","04/29 Sale"),
+#                        ("20180501","20180506","05/01-05/06 Event"),
+#                        ("20180517","20180520","0517 3 Day Sale")]
+        "event_list":"20180429,20180429,04/29 Sale%%20180501,20180506,05/01-05/06 Event%%20180517,20180520,0517 3 Day Sale"
     },
 
     "querypanel":{
         "setdates_on_load": True,
         "setdates_gap":"14",
-        "setdates_from_date":"20180128",             
-        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink-coral",
+        "setdates_from_date":"20180515",             
+        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
         "categories": ["Orders","Cashflow","Traffic","Logistics","Rankings","Cancels"],
         
         "queries_ref": {
@@ -229,7 +232,16 @@ backend_settings = {
                 "gtype": "line",
                 "db-req": "odb"
             },
-            "Top 10 Categories (Orders)":{
+            "Daily Sales (Top Products)":{
+                "category": "Orders",
+                "x-axis-label": "Date",
+                "y-axis-label": "Revenue",
+                "can_filter":None,
+                "gtype": "line",
+                "db-req": "odb"                    
+            },
+  
+            "Top Categories (Orders)":{
             	"category": "Rankings",
             	"x-axis-label": "Category",
             	"y-axis-label": "Order Quantity",
@@ -237,10 +249,10 @@ backend_settings = {
             	"gtype": "bar",
             	"db-req": "odb"
             },
-            "Top 10 Categories (Revenue)":{
+            "Top Categories (Revenue)":{
             	"category": "Rankings",
             	"x-axis-label": "Category",
-            	"y-axis-label": "Order Quantity",
+            	"y-axis-label": "Revenue",
             	"can_filter":None,
             	"gtype": "bar",
             	"db-req": "odb"
@@ -421,7 +433,7 @@ backend_settings = {
             	"gtype": "bar",
             	"db-req": "odb"
             },
-            "Top 10 By Orders":{
+            "Top Products (Orders)":{
             	"category": "Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -430,7 +442,7 @@ backend_settings = {
             	"db-req": "odb"
             },
             
-            "Top 10 By Returns":{
+            "Top Products (Returns)":{
             	"category": "Rankings",
             	"x-axis-label": "Product Codes",
             	"y-axis-label": "Quantity (Part-Orders)",
@@ -467,7 +479,12 @@ backend_settings = {
              }
         ]
     },
-#    "datatable":{}
+    "graphframe":{
+        "event_colors":"firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink"
+    },
+    "datatable":{
+        "gg":"hh"
+    }
 }
     
            

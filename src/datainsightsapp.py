@@ -111,6 +111,7 @@ class DataInsightsApp(tk.Tk):
         
             
     def propagate_cfg_var_change(self,new_cfgvar):
+#        PRETTYPRINTTHIS(new_cfgvar)
         self.dbmanager.set_cfgvar(new_cfgvar)
         self.product_viewer_page.set_cfgvar(new_cfgvar)
         self.ap.set_cfgvar(new_cfgvar)
@@ -127,8 +128,6 @@ class DataInsightsApp(tk.Tk):
         self.settingsmanager.set_new_presets(multigrapher_cfg)
         
     def get_default_presets(self):
-        what = self.settingsmanager.get_latest_config()["multigrapher"]
-#        PRETTYPRINTTHIS(what)
         return self.settingsmanager.get_latest_config()["multigrapher"]
         
 if __name__ == "__main__":

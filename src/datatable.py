@@ -41,7 +41,7 @@ class DataTable(AppWidget):
 #   We use the "cfg" attribute present in all defaultengines as a convenient way
 #   to store and access the latest "mrp". 
     def update_table(self,mrp):
-        self.engine.set_build_config(mrp)    
+        self.set_build_config(mrp)    
         if self.nav_tree is not None:
             self.nav_tree.destroy()
             

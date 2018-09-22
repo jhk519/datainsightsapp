@@ -17,6 +17,7 @@ import requests
 import copy
 import urllib
 import io
+import numpy as np
 import pandas as pd
 from pprint import pprint
 
@@ -41,12 +42,11 @@ class AppWidget(tk.Frame):
             config[self.widget_name]
         except KeyError:
             self.bug("{} not in config. Check config2 file.".format(self.widget_name))
+            self.set_build_config({})
         else:
             self.set_build_config(config[self.widget_name])
             
         self.__dbvar = dbvar  
-        
-
         
         if self.widget_name == "dbmanager":
             self.engine = DBManagerEngine()
@@ -68,7 +68,6 @@ class AppWidget(tk.Frame):
 
 #   API
     def set_build_config(self,raw_config):
-#        print(raw_config)
         if self._check_req_headers(config_to_check=raw_config):
             self.log("Passed Check Req Headers.")
             self.__cfgvar = raw_config
@@ -95,7 +94,7 @@ class AppWidget(tk.Frame):
         try: 
             value = self.__cfgvar[key]
         except TypeError:
-            self.bug("Could not get cfg_val for: {} for {} config.".format(key,self.engine_name))
+            self.bug("Could not get cfg_val for: {} for {} config.".format(key,__name__ + "-" + self.widget_name))
         except KeyError:
             self.bug("This key is not found in cfg! {}".format(key))
             return None
@@ -148,6 +147,8 @@ class AppWidget(tk.Frame):
             tk.Entry(self.popup,textvariable=self.popupentryvar).pack()
             tk.Button(self.popup,text="Set",command=entrycommand).pack()
             tk.Button(self.popup,text="Close",command=self.popup.destroy).pack()
+            
+        return self.popup
             
     def _sortby(self, tree, col, descending):
         """sort tree contents when a column header is clicked on
@@ -229,7 +230,7 @@ class SettingsManagerEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug    
         
-    def get_updated_config(self, temp_cfg, parser_sections):
+    def get_updated_config(self, app_cfg, parser_sections):
         """ Receives parser._sections from user_settings.ini, and replaces the
         key-value pairs in the default config2
         """
@@ -238,21 +239,21 @@ class SettingsManagerEngine():
         for section_header,section_cfg in parser_sections.items():
             for setting_header, setting_str in section_cfg.items():
                 try:
-                    temp_cfg[section_header]
+                    app_cfg[section_header]
                 except KeyError:
                     self.bug("{} from .ini file not found in config.".format(section_header))
                     self.bug("This will mean updates to ini will not be unpacked and config updated.")
                     continue
-                set_val,set_type = setting_str.split("$$")
+                set_type,set_val = setting_str.split("$$")
                 final_val = self._get_clean_val(set_val,set_type)
-                temp_cfg[section_header][setting_header] = final_val
+                app_cfg[section_header][setting_header] = final_val
                 user_settings.append([section_header,setting_header,final_val,set_type])
         try:
             with open('settings//presets.pickle',"rb") as presetlist:
-                temp_cfg["multigrapher"]["presetpages"] = pickle.load(presetlist) 
+                app_cfg["multigrapher"]["presetpages"] = pickle.load(presetlist) 
         except FileNotFoundError:
             self.bug("No preset pickle file found. Skipping.")
-        return temp_cfg,user_settings  
+        return app_cfg,user_settings  
         
     def _get_clean_val(self,setting_val,setting_type):
         if setting_type == "bool":
@@ -265,10 +266,10 @@ class SettingsManagerEngine():
                 raise ValueError
         elif setting_type == "int":
             val = int(setting_val)
-        elif setting_type in ["list","date","str","dirloc","fileloc","colors"]:
+        elif setting_type in ["list","date","str","dirloc","fileloc","colors","event_dates"]:
             val = setting_val
         else:
-            self.bug("INVALID TYPE FOR SETTING! - ", setting_type, " - ", setting_val)
+            self.bug("INVALID TYPE FOR SETTING! - {} - {}".format(setting_type, setting_val))
             val = None   
         return val
 
@@ -389,7 +390,7 @@ class ProductViewerEngine():
         
         self.log("Orig. pdb length: {}".format(pdb.shape[0]))
         if codetype == "Product Code":
-            returndf = pdb.loc[pdb['product_code'] == code]  
+            returndf = pdb.loc[pdb['product_cafe24_code'] == code]  
         elif codetype == "Barcode":
             returndf = pdb.loc[pdb['sku_code'] == int(code)]
         self.log("Locced pdb length: {}".format(returndf.shape[0]))
@@ -438,7 +439,7 @@ class ProductViewerEngine():
         }
             
         for sku_dict in plist:
-            final_dict["product_info"]["product_code"] = sku_dict["product_code"]
+            final_dict["product_info"]["product_cafe24_code"] = sku_dict["product_cafe24_code"]
 #            final_dict["product_info"]["vendor_name"] = sku_dict["vendor_name"]
 #            final_dict["product_info"]["vendor_code"] = sku_dict["vendor_code"]
 #            final_dict["product_info"]["vendor_price"] = sku_dict["vendor_price"]
@@ -549,7 +550,7 @@ class AnalysisPageEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug   
         
-    def get_results_packs(self,pack,dbvar,event_dates):
+    def get_results_packs(self,pack,dbvar,event_string):
         """
         selpack = {
          "end": datetime.date(2018, 1, 28),
@@ -559,6 +560,7 @@ class AnalysisPageEngine():
                   "queries": [("Average Order Value", "firebrick", "-")],
                   "set_y": [False, 0, 0]},
          "mirror_days": 0,
+         "n_rankings":10,
          "right": {"gtype": None,
                    "metric": None,
                    "queries": [],
@@ -575,6 +577,14 @@ class AnalysisPageEngine():
         if bool(pack["mirror_days"]):
             m_start = (start - datetime.timedelta(pack["mirror_days"]))
             m_end = (end - datetime.timedelta(pack["mirror_days"]))
+        
+        event_list = []
+        for index, event in enumerate(event_string.split("%%")):
+            event_parts = event.split(",")
+            start_date = event_parts[0]
+            end_date = event_parts[1]
+            name_str = event_parts[2]     
+            event_list.append((start_date,end_date,name_str))
 
         for ind,axis in enumerate(axes_select_packs):
             if axis:
@@ -588,26 +598,40 @@ class AnalysisPageEngine():
                     
                     first_found = True
                     if not query_tuple[0] == "None":
-                        ls_queries.append(query_tuple[0])
-                        colors_to_plot.append(query_tuple[1])
-                        styles_to_plot.append(query_tuple[2])
+
                         xandy = queries.main(query_tuple[0],dbvar,start,end,
-                                             extra=pack["extra"])
-                        self.bug("xandy type: {}".format(type(xandy)))
-                        if xandy == "No Date Data":
-                            self.bug("No Date Data given to default engine from queries")
-                            return xandy
-                        elif xandy is None:
-                            self.bug("None given to default engine query.")
-                            return None
-                        queryx,queryy = xandy
-                        if first_found:
-                            x_data = queryx
-                            first_found = False
-                        y_data_lists.append(queryy)
+                                             extra=pack["extra"], n_rankings=pack["n_rankings"] )
+                        self.log("xandy type: {}".format(type(xandy)))
+                        if xandy[0] == "MULTIPLE PLOTS":
+                            colors = ["firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral",
+                                      "firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral"]
+                            if first_found:
+                                x_data = xandy[1]
+                                first_found = False                            
+                            for index,single_plot_tuple in enumerate(xandy[2]):
+                                ls_queries.append(single_plot_tuple[1])
+                                colors_to_plot.append(colors[index])
+                                styles_to_plot.append(query_tuple[2])                                
+                                y_data_lists.append(single_plot_tuple[0])
+                        else:
+                            if xandy == "No Date Data":
+                                self.bug("No Date Data given to default engine from queries")
+                                return xandy
+                            elif xandy is None:
+                                self.bug("None given to default engine query.")
+                                return None
+                            else:
+                                ls_queries.append(query_tuple[0])
+                                colors_to_plot.append(query_tuple[1])
+                                styles_to_plot.append(query_tuple[2])                                
+                                queryx,queryy = xandy
+                                if first_found:
+                                    x_data = queryx
+                                    first_found = False
+                                y_data_lists.append(queryy)
                         
                         if bool(pack["mirror_days"]):
-                            ls_queries.append(query_tuple[0] + "_Mirror")
+                            ls_queries.append("{}MR_{}-{}".format(query_tuple[0],m_start,m_end))
                             colors_to_plot.append(query_tuple[1])
                             styles_to_plot.append(query_tuple[2])
                             xandy = queries.main(query_tuple[0],dbvar,
@@ -640,7 +664,7 @@ class AnalysisPageEngine():
                     "colors":colors_to_plot,
                     "linestyles": styles_to_plot,
                     "title":pack["title"],
-                    "event_dates": event_dates
+                    "event_dates": event_list
                     
                 }
                 axes_result_packs[ind] = axis_pack          

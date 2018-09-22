@@ -33,7 +33,7 @@ class AnalysisPage(AppWidget):
         super().__init__(parent,controller,config,dbvar)   
 
 #       UX VARIABLES     
-        self.graph_frame = graphframe.GraphFrame(self)
+        self.graph_frame = graphframe.GraphFrame(self,self,config)
         self.graph_frame.grid(row=0, rowspan=2,column=0, sticky="NSW")
         
 #        self.
@@ -44,8 +44,8 @@ class AnalysisPage(AppWidget):
         self.config_chain.append(self.query_panel)
         self.b_menu_pane()  
         
-        self.datatable = datatable.DataTable(self,self,config,dbvar)
-        self.datatable.grid(row=2,column=0,sticky="new")
+        self.datatable = datatable.DataTable(self,self,config)
+        self.datatable.grid(row=2,column=0,columnspan=3,sticky="new")
            
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
@@ -61,7 +61,7 @@ class AnalysisPage(AppWidget):
         self.log("***START*** search query.")
         data_pack = None
         
-        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar(),self.get_cfg_val("event_dates"))
+        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar(),self.get_cfg_val("event_list"))
         self.log("Received Data")
         if init_data == "No Date Data":
             self.bug("No results for this date range.")
@@ -82,6 +82,7 @@ class AnalysisPage(AppWidget):
         self.last_selection_pack = request_pack
         self.last_data_pack = data_pack
         self.last_graph_pack = self.draw_graph(data_pack)
+        self.datatable.update_table(self.last_graph_pack)
         self.log("***END*** Search Query")
         
 # ================================================================
@@ -127,7 +128,7 @@ class AnalysisPage(AppWidget):
         else: 
             file_location = tk.filedialog.asksaveasfilename()
             fullname = file_location + self.get_time_str() + ".png"
-        self.graph_frame.my_figure.savefig(fullname) 
+        self.graph_frame.my_figure.savefig(fullname, dpi=self.graph_frame.my_figure.dpi) 
         self.log(fullname)
         return fullname
 

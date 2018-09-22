@@ -52,7 +52,7 @@ class MultiGrapher(AppWidget):
 #    if not custom_today:
 #    self.custom_today = datetime.now.date()
 #    else:
-    custom_today = datetime.date(2018,4,1)    
+    custom_today = datetime.date(2018,5,1)    
     
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "multigrapher"

@@ -124,10 +124,10 @@ class SettingsManager(AppWidget):
         events_string = self.setting_packs[masterindex][2].get()
         for index, event in enumerate(events_string.split("%%")):
             event_parts = event.split(",")
-            start_date = event_parts[0]
-            end_date = event_parts[1]
-            name_str = event_parts[2]    
-            self.events_list.append([start_date,end_date,name_str])            
+            name_var = tk.StringVar(value=event_parts[0])
+            start_date = event_parts[1]
+            end_date = event_parts[2]
+            self.events_list.append([name_var,start_date,end_date])            
         self.extra_window["text"] = "Edit Events"
         for child in self.extra_window.winfo_children():
             child.destroy()        
@@ -140,25 +140,29 @@ class SettingsManager(AppWidget):
 
         real_row_count = 0
         for index, event in enumerate(events_list):
-            start_date = event[0]
-            end_date = event[1]
-            name_str = event[2]
+            namevar = event[0]
+            start_date = event[1]
+            end_date = event[2]
             
             arg = index,0
-            start_date_widget = ttk.Button(self.extra_window,text=start_date,
-               command=lambda arg=arg: self.event_date_change(arg))  
-            start_date_widget.grid(row=real_row_count,column=0,sticky="w",columnspan=1,padx=(10,0),pady=(15,0))      
+            name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
+            name_str_widget.grid(row=real_row_count,column=0,sticky="ew",
+                                 columnspan=1,padx=(15,10),pady=(15,0))  
+            
             
             arg = index,1
-            end_date_widget = ttk.Button(self.extra_window,text=end_date,
-               command=lambda arg=arg: self.event_date_change(arg))    
-            end_date_widget.grid(row=real_row_count,column=1,sticky="w",columnspan=1,padx=(10,10),pady=(15,0)) 
+            start_date_widget = ttk.Button(self.extra_window,text=start_date,
+               command=lambda arg=arg: self.event_date_change(arg))  
+            start_date_widget.grid(row=real_row_count,column=1,sticky="w",
+                                   columnspan=1,padx=(10,0),pady=(15,0))      
             
             arg = index,2
-            name_str_widget = ttk.Button(self.extra_window,text=name_str,
-               command=lambda arg=arg: self.event_name_change(arg))  
-            name_str_widget.grid(row=real_row_count,column=2,sticky="w",columnspan=1,padx=(0,10),pady=(15,0))     
+            end_date_widget = ttk.Button(self.extra_window,text=end_date, 
+               command=lambda arg=arg: self.event_date_change(arg))    
+            end_date_widget.grid(row=real_row_count,column=2,sticky="w",
+                                 columnspan=1,padx=(10,15),pady=(15,0)) 
             
+    
             event_separator = ttk.Separator(self.extra_window)
             event_separator.grid(row=real_row_count+1,column=0,columnspan=3,sticky="ew"
                                    ,pady=(15,0))       
@@ -172,7 +176,7 @@ class SettingsManager(AppWidget):
         all_events_str = ""
         temp_iter = []
         for event_tuple in self.events_list:
-            add_str = ",".join(event_tuple)
+            add_str = ",".join([event_tuple[0].get(),event_tuple[1],event_tuple[2]])
             self.log("Adding {}".format(add_str))
             temp_iter.append(add_str)
         all_events_str = "%%".join(temp_iter)

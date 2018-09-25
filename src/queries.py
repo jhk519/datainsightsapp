@@ -98,7 +98,6 @@ def daily_sales_top_products(db, start, end, extra=None,n_rankings=3):
     count_db = db["product_cafe24_code"].value_counts().head(n_rankings)
     list_of_product_daily_sales = []
     for pcode,value in count_db.iteritems():
-#        print(pcode,value)
         product_daily_sales = []
         temp_db = db.loc[db['product_cafe24_code'] == pcode] 
         date_dict = _gen_dates(start, end, init_kvs=[("net_payment", 0)])
@@ -132,15 +131,8 @@ def top10_categories_orders(dbs,start,end,extra=None,n_rankings=10):
 
 def top10_categories_revenue(dbs,start,end,extra=None,n_rankings=10):
     odb = dbs[0]
-#    print(odb.head(15))
     pdb = dbs[1]
-#    print(pdb.head(10))
-#    odb["category"] = odb.product_cafe24_code.map(pdb.product_cafe24_code)
-#    print(odb.category)
-#    count_db = odb["category"].value_counts().head(10)
-#    print("----")
-#    print(count_db.head(10))
-#    odb.merge(pdb, on='product_cafe24_code', how='left')
+
     new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)   
     groups = new_df.groupby(['category'])['total_net_price'].agg('sum')
     topten = groups.nlargest(n_rankings)
@@ -152,8 +144,6 @@ def top10_categories_revenue(dbs,start,end,extra=None,n_rankings=10):
         y_axis_values.append(value)
     return x_axis_labels, y_axis_values    
     
-    
-
 def cancel_quantity(db, start, end, extra=None,n_rankings=10):
     if extra is not None and not extra == "":
         db = db.loc[db['product_cafe24_code'] == extra]
@@ -211,7 +201,6 @@ def order_quantity(db, start, end, extra=None,n_rankings=10):
         orders_list.append(date_dict[date_object]["orders"])
     return date_list, orders_list
 
-
 def cancel_reasons(db, start, end, extra=None,n_rankings=10):
 
 #    EXTRACT AND FILTER DB IF NECC.
@@ -258,7 +247,6 @@ def revenue_kooding(db, start, end, extra=None,n_rankings=10):
 
     return date_list, revenues_list
 
-
 def revenue_pc(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
@@ -269,7 +257,6 @@ def revenue_pc(db, start, end, extra=None,n_rankings=10):
 
     return date_list, revenues_list
 
-
 def revenue_mobile(db, start, end, extra=None,n_rankings=10):
     date_list = []
     revenues_list = []
@@ -279,7 +266,6 @@ def revenue_mobile(db, start, end, extra=None,n_rankings=10):
         revenues_list.append(total)
 
     return date_list, revenues_list
-
 
 def revenue_app(db, start, end, extra=None,n_rankings=10):
     date_list = []
@@ -453,7 +439,6 @@ def net_discount(db, start, end, extra=None,n_rankings=10):
         y_axis_values_1.append(date_dict[day]["net_discount"])
     return x_axis_labels, y_axis_values_1
 
-
 def aov(db, start, end, extra=None,n_rankings=10):
 #   make a separate db without duplicate order_ids.
     db = db.drop_duplicates(subset="order_id")
@@ -477,7 +462,6 @@ def aov(db, start, end, extra=None,n_rankings=10):
             pay_avg = 0
         y_axis_values_1.append(pay_avg)
     return x_axis_labels, y_axis_values_1
-
 
 def aos(db, start, end, extra=None,n_rankings=10):
 # this gives us a reference of how many rows had this order_id giving us
@@ -575,7 +559,6 @@ def conversion_rate(db,start,end,extra=None,n_rankings=10):
             visitors = row["returning_visitors_count"] + row["new_visitors_count"]
             orders = row["app_orders_count"]+row["mobile_orders_count"]+row["pc_orders_count"]
             cr = orders/visitors * 100
-#            print()
             date_dict[temp_date]["cr"] = cr
     x_axis_labels = []
     y_axis_values_1 = []

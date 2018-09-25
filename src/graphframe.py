@@ -49,6 +49,7 @@ class GraphFrame(AppWidget):
         self.canvas.draw()
         
         self.lines_list = []
+        self.bars_list = []
         self.event_polygon_list = []
 
         self.toolbar = NavigationToolbar2TkAgg(self.canvas, self)
@@ -60,17 +61,26 @@ class GraphFrame(AppWidget):
         if kind == "line":
             x,y = hover_obj.get_data() 
             coords = (x[ind["ind"][0]], y[ind["ind"][0]])
+            yshort = '%.2f' % coords[1]
             self.annot.xy = coords
-            text = hover_obj.get_label()
+            text = "{}\n{},{}".format(hover_obj.get_label(),coords[0],yshort)
             self.annot.set_text(text)
             self.annot.get_bbox_patch().set_alpha(0.4)
-        elif kind == "event":
-            vertices = hover_obj.get_xy()
-            self.annot.xycoords = "axes fraction"
-            self.annot.xy = (0.5,0.5)
-            text = hover_obj.get_label()
+        elif kind == "bar":
+            coords = hover_obj.get_xy()
+            ynew = coords[1] + hover_obj.get_height()
+            self.annot.xy = coords[0]+hover_obj.get_width()/2,ynew
+            text = "{}-{}".format(self.axis_prime.get_xticklabels()[ind].get_text(),ynew)
+#            text = "ggg"
             self.annot.set_text(text)
             self.annot.get_bbox_patch().set_alpha(0.4)            
+#        elif kind == "event":
+#            vertices = hover_obj.get_xy()
+#            self.annot.xycoords = "axes fraction"
+#            self.annot.xy = (0.5,0.5)
+#            text = hover_obj.get_label()
+#            self.annot.set_text(text)
+#            self.annot.get_bbox_patch().set_alpha(0.4)            
     
     
     def hover(self,event):
@@ -82,22 +92,18 @@ class GraphFrame(AppWidget):
                     self.update_annot(line2d, ind)
                     self.annot.set_visible(True)
                     self.canvas.draw_idle()
-                    break
-                else:
-                    if vis:
-                        self.annot.set_visible(False)
-                        self.canvas.draw_idle()      
-#            for event_polygon in self.event_polygon_list:
-#                cont, ind = event_polygon.contains(event) 
-#                if cont:
-#                    self.update_annot(event_polygon, ind, kind="event")
-#                    self.annot.set_visible(True)
-#                    self.canvas.draw_idle()
-#                    break
-#                else:
-#                    if vis:
-#                        self.annot.set_visible(False)
-#                        self.canvas.draw_idle()                 
+                    return
+            for index, rec in enumerate(self.bars_list):
+                cont,ind = rec.contains(event)
+                if cont:
+                    self.update_annot(rec, index,kind="bar")
+                    self.annot.set_visible(True)
+                    self.canvas.draw_idle()
+                    return
+
+        if vis:
+            self.annot.set_visible(False)
+            self.canvas.draw_idle()                    
 
     def update_graph(self,analysis_pack ):
         #       CLEAN UP AND RESET
@@ -183,10 +189,9 @@ class GraphFrame(AppWidget):
             self.axis_prime.set_xlim(prp["x_data"][0], prp["x_data"][-1])
 
         elif prp["gtype"] == "string-bar" or prp["gtype"] == "bar":
-            self.axis_prime.bar(prp["x_data"],
+            self.bars_list = self.axis_prime.bar(prp["x_data"],
                                 prp["y_data"][0],
-                                color=prp_colors[color_c])
-            self.axis_prime.set_xlim(prp["x_data"][0], prp["x_data"][-1])
+                                color=prp_colors[color_c]).patches
             color_c += 1   
         elif prp["gtype"] == "pie":
             self.axis_prime.pie(prp["y_data"][0],labels=prp["x_data"])
@@ -211,15 +216,6 @@ class GraphFrame(AppWidget):
                                              lw=linewidth,
                                              label=srp["line_labels"][x])
                     color_c += 1
-                    
-
-            elif srp["gtype"] == "string-bar" or "bar":
-                self.axis_secondary.bar(srp["x_data"],
-                                        srp["y_data"][0],
-                                        srp_colors[color_c])
-                self.axis_secondary.set_xlim(
-                    srp["x_data"][0], srp["x_data"][-1])
-                color_c += 1
 
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
@@ -252,20 +248,18 @@ class GraphFrame(AppWidget):
                 invDisToAxFrac = self.axis_prime.transAxes.inverted()
                 axis_left_lim = matplotlib.dates.num2date(self.axis_prime.get_xlim()[0]).date()   
                 for e_index, event_tuple in enumerate(prp["event_dates"]):
-                    start_str = event_tuple[0]
-                    end_str = event_tuple[1]
-                    event_name = event_tuple[2]
-                    self.log("{}: {} -> {}".format(event_name,start_str,end_str))
+                    name_str = event_tuple[0]
+                    start_str = event_tuple[1]
+                    end_str = event_tuple[2]
+                    
+                    self.log("{}: {} -> {}".format(name_str,start_str,end_str))
                     start_date = datetime.date(int(start_str[0:4]),int(start_str[4:6]),int(start_str[6:8]))
-                    print("----")
-                    print(start_date)
                     end_date = datetime.date(int(end_str[0:4]),int(end_str[4:6]),int(end_str[6:8]))
                     axis_left_lim = matplotlib.dates.num2date(self.axis_prime.get_xlim()[0]).date()      
                     if start_date < axis_left_lim:
                         start_date = axis_left_lim
-                        print(start_date)
                     event_polygon = self.axis_prime.axvspan(start_date, end_date, 
-                                    alpha=0.05, color="red",lw=4,linestyle=(115,(20,2)))
+                                    alpha=0.08, color="red",lw=7,linestyle=(115,(20,2)))
                     self.event_polygon_list.append(event_polygon)
                     
                     left_top = event_polygon.get_verts()[1]
@@ -281,11 +275,12 @@ class GraphFrame(AppWidget):
                         else:
                             final_left_top[0] = 0
                     elif ax_left_top[0] >= 1:
+                        self.log("Too far in future, skipping.")
                         continue
                     self.log("LEFT: {} -> {} -> {}".format(left_top,ax_left_top,final_left_top))
                     self.log("RIGHT: {} -> {}".format(right_top,ax_right_top))                     
                     self.axis_prime.text(final_left_top[0]+ 0.01, 0.95,
-                        s=event_name,horizontalalignment="left",
+                        s=name_str,horizontalalignment="left",
                         transform=self.axis_prime.transAxes)
 
     #       GENERAL FORMATTING
@@ -301,13 +296,10 @@ class GraphFrame(AppWidget):
 
         self.canvas.draw()
         
-#        import matplotlib.pyplot as plt
-        
-#        self.norm = plt.Normalize(1,4)
-#        self.cmap = plt.cm.RdYlGn
-        self.annot = self.axis_prime.annotate("", xy=(0,0), xytext=(-20,20),textcoords="offset points",
-                            bbox=dict(boxstyle="round", fc="w"),
-                            arrowprops=dict(arrowstyle="->"))
+        self.annot = self.axis_prime.annotate("", xy=(0,0), xytext=(-20,20),
+#                        xycoords="data",
+                        textcoords="offset points", bbox=dict(boxstyle="round", 
+                        fc="w"),arrowprops=dict(arrowstyle="->"))
         self.annot.set_visible(False)
         self.canvas.mpl_connect("motion_notify_event", self.hover)        
 

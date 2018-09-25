@@ -104,6 +104,7 @@ backend_settings = {
                 "예치금": "total_cash_credit_discount",
                 "쿠폰할인금액": "total_coupon_discount",
                 "결제수단": "payment_method",
+                "매출경로": "shopping_platform",
                 
                 
                 "주문자휴대전화": "customer_phone_number",
@@ -213,7 +214,7 @@ backend_settings = {
 #        "event_list": [("20180429","20180429","04/29 Sale"),
 #                        ("20180501","20180506","05/01-05/06 Event"),
 #                        ("20180517","20180520","0517 3 Day Sale")]
-        "event_list":"20180429,20180429,04/29 Sale%%20180501,20180506,05/01-05/06 Event%%20180517,20180520,0517 3 Day Sale"
+        "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520"
     },
 
     "querypanel":{

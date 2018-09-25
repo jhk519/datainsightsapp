@@ -21,6 +21,7 @@ bug = logging.getLogger(__name__).debug
 
 
 def add_data(curr_df,dir_loc,ext,hr_dict,req_excels_tpl,match_on_key):
+    log("Adding Data...")
     append_df = gen_single_db_from_excels(dir_loc,ext,hr_dict,req_excels_tpl,
         match_on_key)
     log("Append DF length: {} {}".format(append_df.shape[0],append_df.shape[1]))

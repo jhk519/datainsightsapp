@@ -58,7 +58,7 @@ class DBManager(AppWidget):
         self.log("Completed Generated New Dbs")
         
     def _reset_and_gen(self,db_str,dir_list = None):
-        self.bug(".reset_and_gen for {} called. dir_list given: {}".format(db_str,dir_list))
+        self.log(".reset_and_gen for {} called. dir_list given: {}".format(db_str,dir_list))
         if not dir_list:
 #          returns tuple of strings
             pathstr_tuple = filedialog.askopenfilenames()
@@ -88,7 +88,7 @@ class DBManager(AppWidget):
         self.log("Completed Adding Data to All Dbs")      
 
     def _add_data(self, db_str, dir_list=None):
-        self.bug("Add data to {}, dir_list given: {}".format(db_str,dir_list))
+        self.log("Add data to {}, dir_list given: {}".format(db_str,dir_list))
         if not dir_list:
             pathstr_tuple = filedialog.askopenfilenames()
             dir_list = list(pathstr_tuple)

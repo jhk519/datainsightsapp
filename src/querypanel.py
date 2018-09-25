@@ -55,7 +55,10 @@ class QueryPanel(AppWidget):
         self.category_menu = None
         self.max_num_queries = 11
         
-        #USE PRODUCT FILTER
+        #OPTION VARS
+        self.aggregate_var = tk.StringVar()
+        self.aggregate_var.set("week")
+        
         self.use_product_filter = tk.BooleanVar()
         self.use_product_filter.set(False)
         self.product_filter_var = tk.StringVar()
@@ -142,6 +145,7 @@ class QueryPanel(AppWidget):
         right_set_y = [ p.get() for i,p in enumerate(self.axis_panels["right"]["set_y"]) ]
         
         selpack = {
+            "aggregate_by":self.aggregate_var.get(),
             "extra":self.product_filter_var.get().strip().replace(" ", "").replace("\n", ""),
             "x_axis_label": self.x_axis_type.get(),
             "mirror_days": self.mirror_days_var.get(),   
@@ -574,43 +578,63 @@ class QueryPanel(AppWidget):
                     self.axis_panels[axis]["queries"].append(selected_query_pack)
                 
     def build_options(self):
-        x = 1
+        row_n = 0
         self.options_menu = ttk.LabelFrame(self,text="Options and Search")
         self.options_menu.grid(row=3,column=0,sticky="nwse",columnspan=2,padx=(5,5),pady=(8,8))
         
+        aggregate_label = tk.Label(self.options_menu,text="Aggregate Data By: ")
+        aggregate_label.grid(row=row_n,column=0,sticky="w")
+        
+        self.aggregate_by_day_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
+                                                      text="By Day",value="day")
+        self.aggregate_by_day_radio.grid(row=row_n,column=1,sticky="w",padx=(0,5)) 
+        
+        self.aggregate_by_week_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
+                                                       text="By Week",value="week")
+        self.aggregate_by_week_radio.grid(row=row_n,column=2,sticky="w",padx=(0,5))     
+        
+        self.aggregate_by_month_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
+                                                        text="By Month",value="month")
+        self.aggregate_by_month_radio.grid(row=row_n,column=3,sticky="w",padx=(0,5)) 
+        
+        row_n += 1
         self.extra_use_check = ttk.Checkbutton(self.options_menu,text="Filter by Product Code",
               onvalue=True,  offvalue=False, variable=self.use_product_filter,
-              command=lambda x = x:self._use_product_filter_changed())
-        self.extra_use_check.grid(row=0,column=0,sticky="w",columnspan=2)
+              command=self._use_product_filter_changed)
+        self.extra_use_check.grid(row=row_n,column=0,sticky="w",columnspan=1,pady=(2,2))
         
         self.extra_widget = ttk.Entry(self.options_menu, width=15, textvariable=self.product_filter_var)
-        self.extra_widget.grid(row=0, column=2,columnspan=1, pady=2, sticky="w")
+        self.extra_widget.grid(row=row_n, column=1,sticky="w",columnspan=2,padx=(10,0))
         self.extra_widget.grid_remove()
-            
+
+        row_n += 1            
         self.mirror_days_check = ttk.Checkbutton(self.options_menu,text="Mirror with Past Data",
               onvalue=True,  offvalue=False, variable=self.use_mirror_var,
-              command=lambda x= x:self._use_mirror_var_changed())
-        self.mirror_days_check.grid(row=1,column=0,sticky="w",columnspan=2)          
+              command=self._use_mirror_var_changed)
+        self.mirror_days_check.grid(row=row_n,column=0,sticky="w",columnspan=2,pady=(2,2))          
         
         self.mirror_days_entry = ttk.Entry(self.options_menu, width=5, textvariable=self.mirror_days_var)
-        self.mirror_days_entry.grid(row=1, column=2,columnspan=2, sticky="w")
+        self.mirror_days_entry.grid(row=row_n, column=1,columnspan=2, sticky="w",padx=(10,10))
         self.mirror_days_entry.grid_remove()     
-               
+            
+        row_n += 1
         self.should_search_on_query_change = ttk.Checkbutton(
             self.options_menu,
             text="Search on Query/Date Change",
             variable=self.autosearch,
             onvalue=True,
             offvalue=False)
-        self.should_search_on_query_change.grid(row=4, column=0,sticky="w",columnspan=2)
+        self.should_search_on_query_change.grid(row=row_n, column=0,sticky="w",columnspan=2,pady=(2,2))
         self.should_search_on_query_change.invoke()
-
+        
+        row_n += 1
         self.n_rankings_label = ttk.Label(self.options_menu, text="Number of Rankings:")
-        self.n_rankings_label.grid(row=5,column=0,sticky="w")
+        self.n_rankings_label.grid(row=row_n,column=0,sticky="w",pady=(2,2))
         
         self.n_rankings_entry = ttk.Entry(self.options_menu, width=5, textvariable=self.n_rankings_var)
-        self.n_rankings_entry.grid(row=5, column=1,columnspan=1, sticky="w")       
+        self.n_rankings_entry.grid(row=row_n, column=1,columnspan=1, sticky="w",padx=(10,10))       
         
+        row_n += 1
         self.entry_input_button = ttk.Button(
             self.options_menu,
             command=self.push_search,

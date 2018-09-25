@@ -413,30 +413,28 @@ class MultiGrapher(AppWidget):
             slot.rowconfigure(0, weight=0)
           
             canvas = tk.Canvas(slot,bg='#FFFFFF') 
+                               
             hbar=tk.Scrollbar(slot,orient=tk.HORIZONTAL)
             hbar.pack(side=tk.BOTTOM,fill=tk.X)
             hbar.config(command=canvas.xview)
             vbar=tk.Scrollbar(slot,orient=tk.VERTICAL)
             vbar.pack(side=tk.RIGHT,fill=tk.Y)
             vbar.config(command=canvas.yview)
-            canvas.config(width=450,height=300)
-            canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set,scrollregion=(0, 0, 450, 600))
+#            canvas.config()
+            canvas.config(width=450,height=300,xscrollcommand=hbar.set, yscrollcommand=vbar.set,scrollregion=(0, 0, 450, 600))
                        
             self.graph_slots.append([canvas,"IMAGEPLACEHOLDER",[]])  
+            
+            canvas.pack(side=tk.LEFT,expand=True,fill=tk.BOTH) 
+            canvas.update_idletasks()
+#            wd = canvas.winfo_width()
             
         self.export_png = ttk.Button(
             self.graphs_frame,
             command=self.export_multigraph,
             text="Export Graphs to .png")
         self.export_png.grid(
-            row=3, column=0, padx=0, pady=2, sticky="w")
-        
-        for slot in self.graph_slots:
-            canvas = slot[0]
-            canvas.pack(side=tk.LEFT,expand=True,fill=tk.BOTH) 
-            canvas.update_idletasks()
-            wd = canvas.winfo_width()
-#            self.bug(str(wd) + " width")        
+            row=3, column=0, padx=0, pady=2, sticky="w")        
             
         self.update_graphs_button = ttk.Button(
             self.graphs_frame,

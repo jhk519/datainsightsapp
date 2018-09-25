@@ -16,7 +16,7 @@ except ImportError:  # Python 3
     import tkinter.ttk as ttk
     
 # Standard Modules   
-    import os
+import os
 import logging   
 import datetime
 from pprint import pprint as PRETTYPRINTTHIS
@@ -30,8 +30,9 @@ from settingsmanager import SettingsManager
 from multigrapher import MultiGrapher
 
 class DataInsightsApp(tk.Tk):
-    def __init__(self, account, init_config, ver=None):
+    def __init__(self, account, init_config, ver=None,showlog=False):
         logger = logging.getLogger(__name__)
+#        if showlog = 
         self.log = logging.getLogger(__name__).info
         self.bug = logging.getLogger(__name__).debug
         
@@ -149,7 +150,7 @@ if __name__ == "__main__":
     config = config2.backend_settings    
     logging.info("Collected config2.backend_settings")
     
-    app = DataInsightsApp("admin",config,ver=ver)
+    app = DataInsightsApp("admin",config,ver=ver,showlog=False)
     logging.info("App Initialized...")
     
     app.state("zoomed")

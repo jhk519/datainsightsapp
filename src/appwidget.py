@@ -25,13 +25,16 @@ import queries
 import exceltodataframe as etdf
 
 class AppWidget(tk.Frame):
-    def __init__(self,parent,controller,config,dbvar):
+    def __init__(self,parent,controller,config,dbvar,showlog=True):
         super().__init__(parent)
         self.parent = parent
         self.controller = controller
         
-        self.log = logging.getLogger(__name__ + "-" + self.widget_name).info
-        self.log("Init.")
+        if not showlog:
+            self.log = print
+        else:
+            self.log = logging.getLogger(__name__ + "-" + self.widget_name).info
+            self.log("Init.")
         self.bug = logging.getLogger(self.widget_name).debug   
         
         self._req_headers = []  
@@ -95,10 +98,12 @@ class AppWidget(tk.Frame):
             value = self.__cfgvar[key]
         except TypeError:
             self.bug("Could not get cfg_val for: {} for {} config.".format(key,__name__ + "-" + self.widget_name))
+            return None
         except KeyError:
             self.bug("This key is not found in cfg! {}".format(key))
             return None
-        return value
+        else:
+            return value
     
     def get_export_full_name(self,base_string,ftype="excel",outdir=None):
         if ftype == "excel":
@@ -484,6 +489,7 @@ class MultiGrapherEngine():
     def convert_slot_pack_to_request_pack(self,slot_pack,custom_today):
             
         request_pack = {
+            "aggregate_by":slot_pack["aggregate_by"],
             "start": (custom_today - datetime.timedelta(slot_pack["days_back"])),
             "end": custom_today,
             "extra": slot_pack["extra"],
@@ -522,26 +528,27 @@ class MultiGrapherEngine():
         else:
             newtitle = request_pack["title"] 
         slot_pack = {
-                    "extra":request_pack["extra"],
-                    "x_axis_label": request_pack["x_axis_label"],
-                    "mirror_days":request_pack["mirror_days"],      
-                    "last_path":None,
-                    "left": {
-                        "gtype":request_pack["left"]["gtype"],
-                        "metric": request_pack["left"]["metric"],
-                        "queries": request_pack["left"]["queries"],
-                        "set_y": request_pack["left"]["set_y"]
-                    },
-                    "right": {
-                        "gtype":request_pack["right"]["gtype"],
-                        "metric": request_pack["right"]["metric"],
-                        "queries": request_pack["right"]["queries"],
-                        "set_y": request_pack["right"]["set_y"]
-                    }, 
-                    "custom_today":custom_today,
-                    "days_back":((request_pack["end"] - request_pack["start"]).days),
-                    "title": newtitle
-                 }                   
+            "aggregate_by":request_pack["aggregate_by"],
+            "extra":request_pack["extra"],
+            "x_axis_label": request_pack["x_axis_label"],
+            "mirror_days":request_pack["mirror_days"],      
+            "last_path":None,
+            "left": {
+                "gtype":request_pack["left"]["gtype"],
+                "metric": request_pack["left"]["metric"],
+                "queries": request_pack["left"]["queries"],
+                "set_y": request_pack["left"]["set_y"]
+            },
+            "right": {
+                "gtype":request_pack["right"]["gtype"],
+                "metric": request_pack["right"]["metric"],
+                "queries": request_pack["right"]["queries"],
+                "set_y": request_pack["right"]["set_y"]
+            }, 
+            "custom_today":custom_today,
+            "days_back":((request_pack["end"] - request_pack["start"]).days),
+            "title": newtitle
+        }                   
         return slot_pack        
         
 class AnalysisPageEngine():
@@ -553,6 +560,7 @@ class AnalysisPageEngine():
     def get_results_packs(self,pack,dbvar,event_string):
         """
         selpack = {
+         "aggregate_by":"day",
          "end": datetime.date(2018, 1, 28),
          "extra": "",
          "left": {"gtype": "line",
@@ -648,8 +656,7 @@ class AnalysisPageEngine():
                                 x_data = queryx
                                 first_found = False
                             y_data_lists.append(queryy)                            
-                        
-#            print(axis["set_y"])
+                         
                 axis_pack  = {
                     "start":start,
                     "end":end,

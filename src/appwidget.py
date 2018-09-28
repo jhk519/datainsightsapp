@@ -57,6 +57,8 @@ class AppWidget(tk.Frame):
             self.engine = AnalysisPageEngine()
         elif self.widget_name == "querypanel":
             self.engine = QueryPanelEngine()
+        elif self.widget_name == "newquerypanel":
+            self.engine = QueryPanelEngine()
         elif self.widget_name == "datatable":
             self.engine = DataTableEngine()
         elif self.widget_name == "productviewer":

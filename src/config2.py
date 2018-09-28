@@ -118,6 +118,7 @@ backend_settings = {
                 
                 "주문상품명": "product_name",
                 "상품코드": "product_cafe24_code",
+                "상품자체코드": "product_hcode",
                 "상품옵션":"product_option"
             },
 #            "cancel_data": {
@@ -215,6 +216,74 @@ backend_settings = {
 #                        ("20180501","20180506","05/01-05/06 Event"),
 #                        ("20180517","20180520","0517 3 Day Sale")]
         "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520"
+        
+"""
+    "proper_title": "",
+    "metric_types": [],
+    "data_types": [],
+    "breakdown_types": []
+"""
+    },
+    "newquerypanel":{
+        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
+        "queries":{
+            "order_data-date_series": {
+                "proper_title": "Order Data-Date Series",
+                "x-axis-type":"date_series",
+                "data_filters": ["start_end_dates","category_or_product","platform"],
+                "metrics": {
+                    "count_of_items": {
+                        "proper_title": "Count of Items",
+                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None", "Top Products", "Top Categories", "Platform", "Price Range"]
+                    },
+                    "revenue_by_item":{
+                        "proper_title": "Revenue By Item",
+                        "metric_types": ["Before Discount", "After Discount"],
+                        "data_types": ["Sum","Percentage","Average"],
+                        "breakdown_types": ["None", "Top Products", "Top Categories", "Platform", "Price Range"]
+                    },
+                    "count_of_orders":{
+                        "proper_title": "Count of Orders",
+                        "metric_types": ["None"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None", "Platform","Order Size"]                        
+                    },
+                    "revenue_by_order":{
+                        "proper_title": "Revenue By Order",
+                        "metric_types": ["Before Discount", "After Discount"],
+                        "data_types": ["Sum","Percentage","Average"],
+                        "breakdown_types": ["None", "Platform"]                     
+                    },
+                    "order_size":{
+                        "proper_title": "Order Size",
+                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
+                        "data_types": ["Sum","Percentage","Average"],
+                        "breakdown_types": ["None","Platform"]                        
+                    }
+                }
+            },
+            "traffic_data-date_series": {
+                "proper_title": "Traffic Data-Date Series",
+                "x-axis-type": "date_series",
+                "data_filters": ["start_end_dates"],
+                "metrics": {
+                    "pageviews": {
+                        "proper_title": "Pageviews",
+                        "metric_types": ["None"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None"]
+                    },
+                    "visitors": {
+                        "proper_title": "Visitors",
+                        "metric_types": ["None"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None","Device","New/Returning"]
+                    },                
+                }
+            }
+        }
     },
 
     "querypanel":{

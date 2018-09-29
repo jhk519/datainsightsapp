@@ -19,13 +19,14 @@ import urllib
 import io
 import numpy as np
 import pandas as pd
-from pprint import pprint
+from pprint import pprint as PRETTYPRINT
 
 import queries
+import newqueries
 import exceltodataframe as etdf
 
 class AppWidget(tk.Frame):
-    def __init__(self,parent,controller,config,dbvar,showlog=True):
+    def __init__(self,parent,controller,config,dbvar,showlog=False):
         super().__init__(parent)
         self.parent = parent
         self.controller = controller
@@ -559,166 +560,87 @@ class AnalysisPageEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug   
         
-    def get_results_packs(self,pack,dbvar,event_string):
+    def get_data(self,pack,dbvar,event_string):
         """
-        selpack = {
-         "aggregate_by":"day",
-         "end": datetime.date(2018, 1, 28),
-         "extra": "",
-         "left": {"gtype": "line",
-                  "metric": "Order Value (KRW)",
-                  "queries": [("Average Order Value", "firebrick", "-")],
-                  "set_y": [False, 0, 0]},
-         "mirror_days": 0,
-         "n_rankings":10,
-         "right": {"gtype": None,
-                   "metric": None,
-                   "queries": [],
-                   "set_y": [False, 0, 0]},
-         "start": datetime.date(2018, 1, 14),
-         "title": None,
-         "x_axis_label": "Date"}
+        {'data_filters': {'category_or_product': 'Product Code',
+                          'category_or_product_entry': 'P000BXBD',
+                          'end_datetime': datetime.date(2018, 5, 15),
+                          'platform': 'PC',
+                          'start_datetime': datetime.date(2018, 5, 12)},
+         'graph_options': {'axis': 'left',
+                           'color': 'black',
+                           'custom_name': 'TESTCUSTOMNAME',
+                           'line_style': '-.'},
+         'metric_options': {'breakdown': 'Spec. Platform',
+                            'data_type': 'Percentage',
+                            'metric': 'Count of Items',
+                            'metric_type': 'Exclude Cancelled Items',
+                            'number_of_rankings': 8},
+         'result_options': {'aggregation_period': 'Weekly',
+                            'aggregation_type': 'Average',
+                            'compare_to_days': '8'},
+         'x_axis_type': 'date_series'}
         """      
-       
-        start = pack["start"]       
-        end = pack["end"]
-        axes_select_packs = self._determine_left_right_axis(pack)
-        axes_result_packs = [None,None]
-        if bool(pack["mirror_days"]):
-            m_start = (start - datetime.timedelta(pack["mirror_days"]))
-            m_end = (end - datetime.timedelta(pack["mirror_days"]))
+#        PRETTYPRINT(pack)
+        date_list,result_dict,m_datelist,m_resultdict = None,None,None,None
+        date_list, result_dict = newqueries.main(pack,dbvar)
         
-        event_list = []
-        for index, event in enumerate(event_string.split("%%")):
-            event_parts = event.split(",")
-            start_date = event_parts[0]
-            end_date = event_parts[1]
-            name_str = event_parts[2]     
-            event_list.append((start_date,end_date,name_str))
+#        PRETTYPRINT(result_dict)
+        breakdown_keys = list(result_dict["breakdown"].keys())
+        
+        compare_days_str = pack["result_options"]["compare_to_days"]
+        try: 
+            compare_int = int(compare_days_str)
+        except ValueError:
+            self.bug("Cannot convert compare_to_days value: {} into int.".format(compare_days_str))
+        else:
+            if compare_int > 0:
+                pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))
+                pack["data_filters"]["end_datetime"] = (pack["data_filters"]["end_datetime"] - datetime.timedelta(compare_int))
+                m_datelist,m_resultdict = newqueries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
+        
+        list_of_plot_tuples = []
 
-        for ind,axis in enumerate(axes_select_packs):
-            if axis:
-                ls_queries = []
-                x_data = []
-                y_data_lists = []
-                colors_to_plot = []
-                styles_to_plot = []
+        if pack["result_options"]["aggregation_period"] == "Daily":
+            self.log("Aggregation set to daily, skipping aggregation.")
+            if len(result_dict["breakdown"]) > 0:
+                for k,v in result_dict["breakdown"].items():
+                    list_of_plot_tuples.append((k,v))
+            else:
+                list_of_plot_tuples.append(("All",result_dict["All"]))       
+        else:
+            agg_type = pack["result_options"]["aggregation_type"]
+            if pack["result_options"]["aggregation_period"] == "Weekly":
+                self.log("Aggregation set to Weekly.")
+                agg_len = 7
+            elif pack["result_options"]["aggregation_period"] == "Monthly":
+                agg_len = 30
                 
-                for index,query_tuple in enumerate(axis["queries"]):
-                    
-                    first_found = True
-                    if not query_tuple[0] == "None":
-
-                        xandy = queries.main(query_tuple[0],dbvar,start,end,
-                                             extra=pack["extra"], n_rankings=pack["n_rankings"] )
-                        self.log("xandy type: {}".format(type(xandy)))
-                        if xandy[0] == "MULTIPLE PLOTS":
-                            colors = ["firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral",
-                                      "firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral"]
-                            if first_found:
-                                x_data = xandy[1]
-                                first_found = False                            
-                            for index,single_plot_tuple in enumerate(xandy[2]):
-                                ls_queries.append(single_plot_tuple[1])
-                                colors_to_plot.append(colors[index])
-                                styles_to_plot.append(query_tuple[2])                                
-                                y_data_lists.append(single_plot_tuple[0])
-                        else:
-                            if xandy == "No Date Data":
-                                self.bug("No Date Data given to default engine from queries")
-                                return xandy
-                            elif xandy is None:
-                                self.bug("None given to default engine query.")
-                                return None
-                            else:
-                                ls_queries.append(query_tuple[0])
-                                colors_to_plot.append(query_tuple[1])
-                                styles_to_plot.append(query_tuple[2])                                
-                                queryx,queryy = xandy
-                                if first_found:
-                                    x_data = queryx
-                                    first_found = False
-                                y_data_lists.append(queryy)
-                        
-                        if bool(pack["mirror_days"]):
-                            ls_queries.append("{}MR_{}-{}".format(query_tuple[0],m_start,m_end))
-                            colors_to_plot.append(query_tuple[1])
-                            styles_to_plot.append(query_tuple[2])
-                            xandy = queries.main(query_tuple[0],dbvar,
-                                                 m_start,m_end,extra=pack["extra"])
-                            self.bug("xandy type: {}".format(type(xandy)))
-                            if xandy == "No Date Data":
-                                self.bug("No Date Data given to default engine from queries")
-                                return xandy
-                            elif xandy is None:
-                                self.bug("None given to default engine query.")
-                                return None
-                            queryx,queryy = xandy
-                            if first_found:
-                                x_data = queryx
-                                first_found = False
-                            y_data_lists.append(queryy)                            
-                         
-                axis_pack  = {
-                    "start":start,
-                    "end":end,
-                    "met": axis["metric"],
-                    "gtype": axis["gtype"],
-                    "set_y":axis["set_y"],
-                    "str_x": pack["x_axis_label"],
-                    "str_y": axis["metric"],
-                    "line_labels":ls_queries,
-                    "x_data": x_data,
-                    "y_data": y_data_lists,
-                    "colors":colors_to_plot,
-                    "linestyles": styles_to_plot,
-                    "title":pack["title"],
-                    "event_dates": event_list
-                    
-                }
-                axes_result_packs[ind] = axis_pack          
-        return axes_result_packs             
-
-    def get_export_excel_pack(self,mrp):
-        """
-        merged_export_results_pack = {
-            "start":start,
-            "end":end,
-            "title": title,
-            "line_labels": labels,
-            "data_list_of_lists": datas
-        }
-        """
-        line_labels = mrp["line_labels"]
-        data_list_of_lists  = mrp["data_list_of_lists"]
-
-        constructor_dict = {}
-        for x in range(0, len(line_labels)):
-            constructor_dict[line_labels[x]] = data_list_of_lists[x]
-        newdf = pd.DataFrame(constructor_dict)
-        
-        sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
-        
-        return sheetname,newdf 
-    
-    def _has_queries_req(self,queriespacklist):
-        found_something = False
-        for qpack in queriespacklist:
-            if not qpack[0] == "None":
-                found_something = True
-        return found_something           
-    
-    def _determine_left_right_axis(self,pack):
-        p_req = self._has_queries_req(pack["left"]["queries"])
-        s_req = self._has_queries_req(pack["right"]["queries"])
-        
-        if p_req and s_req:
-            return pack["left"],pack["right"]
-        elif p_req and not s_req:
-            return pack["left"],None
-        elif not p_req and s_req:
-            return pack["right"],None
-        return None,None         
+            date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
+            if len(result_dict["breakdown"]) > 0:
+                for k,v in result_dict["breakdown"].items():
+                    agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v,agg_len)]
+                    list_of_plot_tuples.append((k,agg_value))
+            else:
+                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(result_dict["All"],agg_len)]
+                list_of_plot_tuples.append(("All",agg_value))
+        return date_list,list_of_plot_tuples
+            
+    def aggregate_chunk(self,chunk,agg_type):
+        total_value = 0
+        for elem in chunk:
+            total_value += elem    
+        if agg_type == "Average":
+            return total_value / len(chunk)
+        elif agg_type == "Sum":
+            return total_value
+        else:
+            self.bug("Received aggregation_type: {} which is not compatible.".format(agg_type))
+            
+    def get_chunks(self,l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
     
 class QueryPanelEngine():
     def __init__(self):    

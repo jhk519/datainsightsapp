@@ -1,0 +1,139 @@
+        start = pack["start"]       
+        end = pack["end"]
+#        axes_select_packs = self._determine_left_right_axis(pack)
+#        axes_result_packs = [None,None]
+        if bool(pack["mirror_days"]):
+            m_start = (start - datetime.timedelta(pack["mirror_days"]))
+            m_end = (end - datetime.timedelta(pack["mirror_days"]))
+        
+        event_list = []
+        for index, event in enumerate(event_string.split("%%")):
+            event_parts = event.split(",")
+            start_date = event_parts[0]
+            end_date = event_parts[1]
+            name_str = event_parts[2]     
+            event_list.append((start_date,end_date,name_str))
+
+        for ind,axis in enumerate(axes_select_packs):
+            if axis:
+                ls_queries = []
+                x_data = []
+                y_data_lists = []
+                colors_to_plot = []
+                styles_to_plot = []
+                
+                for index,query_tuple in enumerate(axis["queries"]):
+                    
+                    first_found = True
+                    if not query_tuple[0] == "None":
+
+                        xandy = queries.main(query_tuple[0],dbvar,start,end,
+                                             extra=pack["extra"], n_rankings=pack["n_rankings"] )
+                        self.log("xandy type: {}".format(type(xandy)))
+                        if xandy[0] == "MULTIPLE PLOTS":
+                            colors = ["firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral",
+                                      "firebrick","dodgerblue","seagreen","darkorchid","gray","yellow","salmon","deeppink","coral"]
+                            if first_found:
+                                x_data = xandy[1]
+                                first_found = False                            
+                            for index,single_plot_tuple in enumerate(xandy[2]):
+                                ls_queries.append(single_plot_tuple[1])
+                                colors_to_plot.append(colors[index])
+                                styles_to_plot.append(query_tuple[2])                                
+                                y_data_lists.append(single_plot_tuple[0])
+                        else:
+                            if xandy == "No Date Data":
+                                self.bug("No Date Data given to default engine from queries")
+                                return xandy
+                            elif xandy is None:
+                                self.bug("None given to default engine query.")
+                                return None
+                            else:
+                                ls_queries.append(query_tuple[0])
+                                colors_to_plot.append(query_tuple[1])
+                                styles_to_plot.append(query_tuple[2])                                
+                                queryx,queryy = xandy
+                                if first_found:
+                                    x_data = queryx
+                                    first_found = False
+                                y_data_lists.append(queryy)
+                        
+                        if bool(pack["mirror_days"]):
+                            ls_queries.append("{}MR_{}-{}".format(query_tuple[0],m_start,m_end))
+                            colors_to_plot.append(query_tuple[1])
+                            styles_to_plot.append(query_tuple[2])
+                            xandy = queries.main(query_tuple[0],dbvar,
+                                                 m_start,m_end,extra=pack["extra"])
+                            self.bug("xandy type: {}".format(type(xandy)))
+                            if xandy == "No Date Data":
+                                self.bug("No Date Data given to default engine from queries")
+                                return xandy
+                            elif xandy is None:
+                                self.bug("None given to default engine query.")
+                                return None
+                            queryx,queryy = xandy
+                            if first_found:
+                                x_data = queryx
+                                first_found = False
+                            y_data_lists.append(queryy)                            
+                         
+                axis_pack  = {
+                    "start":start,
+                    "end":end,
+                    "met": axis["metric"],
+                    "gtype": axis["gtype"],
+                    "set_y":axis["set_y"],
+                    "str_x": pack["x_axis_label"],
+                    "str_y": axis["metric"],
+                    "line_labels":ls_queries,
+                    "x_data": x_data,
+                    "y_data": y_data_lists,
+                    "colors":colors_to_plot,
+                    "linestyles": styles_to_plot,
+                    "title":pack["title"],
+                    "event_dates": event_list
+                    
+                }
+                axes_result_packs[ind] = axis_pack          
+        return axes_result_packs             
+
+    def get_export_excel_pack(self,mrp):
+        """
+        merged_export_results_pack = {
+            "start":start,
+            "end":end,
+            "title": title,
+            "line_labels": labels,
+            "data_list_of_lists": datas
+        }
+        """
+        line_labels = mrp["line_labels"]
+        data_list_of_lists  = mrp["data_list_of_lists"]
+
+        constructor_dict = {}
+        for x in range(0, len(line_labels)):
+            constructor_dict[line_labels[x]] = data_list_of_lists[x]
+        newdf = pd.DataFrame(constructor_dict)
+        
+        sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
+        
+        return sheetname,newdf 
+    
+    def _has_queries_req(self,queriespacklist):
+        found_something = False
+        for qpack in queriespacklist:
+            if not qpack[0] == "None":
+                found_something = True
+        return found_something           
+    
+    def _determine_left_right_axis(self,pack):
+        p_req = self._has_queries_req(pack["left"]["queries"])
+        s_req = self._has_queries_req(pack["right"]["queries"])
+        
+        if p_req and s_req:
+            return pack["left"],pack["right"]
+        elif p_req and not s_req:
+            return pack["left"],None
+        elif not p_req and s_req:
+            return pack["right"],None
+        return None,None        

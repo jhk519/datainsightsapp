@@ -24,14 +24,10 @@ import pandas as pd
 import numpy as np
 
 # Project Modules
-from appwidget import AppWidget
-
-#log = logging.getLogger(__name__).info
-#log("{} Init.".format(__name__))    
-#bug = logging.getLogger(__name__).debug   
+from appwidget import AppWidget 
 
 class GraphFrame(AppWidget):
-    def __init__(self,parent,controller,config,dbvar=None, wd=11, ht=7):
+    def __init__(self,parent,controller,config,dbvar=None, wd=14, ht=8):
         self.widget_name = "graphframe"
         super().__init__(parent,controller, config,dbvar=None)
 
@@ -71,16 +67,8 @@ class GraphFrame(AppWidget):
             ynew = coords[1] + hover_obj.get_height()
             self.annot.xy = coords[0]+hover_obj.get_width()/2,ynew
             text = "{}-{}".format(self.axis_prime.get_xticklabels()[ind].get_text(),ynew)
-#            text = "ggg"
             self.annot.set_text(text)
-            self.annot.get_bbox_patch().set_alpha(0.4)            
-#        elif kind == "event":
-#            vertices = hover_obj.get_xy()
-#            self.annot.xycoords = "axes fraction"
-#            self.annot.xy = (0.5,0.5)
-#            text = hover_obj.get_label()
-#            self.annot.set_text(text)
-#            self.annot.get_bbox_patch().set_alpha(0.4)            
+            self.annot.get_bbox_patch().set_alpha(0.4)                   
     
     
     def hover(self,event):
@@ -111,8 +99,6 @@ class GraphFrame(AppWidget):
         self.lines_list = []
         self.event_polygon_list = []
         prp, srp= analysis_pack      
-#        prev_prime_y_axis_lims = self.axis_prime.get_ylim()
-#        prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
 
         try:
             self.my_legend.remove()
@@ -269,7 +255,7 @@ class GraphFrame(AppWidget):
                     ax_right_top = invDisToAxFrac.transform(right_top)
 
                     final_left_top = list(ax_left_top)
-                    if ax_left_top[0] < 0:
+                    if ax_left_top[0] <= 0:
                         if ax_right_top[0] < 0:
                             continue
                         else:

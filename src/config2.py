@@ -105,6 +105,7 @@ backend_settings = {
                 "쿠폰할인금액": "total_coupon_discount",
                 "결제수단": "payment_method",
                 "매출경로": "shopping_platform",
+                "주문경로(PC/모바일)": "pc_or_mobile_platform",
                 
                 
                 "주문자휴대전화": "customer_phone_number",
@@ -229,66 +230,66 @@ backend_settings = {
         "queries":{
             "order_data-date_series": {
                 "proper_title": "Order Data-Date Series",
-                "x-axis-type":"date_series",
-                "data_filters": ["start_end_dates","category_or_product","platform"],
+                "x_axis_type":"date_series",
+                "data_filters": ["start_end_dates","platform","category_or_product",],
                 "metrics": {
                     "count_of_items": {
                         "proper_title": "Count of Items",
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None", "Top Products", "Top Categories", "Platform", "Price Range"]
+                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
                     },
-                    "revenue_by_item":{
-                        "proper_title": "Revenue By Item",
-                        "metric_types": ["Before Discount", "After Discount"],
-                        "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None", "Top Products", "Top Categories", "Platform", "Price Range"]
-                    },
-                    "count_of_orders":{
-                        "proper_title": "Count of Orders",
-                        "metric_types": ["None"],
-                        "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None", "Platform","Order Size"]                        
-                    },
-                    "revenue_by_order":{
-                        "proper_title": "Revenue By Order",
-                        "metric_types": ["Before Discount", "After Discount"],
-                        "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None", "Platform"]                     
-                    },
-                    "order_size":{
-                        "proper_title": "Order Size",
-                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
-                        "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None","Platform"]                        
-                    }
+#                    "revenue_by_item":{
+#                        "proper_title": "Revenue By Item",
+#                        "metric_types": ["Before Discount", "After Discount"],
+#                        "data_types": ["Sum","Percentage","Average"],
+#                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
+#                    },
+#                    "count_of_orders":{
+#                        "proper_title": "Count of Orders",
+#                        "metric_types": ["None"],
+#                        "data_types": ["Sum","Percentage"],
+#                        "breakdown_types": ["None", "Gen. Platform","Spec. Platform","Order Size"]                        
+#                    },
+#                    "revenue_by_order":{
+#                        "proper_title": "Revenue By Order",
+#                        "metric_types": ["Before Discount", "After Discount"],
+#                        "data_types": ["Sum","Percentage","Average"],
+#                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                     
+#                    },
+#                    "order_size":{
+#                        "proper_title": "Order Size",
+#                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
+#                        "data_types": ["Sum","Percentage","Average"],
+#                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                        
+#                    }
                 }
             },
-            "traffic_data-date_series": {
-                "proper_title": "Traffic Data-Date Series",
-                "x-axis-type": "date_series",
-                "data_filters": ["start_end_dates"],
-                "metrics": {
-                    "pageviews": {
-                        "proper_title": "Pageviews",
-                        "metric_types": ["None"],
-                        "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None"]
-                    },
-                    "visitors": {
-                        "proper_title": "Visitors",
-                        "metric_types": ["None"],
-                        "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None","Device","New/Returning"]
-                    },                
-                }
-            }
+#            "traffic_data-date_series": {
+#                "proper_title": "Traffic Data-Date Series",
+#                "x_axis_type": "date_series",
+#                "data_filters": ["start_end_dates"],
+#                "metrics": {
+#                    "pageviews": {
+#                        "proper_title": "Pageviews",
+#                        "metric_types": ["None"],
+#                        "data_types": ["Sum","Percentage"],
+#                        "breakdown_types": ["None"]
+#                    },
+#                    "visitors": {
+#                        "proper_title": "Visitors",
+#                        "metric_types": ["None"],
+#                        "data_types": ["Sum","Percentage"],
+#                        "breakdown_types": ["None","Device","New/Returning"]
+#                    },                
+#                }
+#            }
         }
     },
 
     "querypanel":{
         "setdates_on_load": True,
-        "setdates_gap":"14",
+        "setdates_gap":"3",
         "setdates_from_date":"20180515",             
         "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
         "categories": ["Orders","Cashflow","Traffic","Logistics","Rankings","Cancels"],

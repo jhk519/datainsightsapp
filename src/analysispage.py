@@ -14,13 +14,14 @@ except ImportError:  # Python 3
     import tkinter.ttk as ttk
     
 # Standard Modules
-from pprint import pprint
+from pprint import pprint as PRETTYPRINT
 import pickle
 import logging
 import datetime
 
 # Project Modules
 from appwidget import AppWidget
+#import newquerypanel
 import querypanel
 import graphframe
 import datatable
@@ -32,23 +33,27 @@ class AnalysisPage(AppWidget):
         self.widget_name = "analysispage"
         super().__init__(parent,controller,config,dbvar)   
 
-#       UX VARIABLES     
-        self.graph_frame = graphframe.GraphFrame(self,self,config)
-        self.graph_frame.grid(row=0, rowspan=2,column=0, sticky="NSW")
+        self.graph_table_notebook = ttk.Notebook(self) 
+        self.graph_table_notebook.grid(row=0,rowspan=2,column=0,sticky="news")
         
-#        self.
+        self.graph_frame = graphframe.GraphFrame(self.graph_table_notebook,self,config)
+        self.datatable = datatable.DataTable(self.graph_table_notebook,self,config)
+        self.graph_table_notebook.add(self.graph_frame,text="Graph")
+        self.graph_table_notebook.add(self.datatable,text="Table")
+        
+        self.b_queries_pane(config),
+        
+        self.menu_pane = ttk.Labelframe(
+            self, text="Controls")
+        self.menu_pane.grid(row=1,column=1,sticky="NW")      
+        self.b_menu_pane()        
+        
+        self.columnconfigure(0, weight=2)
+        self.columnconfigure(1, weight=1)
+
         self.last_data_pack= None
         self.last_graph_pack = None
-
-        self.b_queries_pane(config),
         self.config_chain.append(self.query_panel)
-        self.b_menu_pane()  
-        
-        self.datatable = datatable.DataTable(self,self,config)
-        self.datatable.grid(row=2,column=0,columnspan=3,sticky="new")
-           
-        self.columnconfigure(0, weight=0)
-        self.columnconfigure(1, weight=1)
 
 # ================================================================
 # ================================================================
@@ -57,33 +62,46 @@ class AnalysisPage(AppWidget):
 # ================================================================       
         
     def request_and_graph_data(self,request_pack):
-#        pprint(request_pack)
-        self.log("***START*** search query.")
-        data_pack = None
+        self.log("***START*** search query.")       
         
-        init_data = self.engine.get_results_packs(request_pack,self.get_dbvar(),self.get_cfg_val("event_list"))
+        # Receive selection pack
+        # Check if applicable to current series
+            # 1. If graph has no current series, OK
+            # 2. Elif graph has current series:
+                # a. If current series is date_series and request_series is date_series
+                    # If request series within current_series, OK
+                    # Else: REJECT
+                # b. else: REJECT
+                
+        # IF OK:
+            # Collect Data
+            # Send graph request
+            # Send datatable request
+        
+        date_list, list_of_plots = self.engine.get_data(request_pack,self.get_dbvar(),self.get_cfg_val("event_list"))
+        PRETTYPRINT(date_list)
+        PRETTYPRINT(list_of_plots)
         self.log("Received Data")
-        if init_data == "No Date Data":
-            self.bug("No results for this date range.")
-            title = "No Results for this date range."
-            text ="No results for this date range."
-            self.create_popup(title,text) 
-            return
-        elif init_data is None:
-            self.bug("engine's get_results_packs returned None")
-            title = "Search Error"
-            text ="Error, please send Debug log to admin."
-            self.create_popup(title,text) 
-            return
-#            data_[a]
-        else:
-            data_pack = init_data
-
-        self.last_selection_pack = request_pack
-        self.last_data_pack = data_pack
-        self.last_graph_pack = self.draw_graph(data_pack)
-        self.datatable.update_table(self.last_graph_pack)
-        self.log("***END*** Search Query")
+#        if init_data == "No Date Data":
+#            self.bug("No results for this date range.")
+#            title = "No Results for this date range."
+#            text ="No results for this date range." 
+#            self.create_popup(title,text) 
+#            return
+#        elif init_data is None:
+#            self.bug("engine's get_results_packs returned None")
+#            title = "Search Error"
+#            text ="Error, please send Debug log to admin."
+#            self.create_popup(title,text) 
+#            return
+#        else:
+#            data_pack = init_data
+#
+#        self.last_selection_pack = request_pack
+#        self.last_data_pack = data_pack
+#        self.last_graph_pack = self.draw_graph(data_pack)
+#        self.datatable.update_table(self.last_graph_pack)
+#        self.log("***END*** Search Query")
         
 # ================================================================
 # ================================================================
@@ -169,16 +187,13 @@ class AnalysisPage(AppWidget):
         self.query_panel.grid(row=0, column=1, sticky="wn")
             
     def b_menu_pane(self):
-        self.menu_pane = ttk.Labelframe(
-            self, text="Controls")
-        self.menu_pane.grid(row=1,column=1,sticky="NW")        
-
+ 
         self.export_excel_button = ttk.Button(
             self.menu_pane,
             command=self.export_excel,
             text="Export Data to Excel")
         self.export_excel_button.grid(
-            row=1, column=1, padx=5, pady=2, sticky="w")
+            row=1, column=0, padx=5, pady=2, sticky="w")
         
         self.export_graph_button = ttk.Button(
             self.menu_pane,
@@ -186,7 +201,7 @@ class AnalysisPage(AppWidget):
             text="Export Graph",
             state="normal")
         self.export_graph_button.grid(
-            row=1, column=2, padx=5, pady=2, sticky="w")   
+            row=1, column=1, padx=5, pady=2, sticky="w")   
         
         self.send_to_multigrapher_button = ttk.Button(
             self.menu_pane,
@@ -194,7 +209,7 @@ class AnalysisPage(AppWidget):
             text="Send to Multigrapher",
             state="normal")
         self.send_to_multigrapher_button.grid(
-            row=1, column=3, padx=5, pady=2, sticky="w") 
+            row=2, column=0, padx=5, pady=2, sticky="w") 
 
         self.new_title_button = ttk.Button(
             self.menu_pane,
@@ -202,7 +217,7 @@ class AnalysisPage(AppWidget):
             text="Change Title",
             state="normal")
         self.new_title_button.grid(
-            row=1, column=4, padx=5, pady=2, sticky="w")  
+            row=2, column=1, padx=5, pady=2, sticky="w")  
         
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
@@ -222,6 +237,7 @@ if __name__ == "__main__":
     dbfile =  open(r"databases/DH_DBS.pickle", "rb")
     dbs = pickle.load(dbfile)  
     app = tk.Tk()    
+    app.state("zoomed")
     analysispage = AnalysisPage(app,app,controls_config,dbvar=dbs)
     analysispage.grid(padx=20)
     app.mainloop()        

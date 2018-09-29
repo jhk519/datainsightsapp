@@ -151,7 +151,7 @@ class DBManager(AppWidget):
         self.log("Export DB CSV for {}".format(db_str))
         if self.get_cfg_val("automatic db export"):
             fullname = self.get_export_full_name(db_str)
-            self.bug(".export_db_csb auto-fullname: {}".format(fullname))
+            self.log(".export_db_csb auto-fullname: {}".format(fullname))
         else:
             self.bug("No automatic db export given, asking dialog.")
             dir_loc = filedialog.asksaveasfilename() 

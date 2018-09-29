@@ -98,8 +98,8 @@ class GraphFrame(AppWidget):
         self.log("Update graph call.")
         self.lines_list = []
         self.event_polygon_list = []
-        prp, srp= analysis_pack      
-
+        prp = analysis_pack      
+        srp = None
         try:
             self.my_legend.remove()
         except BaseException:
@@ -128,6 +128,7 @@ class GraphFrame(AppWidget):
             "event_dates":[('20180522',1),('20180601',5)]
         }
         """
+        PRETTYPRINT(prp)
         if prp:
             try: 
                 prp["y_data"][0]
@@ -157,16 +158,17 @@ class GraphFrame(AppWidget):
         start = prp["start"]
         end = prp["end"]
         color_c = 0
-        if prp["gtype"] == "line":
+        if prp["gtype"] == "date_series":
             for x in range(0, len(prp["y_data"])):
-                if "MR" in prp["line_labels"][x]:
+                if "m_" in prp["line_labels"][x]:
                     linewidth = 0.75
                 else:
                     linewidth = 1.45
+                print("--- {}".format(x))
                 self.lines_list.append(self.axis_prime.plot_date(prp["x_data"],
                                      prp["y_data"][x],
-                                     color=prp_colors[color_c],
-                                     ls=prp["linestyles"][x],
+                                     color=prp_colors,
+                                     ls=prp["linestyles"],
                                      lw=linewidth,
                                      label=prp["line_labels"][x])[0])
 #                print(self.line)
@@ -206,14 +208,14 @@ class GraphFrame(AppWidget):
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
             # Y-AXIS FORMATTING            
-            if prp["set_y"][0]:
-                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
-            elif not prp["set_y"][0]:
-                if self.axis_prime.get_ylim()[1] >= 1000:
-                    self.axis_prime.get_yaxis().set_major_formatter(
-                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
-                if self.axis_prime.get_ylim()[0] <= 0:
-                    self.axis_prime.set_ylim(bottom=0)       
+#            if prp["set_y"][0]:
+#                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
+#            elif not prp["set_y"][0]:
+#                if self.axis_prime.get_ylim()[1] >= 1000:
+#                    self.axis_prime.get_yaxis().set_major_formatter(
+#                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
+#                if self.axis_prime.get_ylim()[0] <= 0:
+#                    self.axis_prime.set_ylim(bottom=0)       
                     
             if srp:
                 if srp["set_y"][0]:

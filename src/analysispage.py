@@ -38,6 +38,8 @@ class AnalysisPage(AppWidget):
         
         self.graph_frame = graphframe.GraphFrame(self.graph_table_notebook,self,config)
         self.datatable = datatable.DataTable(self.graph_table_notebook,self,config)
+#        self.datatable["width"] = 60
+        
         self.graph_table_notebook.add(self.graph_frame,text="Graph")
         self.graph_table_notebook.add(self.datatable,text="Table")
         
@@ -48,7 +50,7 @@ class AnalysisPage(AppWidget):
         self.menu_pane.grid(row=1,column=1,sticky="NW")      
         self.b_menu_pane()        
         
-        self.columnconfigure(0, weight=2)
+        self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=1)
 
         self.last_data_pack= None
@@ -62,45 +64,64 @@ class AnalysisPage(AppWidget):
 # ================================================================       
         
     def request_and_graph_data(self,request_pack):
-        self.log("***START*** search query.")       
-        
-        # Receive selection pack
-        # Check if applicable to current series
-            # 1. If graph has no current series, OK
-            # 2. Elif graph has current series:
-                # a. If current series is date_series and request_series is date_series
-                    # If request series within current_series, OK
-                    # Else: REJECT
-                # b. else: REJECT
-                
-        # IF OK:
-            # Collect Data
-            # Send graph request
-            # Send datatable request
-        
-        date_list, list_of_plots = self.engine.get_data(request_pack,self.get_dbvar(),self.get_cfg_val("event_list"))
-        PRETTYPRINT(date_list)
-        PRETTYPRINT(list_of_plots)
+        self.log("***START*** search query.")     
+        event_list = []
+        event_string = self.get_cfg_val("event_list")
+        for index, event in enumerate(event_string.split("%%")):
+            event_parts = event.split(",")
+            start_date = event_parts[0]
+            end_date = event_parts[1]
+            name_str = event_parts[2]     
+            event_list.append((start_date,end_date,name_str))        
+        """
+        {'data_filters': {'category_or_product': 'Product Code',
+                          'category_or_product_entry': 'P000BXBD',
+                          'end_datetime': datetime.date(2018, 5, 15),
+                          'platform': 'PC',
+                          'start_datetime': datetime.date(2018, 5, 12)},
+         'graph_options': {'axis': 'left',
+                           'color': 'black',
+                           'custom_name': 'TESTCUSTOMNAME',
+                           'line_style': '-.'},
+         'metric_options': {'breakdown': 'Spec. Platform',
+                            'data_type': 'Percentage',
+                            'metric': 'Count of Items',
+                            'metric_type': 'Exclude Cancelled Items',
+                            'number_of_rankings': 8},
+         'result_options': {'aggregation_period': 'Weekly',
+                            'aggregation_type': 'Average',
+                            'compare_to_days': '8'},
+         'x_axis_type': 'date_series'}
+        """        
+        results = self.engine.get_data(request_pack,self.get_dbvar(), self.get_cfg_val("event_list"))
+        date_list, list_of_plot_tuples,m_date_list,m_list_of_plot_tuples = results
+        merged_list_of_plot_tuples = list_of_plot_tuples + m_list_of_plot_tuples
+#        PRETTYPRINT(date_list)
+#        PRETTYPRINT(list_of_plot_tuples)
+#        
+#        PRETTYPRINT(m_date_list)
+#        PRETTYPRINT(m_list_of_plot_tuples)
+        PRETTYPRINT(merged_list_of_plot_tuples)
         self.log("Received Data")
-#        if init_data == "No Date Data":
-#            self.bug("No results for this date range.")
-#            title = "No Results for this date range."
-#            text ="No results for this date range." 
-#            self.create_popup(title,text) 
-#            return
-#        elif init_data is None:
-#            self.bug("engine's get_results_packs returned None")
-#            title = "Search Error"
-#            text ="Error, please send Debug log to admin."
-#            self.create_popup(title,text) 
-#            return
-#        else:
-#            data_pack = init_data
-#
-#        self.last_selection_pack = request_pack
-#        self.last_data_pack = data_pack
-#        self.last_graph_pack = self.draw_graph(data_pack)
-#        self.datatable.update_table(self.last_graph_pack)
+        rp  = {
+            "start":date_list[0],
+            "end":date_list[-1],
+            "met": request_pack["metric_options"]["metric"],
+            "gtype": request_pack["x_axis_type"],
+            "str_x": "Date",
+            "str_y": request_pack["metric_options"]["metric"],
+            "line_labels":[plot_tuple[0] for plot_tuple in merged_list_of_plot_tuples],
+            "x_data": date_list,
+            "y_data": [plot_tuple[1] for plot_tuple in merged_list_of_plot_tuples],
+            "colors":"red",
+            "title": "generic_title",
+            "linestyles":request_pack["graph_options"]["line_style"],
+            "event_dates":event_list
+        }      
+        self.last_selection_pack = request_pack
+        self.last_data_pack = results
+        self.last_graph_pack = self.draw_graph(rp)
+        self.datatable.update_table(self.last_graph_pack)
 #        self.log("***END*** Search Query")
         
 # ================================================================

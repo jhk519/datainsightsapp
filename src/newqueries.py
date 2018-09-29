@@ -52,6 +52,7 @@ def main(rpack, di_dbs,mirror_breakdown=None):
 #        "pageviews": [pageviews,"tdb",None],
 #        "visitors": [visitors,"tdb",None],
     }    
+    PRETTYPRINT(rpack)
     xtype = rpack["x_axis_type"]
     data_cfg = rpack["data_filters"]
     metric_cfg = rpack["metric_options"]
@@ -128,9 +129,9 @@ def count_of_items(odb, pdb, date_list, mcfg,mirror_breakdown=None):
     if top_counts == []:
         BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,mcfg))
     LOG("Generating result_dict.")
-    result_dict = {"All":[ 0 for date in date_list],"breakdown":{}}    
+    result_dict = {"All":[ 0 for date in date_list]}    
     for thing_name in top_counts:
-        result_dict["breakdown"][thing_name] = [ 0 for date in date_list]
+        result_dict[thing_name] = [ 0 for date in date_list]
         
     LOG("Iterating Over Rows")
     for index,row in odb.iterrows():
@@ -139,21 +140,20 @@ def count_of_items(odb, pdb, date_list, mcfg,mirror_breakdown=None):
         if not breakdown == "None":
             result_dict_key = row[bkdwn_column]
             try: 
-                result_dict["breakdown"][result_dict_key]
+                result_dict[result_dict_key]
             except KeyError:
                 pass
             else:
-                result_dict["breakdown"][result_dict_key][date_index] += 1
+                result_dict[result_dict_key][date_index] += 1
     LOG("DONE")
         
     if datatype == "Percentage":
         for index in range(0,len(date_list)):
             total = result_dict["All"][index]
-            for k in result_dict["breakdown"].keys():
-                perc = 100 * float(result_dict["breakdown"][k][index])/float(total)
-                result_dict["breakdown"][k][index] = perc            
+            for k in result_dict.keys():
+                perc = 100 * float(result_dict[k][index])/float(total)
+                result_dict[k][index] = perc            
                 
-#    PRETTYPRINT(result_dict)
     return date_list, result_dict
     
 def get_filtered_dbs(di_dbs,req_db,filters,xtype):

@@ -584,9 +584,8 @@ class AnalysisPageEngine():
 #        PRETTYPRINT(pack)
         date_list,result_dict,m_datelist,m_resultdict = None,None,None,None
         date_list, result_dict = newqueries.main(pack,dbvar)
-        
-#        PRETTYPRINT(result_dict)
-        breakdown_keys = list(result_dict["breakdown"].keys())
+
+        breakdown_keys = list(result_dict.keys())
         
         compare_days_str = pack["result_options"]["compare_to_days"]
         try: 
@@ -600,31 +599,35 @@ class AnalysisPageEngine():
                 m_datelist,m_resultdict = newqueries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
         
         list_of_plot_tuples = []
-
-        if pack["result_options"]["aggregation_period"] == "Daily":
-            self.log("Aggregation set to daily, skipping aggregation.")
-            if len(result_dict["breakdown"]) > 0:
-                for k,v in result_dict["breakdown"].items():
-                    list_of_plot_tuples.append((k,v))
-            else:
-                list_of_plot_tuples.append(("All",result_dict["All"]))       
+        m_list_of_plot_tuples = []
+        
+        if pack["result_options"]["aggregation_period"] == "Weekly":
+            self.log("Aggregation set to Weekly.")
+            agg_len = 7
+        elif pack["result_options"]["aggregation_period"] == "Monthly":
+            agg_len = 30   
         else:
-            agg_type = pack["result_options"]["aggregation_type"]
-            if pack["result_options"]["aggregation_period"] == "Weekly":
-                self.log("Aggregation set to Weekly.")
-                agg_len = 7
-            elif pack["result_options"]["aggregation_period"] == "Monthly":
-                agg_len = 30
+            agg_len = 1
+        agg_type = pack["result_options"]["aggregation_type"]            
+
+        date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
+        m_datelist = [chunk[0] for chunk in self.get_chunks(m_datelist,agg_len)]
+        
+        for k,v in result_dict.items():
+            if agg_len == 1:
+                list_of_plot_tuples.append((k,v))
+            elif agg_len > 1:
+                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v,agg_len)]
+                list_of_plot_tuples.append((k,agg_value))   
                 
-            date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
-            if len(result_dict["breakdown"]) > 0:
-                for k,v in result_dict["breakdown"].items():
-                    agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v,agg_len)]
-                    list_of_plot_tuples.append((k,agg_value))
-            else:
-                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(result_dict["All"],agg_len)]
-                list_of_plot_tuples.append(("All",agg_value))
-        return date_list,list_of_plot_tuples
+        for mk,mv in m_resultdict.items():
+            if agg_len == 1:
+                m_list_of_plot_tuples.append(("m_"+mk,mv))
+            elif agg_len > 1:                
+                m_agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(mv,agg_len)]
+                m_list_of_plot_tuples.append(("m_"+mk,m_agg_value))                    
+                
+        return [date_list,list_of_plot_tuples,m_datelist,m_list_of_plot_tuples]
             
     def aggregate_chunk(self,chunk,agg_type):
         total_value = 0

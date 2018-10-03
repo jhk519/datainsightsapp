@@ -46,19 +46,17 @@ class DataTable(AppWidget):
 # API
 #   We use the "cfg" attribute present in all defaultengines as a convenient way
 #   to store and access the latest "mrp". 
-    def update_table(self,mrp):
-        self.set_build_config(mrp)    
+
+    def update_table(self,table_pack):
+        self.log("Updating Datatable.")
+        self.set_build_config(table_pack)    
         if self.nav_tree is not None:
             self.nav_tree.destroy()
             self.scroll.destroy()
-            
+        
         self.nav_tree = ttk.Treeview(self, columns=self.get_cfg_val("line_labels"),show="headings")
         self.scroll = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.nav_tree.xview)
-        self.nav_tree.configure(xscrollcommand=self.scroll.set)    
-        
-        self.pack_propagate(0)
-        self.scroll.pack(side="bottom", fill="x")
-        self.nav_tree.pack(side="top", fill="both", expand=True)   
+        self.nav_tree.configure(xscrollcommand=self.scroll.set)            
 
         for header in self.get_cfg_val("line_labels"):
             self.nav_tree.heading(header,text=header,
@@ -66,7 +64,13 @@ class DataTable(AppWidget):
             self.nav_tree.column(header, minwidth=20, anchor="center", stretch=False,
                                  width=125)
          
-        for row_values in self.engine.get_rows_of_data(self.get_cfg_val("data_list_of_lists")):
+        for row_values in self.engine.get_rows_of_data(self.get_cfg_val("data_lists")):
             self.nav_tree.insert("", "end", values=row_values)
+            
+        self.pack_propagate(0)
+        self.scroll.pack(side="bottom", fill="x")
+        self.nav_tree.pack(side="top", fill="both", expand=True)            
+        
+        self.log("Completed updating datatable.")
             
                     

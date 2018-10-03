@@ -27,7 +27,7 @@ import master_calendar.calendardialog as cal_dialog
 
 class QueryPanel(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
-        self.widget_name = "newquerypanel"
+        self.widget_name = "querypanel"
         super().__init__(parent,controller,config,dbvar) 
         
         # QUERY MENU
@@ -59,7 +59,8 @@ class QueryPanel(AppWidget):
         self.current_metric_breakdown_var = tk.StringVar()
         
         # RESULTS
-        self.current_aggregation_time_var = tk.StringVar()
+        self.current_aggregation_period_var = tk.IntVar()
+        self.current_aggregation_period_var.set(1)
         self.current_aggregation_type_var = tk.StringVar()
         
         self.current_n_rankings_var = tk.IntVar()
@@ -72,6 +73,12 @@ class QueryPanel(AppWidget):
         self.current_linestyle_var = tk.StringVar() 
         self.color_button_widget = None
         self.current_custom_name_entry_var = tk.StringVar()
+        self.current_show_events_var = tk.BooleanVar()
+        self.current_show_events_var.set(False)
+        
+        self.current_force_y_axis_var = tk.BooleanVar()
+        self.current_force_y_axis_min_var = tk.IntVar()
+        self.current_force_y_axis_max_var = tk.IntVar()
         
         # BUILD 
         self.build_skeleton()
@@ -81,7 +88,17 @@ class QueryPanel(AppWidget):
         self.build_graph_options_menu(self.graph_options_labelframe)
         self.build_send_to_axis_menu(self.send_to_axis_buttons_labelframe)
         
+        if config:
+            if self.get_cfg_val("setdates_on_load"):
+                self._set_dates(self.get_cfg_val("setdates_gap"),
+                                self.get_cfg_val("setdates_from_date"))         
+        
     # UX EVENTS
+    def _set_dates(self,setdates_gap,setdates_from_date):
+        self.start_datetime, self.end_datetime = self.engine.get_start_and_end(setdates_gap,setdates_from_date)
+        self.start_date_button_var.set(str(self.start_datetime))
+        self.end_date_button_var.set(str(self.end_datetime))     
+    
     
     def _ux_category_changed(self,event=None):
         current_category =  self.current_category_var.get().replace(" ","_").lower()            
@@ -138,10 +155,11 @@ class QueryPanel(AppWidget):
         
     def _ux_send_to_axis(self,which_axis="left"):
         current_selections_pack = self.generate_current_selections_pack(which_axis)
-        try:
-            self.controller.request_and_graph_data(current_selections_pack)
-        except AttributeError:
-            self.bug("Error regarding sent and request data.")
+#        PRETTYPRINT(current_selections_pack)
+#        try:
+        self.controller.request_and_graph_data(current_selections_pack)
+#        except AttributeError:
+#            self.bug("Error regarding sent and request data.")
         
     # SELECTIONS PACK FUNCTIONS
     
@@ -163,7 +181,7 @@ class QueryPanel(AppWidget):
                 "number_of_rankings":self.current_n_rankings_var.get(),
             },
             "result_options": {
-                "aggregation_period":self.current_aggregation_time_var.get(),
+                "aggregation_period":self.current_aggregation_period_var.get(),
                 "aggregation_type":self.current_aggregation_type_var.get(),
                 "compare_to_days":self.current_compare_to_days_var.get(),
             },
@@ -171,9 +189,15 @@ class QueryPanel(AppWidget):
                 "line_style":self.current_linestyle_var.get(),
                 "color":self.color_button_widget["background"],
                 "axis": which_axis,
-                "custom_name": self.current_custom_name_entry_var.get()
+                "custom_name": self.current_custom_name_entry_var.get(),
+                "show_events": self.current_show_events_var.get(),
+                "force_y_axis":self.current_force_y_axis_var.get(),
+                "force_y_axis_min": self.current_force_y_axis_min_var.get(),
+                "force_y_axis_max": self.current_force_y_axis_max_var.get()
             } 
         }
+        
+        
         
     def reset_vars(self):
         self.current_x_axis_type.set("DEFAULT_IGNORE")
@@ -187,26 +211,29 @@ class QueryPanel(AppWidget):
         self.current_metric_data_type_var.set("DEFAULT_IGNORE"),
         self.current_metric_breakdown_var.set("DEFAULT_IGNORE"),  
         
-        self.current_compare_to_days_var.set(0)       
+#        self.current_compare_to_days_var.set(0)       
         self.current_custom_name_entry_var.set("None")
-                
+        self.current_force_y_axis_var.set(False)
+        self.current_force_y_axis_min_var.set(0)
+        self.current_force_y_axis_max_var.set(1000)
+        
     # BUILD FUNCTIONS
         
     def build_skeleton(self):
         self.category_dropdown_labelframe = tk.LabelFrame(self,text="Category Menu")
-        self.category_dropdown_labelframe.grid(row=0,column=0,sticky="nesw")
+        self.category_dropdown_labelframe.grid(row=0,column=0,sticky="nesw",pady=(0,9))
         
         self.data_filters_labelframe = tk.LabelFrame(self,text="Data Filters")
-        self.data_filters_labelframe.grid(row=1,column=0,sticky="nesw")
+        self.data_filters_labelframe.grid(row=1,column=0,sticky="nesw",pady=(0,9))
         
         self.metric_options_labelframe = tk.LabelFrame(self,text="Metric Options")
-        self.metric_options_labelframe.grid(row=2,column=0,sticky="nesw")
+        self.metric_options_labelframe.grid(row=2,column=0,sticky="nesw",pady=(0,9))
         
         self.results_options_labelframe = tk.LabelFrame(self,text="Result Options")
-        self.results_options_labelframe.grid(row=3,column=0,sticky="nesw")
+        self.results_options_labelframe.grid(row=3,column=0,sticky="nesw",pady=(0,9))
         
         self.graph_options_labelframe = tk.LabelFrame(self,text="Graph Options")
-        self.graph_options_labelframe.grid(row=4,column=0,sticky="nesw") 
+        self.graph_options_labelframe.grid(row=4,column=0,sticky="nesw",pady=(0,9)) 
         
         self.send_to_axis_buttons_labelframe = tk.LabelFrame(self,text="Send to Graph Axis")
         self.send_to_axis_buttons_labelframe.grid(row=5,column=0,sticky="news")
@@ -245,19 +272,19 @@ class QueryPanel(AppWidget):
                 
     def build_start_end_data_filter(self,targ_frame,rown=0):
         tk.Label(targ_frame,text="Start Date:").grid(row=rown,column=0,sticky="w",
-                columnspan=1)
+                columnspan=1,pady=(0,5))
         ttk.Button(targ_frame,command=self._ux_open_start_cal, textvariable=self.start_date_button_var).grid(
                 row=rown, column=1,columnspan=2, pady=2,sticky="w")        
         rown += 1
         
         tk.Label(targ_frame,text="End Date:").grid(row=rown,column=0,sticky="w",
-                columnspan=1)     
+                columnspan=1,pady=(0,5))     
         ttk.Button(targ_frame,command=self._ux_open_end_cal,textvariable=self.end_date_button_var).grid(
                 row=rown, column=1,columnspan=2, pady=2,sticky="w")        
         rown += 1
         
         tk.Label(targ_frame,text="Skip Dates:").grid(row=rown,column=0,sticky="w",
-                columnspan=1)     
+                columnspan=1,pady=(0,9))     
         ttk.Button(targ_frame,text="<<",width=3,command=lambda: self._ux_skip_calendars(-30)).grid(
                 row=rown,column=1,pady=2,sticky="w")
         ttk.Button(targ_frame,text=">>",width=3,command=lambda: self._ux_skip_calendars(30)).grid(
@@ -266,7 +293,7 @@ class QueryPanel(AppWidget):
         return rown + 1
         
     def build_category_or_product_data_filter(self,targ_frame, rown=0):
-        tk.Label(targ_frame,text="Product:").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="Product:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         
         dropdown = ttk.Combobox(targ_frame, textvariable=self.current_product_var,
                                 width=15)
@@ -279,7 +306,7 @@ class QueryPanel(AppWidget):
         rown += 1
         
         ttk.Entry(targ_frame,textvariable=self.current_product_entry_var,justify="left").grid(
-        row=rown,column=1,columnspan=3)
+        row=rown,column=1,columnspan=3,pady=(0,9))
         
         return rown + 1
         
@@ -311,7 +338,7 @@ class QueryPanel(AppWidget):
         for name,config in required_metrics_dict.items():
             self.metrics_list.append(config["proper_title"])   
             
-        tk.Label(targ_frame,text="Metric:").grid(row=rown, column=0,sticky="w")   
+        tk.Label(targ_frame,text="Metric:").grid(row=rown, column=0,sticky="w",pady=(0,5))   
         
         dropdown = ttk.Combobox(targ_frame, textvariable=self.current_metric_var,width=20)
         dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
@@ -324,26 +351,26 @@ class QueryPanel(AppWidget):
             self.metrics_list.append(config["proper_title"])    
             
         rown += 1
-        tk.Label(targ_frame,text="Metric Type:").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="Metric Type:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         
         self.metric_type_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_type_var,width=20)
         self.metric_type_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
         self.metric_type_menu["state"] = "readonly" 
         
         rown += 1
-        tk.Label(targ_frame,text="Data Type:").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="Data Type:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         self.metric_data_type_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_data_type_var,width=20)
         self.metric_data_type_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
         self.metric_data_type_menu["state"] = "readonly"   
         
         rown += 1
-        tk.Label(targ_frame,text="Breakdown:").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="Breakdown:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         self.metric_breakdown_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_breakdown_var,width=20)
         self.metric_breakdown_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
         self.metric_breakdown_menu["state"] = "readonly"        
 
         rown += 1
-        tk.Label(targ_frame,text="X Rankings (Breakdown):").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="X Breakdowns:").grid(row=rown, column=0,sticky="w",pady=(0,9))
         tk.Spinbox(targ_frame, from_=1.0, to=10.0, wrap=True, width=4, 
                    validate="key", state="readonly",textvariable=self.current_n_rankings_var).grid(
                            row=rown,column=1,sticky="w",columnspan=15) 
@@ -361,23 +388,28 @@ class QueryPanel(AppWidget):
     # RESULTS OPTIONS BUILD
         
     def build_results_options_menu(self,targ_frame,rown=0):
-        tk.Label(targ_frame,text="Aggregation Period: ").grid(row=rown, column=0,sticky="w")
-        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_time_var,width=10)
-        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
-        dropdown["values"] = ["Daily","Weekly","Monthly","Entire"]
-        dropdown["state"] = "readonly" 
-        dropdown.current(0)      
+#        tk.Label(targ_frame,text="Aggregation Period: ").grid(row=rown, column=0,sticky="w",pady=(0,5))
+#        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_time_var,width=10)
+#        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+#        dropdown["values"] = ["Daily","Weekly","Monthly","Entire"]
+#        dropdown["state"] = "readonly" 
+#        dropdown.current(0)     
         
+        tk.Label(targ_frame,text="Aggregation Period:").grid(row=rown, column=0,sticky="w",pady=(0,5))
+        tk.Spinbox(targ_frame, from_=1.0, to=365.0, wrap=True, width=4, 
+                   validate="key", state="normal",textvariable=self.current_aggregation_period_var).grid(
+                           row=rown,column=1,sticky="w",columnspan=15)          
         rown += 1
-        tk.Label(targ_frame,text="Aggregation Type:").grid(row=rown, column=0,sticky="w")
+        
+        tk.Label(targ_frame,text="Aggregation Type:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_type_var,width=10)
         dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
         dropdown["values"] = ["Sum","Average"]
         dropdown["state"] = "readonly" 
         dropdown.current(0)   
-        
         rown += 1
-        tk.Label(targ_frame,text="Compare to X Days Before:").grid(row=rown, column=0,sticky="w")
+        
+        tk.Label(targ_frame,text="Compare to X Days Before:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         tk.Spinbox(targ_frame, from_=0.0, to=365.0, wrap=True, width=4, 
                    validate="key", state="normal",textvariable=self.current_compare_to_days_var).grid(
                            row=rown,column=1,sticky="w",columnspan=15)          
@@ -386,23 +418,39 @@ class QueryPanel(AppWidget):
         
     def build_graph_options_menu(self,targ_frame,rown=0):
         
+        tk.Label(targ_frame,text="Force Y-Axis:").grid(row=rown, column=0,sticky="w",pady=(0,9))
+        ttk.Checkbutton(targ_frame, variable=self.current_force_y_axis_var,
+                        onvalue=True,offvalue=False).grid(row=rown, column=1, sticky="w",
+                                                          padx=(5,0))         
+        ttk.Entry(targ_frame, width=11, textvariable=self.current_force_y_axis_min_var).grid(
+                row=rown,column=2,sticky="w")
+        tk.Label(targ_frame,text="to").grid(row=rown, column=3,sticky="w")
+        ttk.Entry(targ_frame, width=11, textvariable=self.current_force_y_axis_max_var).grid(
+                row=rown,column=4,sticky="w")        
+        rown += 1        
+
         tk.Label(targ_frame,text="Line Style:").grid(row=rown, column=0,sticky="w")
         x = ttk.Combobox(targ_frame, textvariable=self.current_linestyle_var,width=2,
          values=["-","--","-.",":"],state="readonly")
-        x.grid(row=rown, column=1,columnspan=1, sticky="w",padx=(5,0)) 
+        x.grid(row=rown, column=1,columnspan=4, sticky="w",padx=(5,0)) 
         x.current(0)
         rown += 1
 
         tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
         self.color_button_widget = tk.Button(targ_frame,width=1,height=1,command=self._ux_choose_color)
-        self.color_button_widget.grid(row=rown,column=1,padx=(0,0),sticky="w")
+        self.color_button_widget.grid(row=rown,column=1,columnspan=2,padx=(5,0),sticky="w",pady=(5,5))
         self.color_button_widget.configure(background="black")
         rown += 1
         
         tk.Label(targ_frame,text="Custom Name:").grid(row=rown, column=0,sticky="w")
         ttk.Entry(targ_frame, width=20, textvariable=self.current_custom_name_entry_var).grid(
-                  row=rown, column=1, sticky="w",padx=(0,0))        
+                  row=rown, column=1,columnspan=4, sticky="nw",padx=(5,0),pady=(5,5))    
+        rown += 1
         
+        tk.Label(targ_frame,text="Show Events:").grid(row=rown, column=0,sticky="w")
+        ttk.Checkbutton(targ_frame, variable=self.current_show_events_var,
+                        onvalue=True,offvalue=False).grid(row=rown, column=1, sticky="w",padx=(5,0))         
+#        rown += 1
     # SEND TO AXIS BUILD
     
     def build_send_to_axis_menu(self,targ_frame,rown=0):

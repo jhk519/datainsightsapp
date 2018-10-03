@@ -58,8 +58,8 @@ class AppWidget(tk.Frame):
             self.engine = AnalysisPageEngine()
         elif self.widget_name == "querypanel":
             self.engine = QueryPanelEngine()
-        elif self.widget_name == "newquerypanel":
-            self.engine = QueryPanelEngine()
+#        elif self.widget_name == "newquerypanel":
+#            self.engine = QueryPanelEngine()
         elif self.widget_name == "datatable":
             self.engine = DataTableEngine()
         elif self.widget_name == "productviewer":
@@ -562,7 +562,8 @@ class AnalysisPageEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug   
         
-    def get_data(self,pack,dbvar,event_string):
+    def get_results_pack(self,pack,dbvar,event_string):
+        self.log("Start results_pack generation.")
         need_mirror = False
         compare_days_str = pack["result_options"]["compare_to_days"]
         try: 
@@ -573,46 +574,48 @@ class AnalysisPageEngine():
             if compare_int > 0:
                 need_mirror = True
                 
-        if pack["result_options"]["aggregation_period"] == "Weekly":
-            agg_len = 7
-        elif pack["result_options"]["aggregation_period"] == "Monthly":
-            agg_len = 30   
-        else:
-            agg_len = 1
+        agg_len = pack["result_options"]["aggregation_period"]
         agg_type = pack["result_options"]["aggregation_type"]   
-        
-        
+
         # COLLECT PRIME DATA
+        date_list = []
+        m_datelist = []
+        list_of_plot_tuples = []
         date_list, result_dict = queries.main(pack,dbvar)
         breakdown_keys = list(result_dict["lines"].keys())
-
-        list_of_plot_tuples = []
-        m_list_of_plot_tuples = []
         
         date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
-        for k,v in result_dict["lines"].items():
-            if agg_len == 1:
-                list_of_plot_tuples.append((k,v["data"]))
-            elif agg_len > 1:
-                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v["data"],agg_len)]
-                list_of_plot_tuples.append((k,agg_value))   
+        list_of_plot_tuples = self.generate_list_of_plot_tuples(result_dict,
+                                                                list_of_plot_tuples,
+                                                                agg_len,
+                                                                agg_type)   
                 
         # COLLECT MIRROR DATA IF NEEDED
-        m_datelist,m_resultdict = [],{}
         if need_mirror:
             pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))
             pack["data_filters"]["end_datetime"] = (pack["data_filters"]["end_datetime"] - datetime.timedelta(compare_int))
             m_datelist,m_resultdict = queries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
                 
             m_datelist = [chunk[0] for chunk in self.get_chunks(m_datelist,agg_len)]
-            for mk,mv in m_resultdict["lines"].items():
-                if agg_len == 1:
-                    m_list_of_plot_tuples.append(("m_"+mk,mv["data"]))
-                elif agg_len > 1:                
-                    m_agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(mv["data"],agg_len)]
-                    m_list_of_plot_tuples.append(("m_"+mk,m_agg_value))                    
-                    
-        return [date_list,list_of_plot_tuples,m_datelist,m_list_of_plot_tuples]
+            list_of_plot_tuples = self.generate_list_of_plot_tuples(
+                    m_resultdict,list_of_plot_tuples,agg_len, agg_type,is_mirror=True) 
+                           
+        self.log("Completed request_pack generation.")
+        return date_list,m_datelist,list_of_plot_tuples
+    
+    def generate_list_of_plot_tuples(self,result_dict,list_of_plot_tuples,agg_len,agg_type,is_mirror=False):
+        for k,v in result_dict["lines"].items():
+            if is_mirror:
+                k_str = "m_" + k
+            else:
+                k_str = str(k)
+            if agg_len == 1:
+                list_of_plot_tuples.append((k_str,v["data"]))
+            elif agg_len > 1:
+                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v["data"],agg_len)]
+                list_of_plot_tuples.append((k_str,agg_value))   
+                
+        return list_of_plot_tuples
             
     def aggregate_chunk(self,chunk,agg_type):
         total_value = 0
@@ -630,26 +633,16 @@ class AnalysisPageEngine():
         for i in range(0, len(l), n):
             yield l[i:i + n]
             
-    def get_export_excel_pack(self,mrp):
-        """
-        merged_export_results_pack = {
-            "start":start,
-            "end":end,
-            "title": title,
-            "line_labels": labels,
-            "data_list_of_lists": datas
-        }
-        """
-        line_labels = mrp["line_labels"]
-        data_list_of_lists  = mrp["data_list_of_lists"]
+    def get_export_excel_pack(self,table_pack):
+        line_labels = table_pack["line_labels"]
+        data_list_of_lists  = table_pack["data_lists"]
 
         constructor_dict = {}
         for x in range(0, len(line_labels)):
             constructor_dict[line_labels[x]] = data_list_of_lists[x]
         newdf = pd.DataFrame(constructor_dict)
         
-        sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
-        
+        sheetname = table_pack["sheet_title"]
         return sheetname,newdf 
 
     def get_events_list(self,event_string):

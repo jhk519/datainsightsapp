@@ -28,7 +28,7 @@ import numpy as np
 from appwidget import AppWidget 
 
 class GraphFrame(AppWidget):
-    def __init__(self,parent,controller,config,dbvar=None, wd=14, ht=8):
+    def __init__(self,parent,controller,config,dbvar=None, wd=14, ht=7.5):
         self.widget_name = "graphframe"
         super().__init__(parent,controller, config,dbvar=None)
 
@@ -143,19 +143,13 @@ class GraphFrame(AppWidget):
             return None
         
 #       TITLING
-        if prp["title"]:
-            title = prp["title"]
-        else:
-            title = prp["met"]
-            if srp:
-                title += " vs. " + srp["met"]
-        self.axis_prime.set_title(title)
+        self.axis_prime.set_title(prp["title"])
 
         self.axis_prime.xaxis.set_label_text(prp["str_x"])
         self.axis_prime.yaxis.set_label_text(prp["str_y"])
 
 #       GRAPH PRP
-        prp_colors = prp["colors"]
+        prp_colors = [prp["color"]] +  prp["breakdown_colors"]
         start = prp["start"]
         end = prp["end"]
         color_c = 0
@@ -167,7 +161,7 @@ class GraphFrame(AppWidget):
                     linewidth = 1.45
                 self.lines_list.append(self.axis_prime.plot_date(prp["x_data"],
                                      prp["y_data"][x],
-                                     color=prp_colors,
+                                     color=prp_colors[x],
                                      ls=prp["linestyles"],
                                      lw=linewidth,
                                      label=prp["line_labels"][x])[0])
@@ -208,14 +202,14 @@ class GraphFrame(AppWidget):
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
             # Y-AXIS FORMATTING            
-#            if prp["set_y"][0]:
-#                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
-#            elif not prp["set_y"][0]:
-#                if self.axis_prime.get_ylim()[1] >= 1000:
-#                    self.axis_prime.get_yaxis().set_major_formatter(
-#                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
-#                if self.axis_prime.get_ylim()[0] <= 0:
-#                    self.axis_prime.set_ylim(bottom=0)       
+            if prp["force_y"][0]:
+                self.axis_prime.set_ylim(bottom=prp["force_y"][1],top=prp["force_y"][2])
+            elif not prp["force_y"][0]:
+                if self.axis_prime.get_ylim()[1] >= 1000:
+                    self.axis_prime.get_yaxis().set_major_formatter(
+                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
+                if self.axis_prime.get_ylim()[0] <= 0:
+                    self.axis_prime.set_ylim(bottom=0)       
                     
             if srp:
                 if srp["set_y"][0]:
@@ -290,22 +284,6 @@ class GraphFrame(AppWidget):
                         fc="w"),arrowprops=dict(arrowstyle="->"))
         self.annot.set_visible(False)
         self.canvas.mpl_connect("motion_notify_event", self.hover)        
-
-#        PREP FINAL MERGED DATA PACK
-        if srp:
-            labels = [prp["str_x"]] + prp["line_labels"] + srp["line_labels"]
-            datas = [prp["x_data"]] + prp["y_data"] + srp["y_data"]
-        else:
-            labels = [prp["str_x"]] + prp["line_labels"]
-            datas = [prp["x_data"]] + prp["y_data"]
-
-        merged_export_results_pack = {
-            "start":start,
-            "end":end,
-            "title": title,
-            "line_labels": labels,
-            "data_list_of_lists": datas
-        }
-        self.log("Completed merged results pack.")
-        return merged_export_results_pack
+        
+        self.log("Completed Graphing.")
     

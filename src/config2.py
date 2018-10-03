@@ -27,10 +27,11 @@ backend_settings = {
                 "automatic search export": "Automatically choose file location export search results.",
                 "automatic export location": "File location for automatic search result export.",
                 "setdates_on_load": "Automatically set dates on loading.",
-                "event_list": "List of Events"
+                "automatically open excel exports": "Automatically open Excels after exporting results.",
+                "event_list": "List of Events",
+                "breakdown colors": "In the case of data breakdowns, use these colors for breakdown lines."
             },
             "querypanel": {
-                "colors_preferred": "Default colors for graphing queries.",
                 "setdates_gap": "The required number of days between automatic date setting on startup.",
                 "setdates_from_date": "The end date for automatic date settings on startup."
             },
@@ -180,29 +181,7 @@ backend_settings = {
                 "주문자명": "customer_name"
             },
         }              
-    },
-            
-#            "extra":self.extra_var.get(),
-#            "x_axis_label": self.x_axis_type.get(),
-#            "mirror_days": self.mirror_days_var.get(),            
-#            "left": {
-#                "gtype":self.axis_panels["left"]["gtype"],
-#                "db-type": self.axis_panels["left"]["dbtype"],
-#                "metric": self.axis_panels["left"]["metric"],
-#                "queries": left_comp,
-#            },
-#            "right": {
-#                "gtype":self.axis_panels["right"]["gtype"],
-#                "db-type": self.axis_panels["right"]["dbtype"],
-#                "metric": self.axis_panels["right"]["metric"],
-#                "queries": right_comp,
-#                #selected_query_pack = [stvar, label, choose_color, delete]      
-#            }, 
-#            "start": self.start_date,
-#            "end": self.end_date,
-#            "hold_y": self.hold_y_var.get()                
-            
-
+    },        
             
     "productviewer":{
         "automatic export location":".//exports//product_customer_lists"
@@ -210,23 +189,16 @@ backend_settings = {
             
     "analysispage":{     
         "automatic search export": True,
-        "automatic export location": "exports\search_results",
-        "auto_name_exports": True,  
-        "auto_query": True, 
-#        "event_list": [("20180429","20180429","04/29 Sale"),
-#                        ("20180501","20180506","05/01-05/06 Event"),
-#                        ("20180517","20180520","0517 3 Day Sale")]
-        "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520"
+        "automatic export location": "exports\search_results", 
+        "automatically open excel exports": True,
+        "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520",
+        "breakdown colors": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
         
-"""
-    "proper_title": "",
-    "metric_types": [],
-    "data_types": [],
-    "breakdown_types": []
-"""
     },
-    "newquerypanel":{
-        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
+    "querypanel":{
+        "setdates_on_load": True,
+        "setdates_gap":"14",
+        "setdates_from_date":"20180401",                 
         "queries":{
             "order_data-date_series": {
                 "proper_title": "Order Data-Date Series",
@@ -287,259 +259,6 @@ backend_settings = {
                     },                
                 }
             }
-        }
-    },
-
-    "querypanel":{
-        "setdates_on_load": True,
-        "setdates_gap":"3",
-        "setdates_from_date":"20180515",             
-        "colors_preferred": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
-        "categories": ["Orders","Cashflow","Traffic","Logistics","Rankings","Cancels"],
-        
-        "queries_ref": {
-            "Average Order Size":{
-                "category": "Orders",
-                "x-axis-label": "Date",
-                "y-axis-label": "Order Size (Part-Orders)",
-                "can_filter":None,
-                "gtype": "line",
-                "db-req": "odb"
-            },
-            "Daily Sales (Top Products)":{
-                "category": "Orders",
-                "x-axis-label": "Date",
-                "y-axis-label": "Revenue",
-                "can_filter":None,
-                "gtype": "line",
-                "db-req": "odb"                    
-            },
-  
-            "Top Categories (Orders)":{
-            	"category": "Rankings",
-            	"x-axis-label": "Category",
-            	"y-axis-label": "Order Quantity",
-            	"can_filter":None,
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            "Top Categories (Revenue)":{
-            	"category": "Rankings",
-            	"x-axis-label": "Category",
-            	"y-axis-label": "Revenue",
-            	"can_filter":None,
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },                    
-            "Average Order Value":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Order Value (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Orders By App":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Orders)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Orders By PC":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Orders)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Orders By Mobile":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Orders)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Orders By All Devices":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Orders)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Total Orders By Item":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Total Cancels By Item":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Total Returns By Item":{
-            	"category": "Orders",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Revenue By All Devices":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Revenue By App":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Revenue By PC":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Revenue By Mobile":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Revenue By Kooding":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Net Discount Given":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":"pcode",
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Net Payments Received":{
-            	"category": "Cashflow",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Cash (KRW)",
-            	"can_filter":"pcode",
-            	"gtype": "line",
-            	"db-req": "odb"
-            },
-            "Total Pageviews":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Pageviews",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Visitors By All Devices":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Visitors",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Visitors By Mobile":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Visitors",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Visitors By PC":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Visitors",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Visitors By App":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Visitors",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
-            "Unsent Orders Days to Ship":{
-            	"category": "Logistics",
-            	"x-axis-label": "Duration in Days",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            "Sent Orders Days To Ship":{
-            	"category": "Logistics",
-            	"x-axis-label": "Duration in Days",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            "Top Products (Orders)":{
-            	"category": "Rankings",
-            	"x-axis-label": "Product Codes",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":None,
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            
-            "Top Products (Returns)":{
-            	"category": "Rankings",
-            	"x-axis-label": "Product Codes",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":None,
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            "Cancel Reasons":{
-            	"category": "Cancels",
-            	"x-axis-label": "Reasons",
-            	"y-axis-label": "Quantity (Part-Orders)",
-            	"can_filter":"pcode",
-            	"gtype": "bar",
-            	"db-req": "odb"
-            },
-            "Conversion Rate":{
-            	"category": "Traffic",
-            	"x-axis-label": "Date",
-            	"y-axis-label": "Conversion Rate (Purchases / Visitors)",
-            	"can_filter":None,
-            	"gtype": "line",
-            	"db-req": "tdb"
-            },
         }
     },
             

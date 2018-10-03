@@ -22,16 +22,16 @@ import pandas as pd
 from pprint import pprint as PRETTYPRINT
 
 import queries
-import newqueries
+#import newqueries
 import exceltodataframe as etdf
 
 class AppWidget(tk.Frame):
-    def __init__(self,parent,controller,config,dbvar,showlog=False):
+    def __init__(self,parent,controller,config,dbvar,usedebuglog=True):
         super().__init__(parent)
         self.parent = parent
         self.controller = controller
         
-        if not showlog:
+        if not usedebuglog:
             self.log = print
         else:
             self.log = logging.getLogger(__name__ + "-" + self.widget_name).info
@@ -312,13 +312,17 @@ class DBManagerEngine():
         req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
         match_on_key = db_ref["match_on_key"]
         
+        if len(path_list) == 0:
+            new_df = None
+        
         for index, path in enumerate(path_list):
             if index == 0:
                 new_df = etdf.gen_single_db_from_excels(path, ext, header_ref,
                                                         req_excels_tpl, match_on_key)
             else:
                 new_df =  etdf.add_data(new_df, path, ext, header_ref, 
-                               req_excels_tpl,match_on_key)                
+                               req_excels_tpl,match_on_key)   
+                        
         return new_df        
 
     def update_single_db(self,db_str,path_list,db_ref,new_df,header_ref):
@@ -332,13 +336,6 @@ class DBManagerEngine():
             new_df =  etdf.add_data(new_df, path, ext, header_ref, 
                                req_excels_tpl,match_on_key)
         return new_df
-#    
-#    def load_offline_dbs(self,dir_loc):
-#        with open(dir_loc, "rb") as dbfile:
-#            try:
-#                self.set_dbvar(pickle.load(dbfile))
-#            except:
-#                print("Likely in-compatible DB file.")
             
     def load_online_dbs(self,counter=None,ticker=None):
         url = self.get_cfg_val("URL for Online DB Download")
@@ -373,7 +370,12 @@ class DBManagerEngine():
         cur.executemany("insert into %s values(%s)" % (tbl_name, wildcards), data)
         conn.commit()
         conn.close()
-        self.log("Export to Sqlite Completed")    
+        self.log("Export to Sqlite Completed")  
+        
+    def merge_odb_with_pdb(self,odb,pdb):
+        self.log("Merging odb with pdb...")
+        return pd.merge(odb, pdb.drop_duplicates(subset="product_cafe24_code"), on="product_cafe24_code", right_index=False,
+                       how='left', sort=False)            
         
 class ProductViewerEngine():
     def __init__(self):    
@@ -561,32 +563,7 @@ class AnalysisPageEngine():
         self.bug = logging.getLogger(__name__).debug   
         
     def get_data(self,pack,dbvar,event_string):
-        """
-        {'data_filters': {'category_or_product': 'Product Code',
-                          'category_or_product_entry': 'P000BXBD',
-                          'end_datetime': datetime.date(2018, 5, 15),
-                          'platform': 'PC',
-                          'start_datetime': datetime.date(2018, 5, 12)},
-         'graph_options': {'axis': 'left',
-                           'color': 'black',
-                           'custom_name': 'TESTCUSTOMNAME',
-                           'line_style': '-.'},
-         'metric_options': {'breakdown': 'Spec. Platform',
-                            'data_type': 'Percentage',
-                            'metric': 'Count of Items',
-                            'metric_type': 'Exclude Cancelled Items',
-                            'number_of_rankings': 8},
-         'result_options': {'aggregation_period': 'Weekly',
-                            'aggregation_type': 'Average',
-                            'compare_to_days': '8'},
-         'x_axis_type': 'date_series'}
-        """      
-#        PRETTYPRINT(pack)
-        date_list,result_dict,m_datelist,m_resultdict = None,None,None,None
-        date_list, result_dict = newqueries.main(pack,dbvar)
-
-        breakdown_keys = list(result_dict.keys())
-        
+        need_mirror = False
         compare_days_str = pack["result_options"]["compare_to_days"]
         try: 
             compare_int = int(compare_days_str)
@@ -594,39 +571,47 @@ class AnalysisPageEngine():
             self.bug("Cannot convert compare_to_days value: {} into int.".format(compare_days_str))
         else:
             if compare_int > 0:
-                pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))
-                pack["data_filters"]["end_datetime"] = (pack["data_filters"]["end_datetime"] - datetime.timedelta(compare_int))
-                m_datelist,m_resultdict = newqueries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
-        
-        list_of_plot_tuples = []
-        m_list_of_plot_tuples = []
-        
+                need_mirror = True
+                
         if pack["result_options"]["aggregation_period"] == "Weekly":
-            self.log("Aggregation set to Weekly.")
             agg_len = 7
         elif pack["result_options"]["aggregation_period"] == "Monthly":
             agg_len = 30   
         else:
             agg_len = 1
-        agg_type = pack["result_options"]["aggregation_type"]            
-
-        date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
-        m_datelist = [chunk[0] for chunk in self.get_chunks(m_datelist,agg_len)]
+        agg_type = pack["result_options"]["aggregation_type"]   
         
-        for k,v in result_dict.items():
+        
+        # COLLECT PRIME DATA
+        date_list, result_dict = queries.main(pack,dbvar)
+        breakdown_keys = list(result_dict["lines"].keys())
+
+        list_of_plot_tuples = []
+        m_list_of_plot_tuples = []
+        
+        date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
+        for k,v in result_dict["lines"].items():
             if agg_len == 1:
-                list_of_plot_tuples.append((k,v))
+                list_of_plot_tuples.append((k,v["data"]))
             elif agg_len > 1:
-                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v,agg_len)]
+                agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(v["data"],agg_len)]
                 list_of_plot_tuples.append((k,agg_value))   
                 
-        for mk,mv in m_resultdict.items():
-            if agg_len == 1:
-                m_list_of_plot_tuples.append(("m_"+mk,mv))
-            elif agg_len > 1:                
-                m_agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(mv,agg_len)]
-                m_list_of_plot_tuples.append(("m_"+mk,m_agg_value))                    
+        # COLLECT MIRROR DATA IF NEEDED
+        m_datelist,m_resultdict = [],{}
+        if need_mirror:
+            pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))
+            pack["data_filters"]["end_datetime"] = (pack["data_filters"]["end_datetime"] - datetime.timedelta(compare_int))
+            m_datelist,m_resultdict = queries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
                 
+            m_datelist = [chunk[0] for chunk in self.get_chunks(m_datelist,agg_len)]
+            for mk,mv in m_resultdict["lines"].items():
+                if agg_len == 1:
+                    m_list_of_plot_tuples.append(("m_"+mk,mv["data"]))
+                elif agg_len > 1:                
+                    m_agg_value = [self.aggregate_chunk(chunk,agg_type) for chunk in self.get_chunks(mv["data"],agg_len)]
+                    m_list_of_plot_tuples.append(("m_"+mk,m_agg_value))                    
+                    
         return [date_list,list_of_plot_tuples,m_datelist,m_list_of_plot_tuples]
             
     def aggregate_chunk(self,chunk,agg_type):
@@ -644,6 +629,41 @@ class AnalysisPageEngine():
         """Yield successive n-sized chunks from l."""
         for i in range(0, len(l), n):
             yield l[i:i + n]
+            
+    def get_export_excel_pack(self,mrp):
+        """
+        merged_export_results_pack = {
+            "start":start,
+            "end":end,
+            "title": title,
+            "line_labels": labels,
+            "data_list_of_lists": datas
+        }
+        """
+        line_labels = mrp["line_labels"]
+        data_list_of_lists  = mrp["data_list_of_lists"]
+
+        constructor_dict = {}
+        for x in range(0, len(line_labels)):
+            constructor_dict[line_labels[x]] = data_list_of_lists[x]
+        newdf = pd.DataFrame(constructor_dict)
+        
+        sheetname = str(mrp["start"]) + " to " + str(mrp["end"])
+        
+        return sheetname,newdf 
+
+    def get_events_list(self,event_string):
+        event_list = []
+        
+        for index, event in enumerate(event_string.split("%%")):
+            event_parts = event.split(",")
+            start_date = event_parts[0]
+            end_date = event_parts[1]
+            name_str = event_parts[2]     
+            event_list.append((start_date,end_date,name_str))  
+        return event_list
+            
+#    def check_need_mirror
     
 class QueryPanelEngine():
     def __init__(self):    

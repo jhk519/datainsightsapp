@@ -20,6 +20,8 @@ import os
 import logging   
 import datetime
 from pprint import pprint as PRETTYPRINTTHIS
+#import matplotlib
+
 
 # Project Mpdules
 import config2

@@ -141,7 +141,7 @@ class QueryPanel(AppWidget):
         try:
             self.controller.request_and_graph_data(current_selections_pack)
         except AttributeError:
-            PRETTYPRINT(current_selections_pack)
+            self.bug("Error regarding sent and request data.")
         
     # SELECTIONS PACK FUNCTIONS
     
@@ -395,7 +395,7 @@ class QueryPanel(AppWidget):
 
         tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
         self.color_button_widget = tk.Button(targ_frame,width=1,height=1,command=self._ux_choose_color)
-        self.color_button_widget.grid(row=rown,column=1,padx=(0,0))
+        self.color_button_widget.grid(row=rown,column=1,padx=(0,0),sticky="w")
         self.color_button_widget.configure(background="black")
         rown += 1
         

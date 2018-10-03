@@ -234,56 +234,59 @@ backend_settings = {
                 "data_filters": ["start_end_dates","platform","category_or_product",],
                 "metrics": {
                     "count_of_items": {
-                        "proper_title": "Count of Items",
+                        "proper_title": "Count Of Items",
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Percentage"],
                         "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
                     },
-#                    "revenue_by_item":{
-#                        "proper_title": "Revenue By Item",
-#                        "metric_types": ["Before Discount", "After Discount"],
-#                        "data_types": ["Sum","Percentage","Average"],
-#                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
-#                    },
-#                    "count_of_orders":{
-#                        "proper_title": "Count of Orders",
-#                        "metric_types": ["None"],
-#                        "data_types": ["Sum","Percentage"],
-#                        "breakdown_types": ["None", "Gen. Platform","Spec. Platform","Order Size"]                        
-#                    },
-#                    "revenue_by_order":{
-#                        "proper_title": "Revenue By Order",
-#                        "metric_types": ["Before Discount", "After Discount"],
-#                        "data_types": ["Sum","Percentage","Average"],
-#                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                     
-#                    },
-#                    "order_size":{
-#                        "proper_title": "Order Size",
-#                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
-#                        "data_types": ["Sum","Percentage","Average"],
-#                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                        
-#                    }
+                    "revenue_by_item":{
+                        "proper_title": "Revenue By Item",
+                        "metric_types": ["Before Discount", "After Discount"],
+                        "data_types": ["Sum","Percentage","Average"],
+                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
+                    },
+                    "count_of_orders":{
+                        "proper_title": "Count Of Orders",
+                        "metric_types": ["Include Fully Cancelled Orders", "Exclude Fully Cancelled Orders"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None", "Gen. Platform","Spec. Platform"]                        
+                    },
+                    "revenue_by_order":{
+                        "proper_title": "Revenue By Order",
+                        "metric_types": ["Orig. Price, Incl. Cncld Orders", 
+                                         "Net. Price, Incl. Cncld Orders",
+                                         "Orig. Price, Excl. Cncld Orders",
+                                         "Net. Price, Excl. Cncld Orders"],
+                        "data_types": ["Sum","Percentage","Average"],
+                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                     
+                    },
+                    "order_size":{
+                        "proper_title": "Order Size",
+                        "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
+                        "data_types": ["Sum","Average"],
+                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                        
+                    }
                 }
             },
-#            "traffic_data-date_series": {
-#                "proper_title": "Traffic Data-Date Series",
-#                "x_axis_type": "date_series",
-#                "data_filters": ["start_end_dates"],
-#                "metrics": {
-#                    "pageviews": {
-#                        "proper_title": "Pageviews",
-#                        "metric_types": ["None"],
-#                        "data_types": ["Sum","Percentage"],
-#                        "breakdown_types": ["None"]
-#                    },
-#                    "visitors": {
-#                        "proper_title": "Visitors",
-#                        "metric_types": ["None"],
-#                        "data_types": ["Sum","Percentage"],
-#                        "breakdown_types": ["None","Device","New/Returning"]
-#                    },                
-#                }
-#            }
+            "traffic_data-date_series": {
+                "proper_title": "Traffic Data-Date Series",
+                "x_axis_type": "date_series",
+                "data_filters": ["start_end_dates"],
+                "metrics": {
+                    "count_of_pageviews": {
+                        "proper_title": "Count Of Pageviews",
+                        "metric_types": ["None"],
+                        "data_types": ["Sum"],
+                        "breakdown_types": ["None"]
+                    },
+                    "count_of_visitors": {
+                        "proper_title": "Count Of Visitors",
+                        "metric_types": ["None"],
+                        "data_types": ["Sum","Percentage"],
+                        "breakdown_types": ["None","Device","New/Returning"]
+                    },                
+                }
+            }
         }
     },
 

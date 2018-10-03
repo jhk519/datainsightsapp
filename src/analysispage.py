@@ -65,43 +65,12 @@ class AnalysisPage(AppWidget):
         
     def request_and_graph_data(self,request_pack):
         self.log("***START*** search query.")     
-        event_list = []
-        event_string = self.get_cfg_val("event_list")
-        for index, event in enumerate(event_string.split("%%")):
-            event_parts = event.split(",")
-            start_date = event_parts[0]
-            end_date = event_parts[1]
-            name_str = event_parts[2]     
-            event_list.append((start_date,end_date,name_str))        
-        """
-        {'data_filters': {'category_or_product': 'Product Code',
-                          'category_or_product_entry': 'P000BXBD',
-                          'end_datetime': datetime.date(2018, 5, 15),
-                          'platform': 'PC',
-                          'start_datetime': datetime.date(2018, 5, 12)},
-         'graph_options': {'axis': 'left',
-                           'color': 'black',
-                           'custom_name': 'TESTCUSTOMNAME',
-                           'line_style': '-.'},
-         'metric_options': {'breakdown': 'Spec. Platform',
-                            'data_type': 'Percentage',
-                            'metric': 'Count of Items',
-                            'metric_type': 'Exclude Cancelled Items',
-                            'number_of_rankings': 8},
-         'result_options': {'aggregation_period': 'Weekly',
-                            'aggregation_type': 'Average',
-                            'compare_to_days': '8'},
-         'x_axis_type': 'date_series'}
-        """        
+        events_list = self.engine.get_events_list(self.get_cfg_val("event_list"))
+            
         results = self.engine.get_data(request_pack,self.get_dbvar(), self.get_cfg_val("event_list"))
         date_list, list_of_plot_tuples,m_date_list,m_list_of_plot_tuples = results
         merged_list_of_plot_tuples = list_of_plot_tuples + m_list_of_plot_tuples
-#        PRETTYPRINT(date_list)
-#        PRETTYPRINT(list_of_plot_tuples)
-#        
-#        PRETTYPRINT(m_date_list)
-#        PRETTYPRINT(m_list_of_plot_tuples)
-        PRETTYPRINT(merged_list_of_plot_tuples)
+        
         self.log("Received Data")
         rp  = {
             "start":date_list[0],
@@ -113,10 +82,10 @@ class AnalysisPage(AppWidget):
             "line_labels":[plot_tuple[0] for plot_tuple in merged_list_of_plot_tuples],
             "x_data": date_list,
             "y_data": [plot_tuple[1] for plot_tuple in merged_list_of_plot_tuples],
-            "colors":"red",
+            "colors":request_pack["graph_options"]["color"],
             "title": "generic_title",
             "linestyles":request_pack["graph_options"]["line_style"],
-            "event_dates":event_list
+            "event_dates":events_list
         }      
         self.last_selection_pack = request_pack
         self.last_data_pack = results

@@ -75,6 +75,11 @@ class DBManager(AppWidget):
                             dir_list,
                             self.get_cfg_val("header_ref")) 
             
+        if db_str == "odb":
+            self.get_dbvar()[db_str] = self.engine.merge_odb_with_pdb(
+                    odb = self.get_dbvar()["odb"],
+                    pdb = self.get_dbvar()["pdb"])
+            
         self._update_statuses()
         self.log("Completed resetting and generating: {}".format(db_str))
 

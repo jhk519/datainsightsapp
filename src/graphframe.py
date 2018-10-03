@@ -17,6 +17,7 @@ import matplotlib
 from matplotlib import ticker
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+matplotlib.rcParams['font.sans-serif'] = ['Source Han Sans TW', 'sans-serif']
 from pprint import pprint as PRETTYPRINT
 import logging
 import datetime
@@ -128,7 +129,7 @@ class GraphFrame(AppWidget):
             "event_dates":[('20180522',1),('20180601',5)]
         }
         """
-        PRETTYPRINT(prp)
+#        PRETTYPRINT(prp)
         if prp:
             try: 
                 prp["y_data"][0]
@@ -164,7 +165,6 @@ class GraphFrame(AppWidget):
                     linewidth = 0.75
                 else:
                     linewidth = 1.45
-                print("--- {}".format(x))
                 self.lines_list.append(self.axis_prime.plot_date(prp["x_data"],
                                      prp["y_data"][x],
                                      color=prp_colors,

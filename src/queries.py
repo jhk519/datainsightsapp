@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep 29 13:21:44 2018
+
+@author: Justin H Kim
+"""
+
 # Standard Modules 
-from pprint import pprint
+from pprint import pprint as PRETTYPRINT
 import collections
 import copy
 from datetime import datetime, timedelta
@@ -9,608 +16,503 @@ import logging
 import workdays
 import pandas as pd
 
-log = logging.getLogger(__name__).info
-log("{} Init.".format(__name__))    
-bug = logging.getLogger(__name__).debug       
+LOG = logging.getLogger(__name__).info
+LOG("{} Init.".format(__name__))    
+BUG = logging.getLogger(__name__).debug  
 
-dates =  [
-        "2018-01-01",
-        "2018-02-15",
-        "2018-02-16",
-        "2018-02-17",
-        "2018-03-01",
-        "2018-05-05",
-        "2018-05-07",
-        "2018-05-22",
-        "2018-06-06",
-        "2018-06-13",
-        "2018-08-15",
-        "2018-09-23",
-        "2018-09-24",
-        "2018-09-25",
-        "2018-09-26",
-        "2018-10-03",
-        "2018-10-09",
-        "2018-12-25"
-    ]
+"""
+        {'data_filters': {'category_or_product': 'All',
+                          'category_or_product_entry': 'P0000BHV',
+                          'end_datetime': datetime.date(2018, 5, 15),
+                          'platform': 'All',
+                          'start_datetime': datetime.date(2018, 4, 15)},
+         'graph_options': {'axis': 'right',
+                           'color': '#0000ff',
+                           'custom_name': 'P0000BHV-Revenue',
+                           'line_style': '--'},
+         'metric_options': {'breakdown': 'Platform',
+                            'data_type': 'Sum',
+                            'metric': 'Revenue By Item',
+                            'number_of_rankings': 2,
+                            'metric_type': 'Before Discount'},
+         'result_options': {'aggregation_period': 'Weekly',
+                            'aggregation_type': 'Average',
+                            'compare_to_days': '365',
+                            }}
+"""
 
-def main(st_query_name, di_dbs, start, end, extra=None, n_rankings=10):
-    queries_ref = {
-        "Total Orders By Item":[order_quantity,["odb",]],
-        "Total Returns By Item":[return_quantity,["odb",]],
-        "Total Cancels By Item":[cancel_quantity,["odb",]],
-        "Cancel Reasons":[cancel_reasons,["odb",]],
-        "Net Payments Received":[net_payment,["odb",]],
-        "Net Discount Given":[net_discount,["odb",]],
-        "Average Order Value":[aov,["odb",]],
-        "Average Order Size":[aos,["odb",]],
-        "Sent Orders Days To Ship":[days_to_ship,["odb",]],
-        "Unsent Orders Days To Ship":[days_unsent,["odb",]],  
-        "Top Products (Orders)":[topten_by_orders,["odb",]],
-        "Top Products (Revenue)":[topten_by_returns,["odb",]],  
-        "Daily Sales (Top Products)":[daily_sales_top_products,["odb",]],
-        "Revenue By Mobile":[revenue_mobile,["tdb",]],
-        "Revenue By All Devices":[revenue_all,["tdb",]],
-        "Revenue By PC":[revenue_pc,["tdb",]],
-        "Revenue By Kooding":[revenue_kooding,["tdb",]],
-        "Revenue By App":[revenue_app,["tdb",]],
-        "Total Pageviews":[pageviews,["tdb",]],
-        "Visitors By Mobile":[visitors_mobile,["tdb",]],
-        "Visitors By PC":[visitors_pc,["tdb",]],
-        "Visitors By App":[visitors_app,["tdb",]],
-        "Visitors By All Devices":[visitors_all,["tdb",]],
-        "Orders By App":[orders_app,["tdb",]],
-        "Orders By PC":[orders_pc,["tdb",]],
-        "Orders By Mobile":[orders_mobile,["tdb",]],
-        "Orders By All Devices":[orders_all,["tdb",]],   
-        "Conversion Rate":[conversion_rate,["tdb",]],
-        "Top Categories (Orders)":[top10_categories_orders,["odb","pdb"]],
-        "Top Categories (Revenue)":[top10_categories_revenue,["odb","pdb"]],
-    }
-    log("Requesting query {} at start {} and end {}".format(st_query_name,start,end))
-#    db = copy.deepcopy(di_dbs[queries_ref[st_query_name][1]])
-    dbs_needed = queries_ref[st_query_name][1]
-    db = None
-    if len(dbs_needed) == 1:
-        log("Queries using one db")
-        db = di_dbs[dbs_needed[0]].copy()
-        dbs = apply_mask(db,start,end)
-        if dbs.shape[0] <= 1:
-            return "No Date Data"
-    elif len(dbs_needed) > 1:
-        log("Queries using more than one db.")
-        dbs = []
-        for ind,db_str in enumerate(dbs_needed):
-            db = di_dbs[db_str].copy()
-            db = apply_mask(db,start,end)
-            if db.shape[0] <= 1:
-                bug("DB too small.")
-                return "No Date Data"
-            dbs.append(db)
-    func = queries_ref[st_query_name][0]
-    returnval = func(dbs, start, end, extra=extra,n_rankings=n_rankings)
-    if returnval:
-        return list(returnval)
+
+def main(rpack, di_dbs,mirror_breakdown=None):
+    raw_metrics_ref = {
+        "Count Of Items": [count_of_items,"odb"],
+        "Revenue By Item": [revenue_by_item,"odb"],
+        "Count Of Orders": [count_of_orders,"odb"],
+        "Revenue By Order": [revenue_by_order,"odb"],
+        "Order Size": [order_size,"odb"],
+        "Count Of Pageviews": [count_of_pageviews,"tdb"],
+        "Count Of Visitors": [count_of_visitors,"tdb"],
+    }    
+    xtype = rpack["x_axis_type"]
+    data_cfg = rpack["data_filters"]
+    metric_cfg = rpack["metric_options"]
+    
+    raw_metric_str = metric_cfg["metric"]
+    try:
+        raw_metric_func = raw_metrics_ref[raw_metric_str][0]
+    except KeyError:
+        BUG("Metric string in metric_cfg arg not found in raw_metrics_ref: {}".format(raw_metric_str))
+    req_db = raw_metrics_ref[raw_metric_str][1] 
+    
+    # FILTER DBS
+    filtered_db = get_filtered_dbs(di_dbs,req_db,data_cfg,xtype)
+    
+    # GATHER RAW METRIC DATA
+    if xtype == "date_series":
+        raw_date_list = _gen_dates_list(data_cfg["start_datetime"], data_cfg["end_datetime"])
+        date_list, result_dict = raw_metric_func(filtered_db,raw_date_list,metric_cfg,mirror_breakdown)
+        return  date_list, result_dict
+    
+def count_of_items(odb, date_list, mcfg,breakdown_keys=None):
+    LOG("Starting Count of Items")
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"]
+    
+    # METRIC TYPE FILTERING 
+    if mtype == "Include Cancelled Items":
+        LOG("No masking needed, because cancelled items included.")
+    elif mtype == "Exclude Cancelled Items":
+        LOG("Masking DB to only include non-cancelled items.")
+        odb = odb.loc[odb['cancel_status'] == "취소안함"]
     else:
-        return None
-    
-def daily_sales_top_products(db, start, end, extra=None,n_rankings=3):
-    count_db = db["product_cafe24_code"].value_counts().head(n_rankings)
-    list_of_product_daily_sales = []
-    for pcode,value in count_db.iteritems():
-        product_daily_sales = []
-        temp_db = db.loc[db['product_cafe24_code'] == pcode] 
-        date_dict = _gen_dates(start, end, init_kvs=[("net_payment", 0)])
-        date_dict = collections.OrderedDict(sorted(date_dict.items()))
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric))     
+
         
-        for index, row in temp_db.iterrows():
-            temp_date = row["date_payment"]
-            if temp_date in date_dict:
-                date_dict[temp_date]["net_payment"] += row["product_price"]   
-        for date_obj in date_dict:
-            product_daily_sales.append(date_dict[date_obj]["net_payment"])
-        list_of_product_daily_sales.append((product_daily_sales,pcode))
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="line_orders")
+        
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
+        
+    result_dict = gen_result_dict(top_counts,date_list)
+
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = 1
+        
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"
+            
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)           
                 
-    x_axis_labels = []
-    
-    for date_obj in date_dict:
-        x_axis_labels.append(date_obj)
-    return "MULTIPLE PLOTS", x_axis_labels, list_of_product_daily_sales   
-    
-def top10_categories_orders(dbs,start,end,extra=None,n_rankings=10):
-    odb = dbs[0]
-    pdb = dbs[1]
-    new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)
-    count_db = new_df["category"].value_counts().head(n_rankings)
-    x_axis_labels = []
-    y_axis_values = []
-    for cat,value in count_db.iteritems():
-        x_axis_labels.append(cat)
-        y_axis_values.append(value)
-    return x_axis_labels, y_axis_values    
-
-def top10_categories_revenue(dbs,start,end,extra=None,n_rankings=10):
-    odb = dbs[0]
-    pdb = dbs[1]
-
-    new_df = pd.merge(odb, pdb, on="product_cafe24_code", how='left',indicator=False)   
-    groups = new_df.groupby(['category'])['total_net_price'].agg('sum')
-    topten = groups.nlargest(n_rankings)
-    
-    x_axis_labels = []
-    y_axis_values = []
-    for index,value in topten.iteritems():
-        x_axis_labels.append(index)
-        y_axis_values.append(value)
-    return x_axis_labels, y_axis_values    
-    
-def cancel_quantity(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
+    LOG("DONE")
         
-    date_dict = _gen_dates(start, end, init_kvs=[("cancels", 0)])
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
     
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        temp_cancel = row["cancel_status"]
-        if temp_date in date_dict:
-            if temp_cancel == "부분취소" or temp_cancel == "취소":
-                date_dict[temp_date]["cancels"] += 1
+    return date_list, result_dict
 
-    date_list = []
-    cancels_list = []
-
-    for date_object in collections.OrderedDict(sorted(date_dict.items())):
-        date_list.append(date_object)
-        cancels_list.append(date_dict[date_object]["cancels"])
-    return date_list, cancels_list
-
-
-def return_quantity(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
-
-    date_dict = _gen_dates(start, end, init_kvs=[("returns", 0)])
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        temp_return = row["date_returned"]
-        if temp_date in date_dict:
-            if not temp_return == 0:
-                date_dict[temp_date]["returns"] += 1
-
-    date_list, returns_list = [], []
-
-    for date_object in collections.OrderedDict(sorted(date_dict.items())):
-        date_list.append(date_object)
-        returns_list.append(date_dict[date_object]["returns"])
-    return date_list, returns_list
-
-
-def order_quantity(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
-
-    date_dict = _gen_dates(start, end, init_kvs=[("orders", 0)])
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        if temp_date in date_dict:
-            date_dict[temp_date]["orders"] += 1
-    date_list, orders_list = [], []
-    for date_object in collections.OrderedDict(sorted(date_dict.items())):
-        date_list.append(date_object)
-        orders_list.append(date_dict[date_object]["orders"])
-    return date_list, orders_list
-
-def cancel_reasons(db, start, end, extra=None,n_rankings=10):
-
-#    EXTRACT AND FILTER DB IF NECC.
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
-
-    try:
-        db = db["reason_cancelled"].value_counts()
-    except KeyError:
-        bug("Missing 'reason_cancelled in DB")
-        return None
-    list_of_unique_reasons = []
-    counts_of_reasons = []
-    total_non_sold_out = 0
-    for x in db.iteritems():
-        bug("cancel_reasons x[0] = {}, x[1] = {} END".format(x[0],x[1]))
-        if x[0] == '품절':
-            list_of_unique_reasons.append("Sold Out")
-            counts_of_reasons.append(x[1])
-        else:
-            total_non_sold_out += x[1]
-    list_of_unique_reasons.append("Customer Request")
-    counts_of_reasons.append(total_non_sold_out)
-    return list_of_unique_reasons, counts_of_reasons
-
-
-def revenue_all(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    revenues_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total = row["app_revenue"] + row["mobile_revenue"] + row["pc_revenue"] + row["kooding_revenue"]
-        revenues_list.append(total)
-
-    return date_list, revenues_list
-
-def revenue_kooding(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    revenues_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total = row["kooding_revenue"]
-        revenues_list.append(total)
-
-    return date_list, revenues_list
-
-def revenue_pc(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    revenues_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total = row["pc_revenue"]
-        revenues_list.append(total)
-
-    return date_list, revenues_list
-
-def revenue_mobile(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    revenues_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total = row["mobile_revenue"]
-        revenues_list.append(total)
-
-    return date_list, revenues_list
-
-def revenue_app(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    revenues_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total = row["app_revenue"]
-        revenues_list.append(total)
-
-    return date_list, revenues_list
-
-
-def pageviews(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    pageviews_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        pageviews_list.append(row["total_pageviews"])
-    return date_list, pageviews_list
-
-
-def visitors_all(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    visitors_list = []
-    types_of_visitors_list = [
-        "app_visitors_count",
-        "mobile_visitors_count",
-        "pc_visitors_count"
-    ]
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total_visitors = 0
-        for visitor_type in types_of_visitors_list:
-            total_visitors += row[visitor_type]
-        visitors_list.append(total_visitors)
-    return date_list, visitors_list
-
-
-def visitors_app(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    visitors_list = []
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        visitors_list.append(row["app_visitors_count"])
-    return date_list, visitors_list
-
-
-def visitors_mobile(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    visitors_list = []
-
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        visitors_list.append(row["mobile_visitors_count"])
-
-    return date_list, visitors_list
-
-def orders_mobile(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    ls_y_data = []
-
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        ls_y_data.append(row["mobile_orders_count"])
-
-    return date_list, ls_y_data
-
-def orders_app(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    ls_y_data = []
-
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        ls_y_data.append(row["app_orders_count"])
-
-    return date_list, ls_y_data
-
-def orders_pc(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    ls_y_data = []
-
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        ls_y_data.append(row["pc_orders_count"])
-
-    return date_list, ls_y_data
-
-def orders_all(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    total_data_list = []
-    types_of_data_list = [
-        "app_orders_count",
-        "mobile_orders_count",
-        "pc_orders_count"
-    ]
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        total_sum = 0
-        for data_type in types_of_data_list:
-            total_sum += row[data_type]
-        total_data_list.append(total_sum)
-    return date_list, total_data_list
-
-
-def visitors_pc(db, start, end, extra=None,n_rankings=10):
-    date_list = []
-    visitors_list = []
-
-    for index, row in db.iterrows():
-        date_list.append(row["date"])
-        visitors_list.append(row["pc_visitors_count"])
-
-    return date_list, visitors_list
-
-
-def net_payment(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
-
-# MUST DROP DUPLICATES BECAUSE DISCOUNT DATA IS BY ORDER BUT REPEATS PER
-# ITEM
-    db = db.drop_duplicates(subset="order_id")
-
-    date_dict = _gen_dates(start, end, init_kvs=[("net_payment", 0)])
-    date_dict = collections.OrderedDict(sorted(date_dict.items()))
-
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        if temp_date in date_dict:
-            date_dict[temp_date]["net_payment"] += row["total_net_price"]
-
-    x_axis_labels = []
-    y_axis_values_1 = []
-
-    for day in date_dict:
-        x_axis_labels.append(day)
-        y_axis_values_1.append(date_dict[day]["net_payment"])
-    return x_axis_labels, y_axis_values_1
-
-
-def net_discount(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
+def revenue_by_item(odb, date_list, mcfg,breakdown_keys=None):
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"]    
     
-# MUST DROP DUPLICATES BECAUSE DISCOUNT DATA IS BY ORDER BUT REPEATS PER
-# ITEM
-    db = db.drop_duplicates(subset="order_id")
-
-    date_dict = _gen_dates(start, end, init_kvs=[("net_discount", 0)])
-    date_dict = collections.OrderedDict(sorted(date_dict.items()))
-
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        total_discount_value = 0
-        list_of_discount_keys = [
-            "total_membership_level_discount",
-            "total_membership_points_discount",
-            "total_coupon_discount",
-            "total_cash_credit_discount"
-        ]
-        if temp_date in date_dict:
-            for discount_key in list_of_discount_keys:
-                total_discount_value += row[discount_key]
-            date_dict[temp_date]["net_discount"] += total_discount_value
-
-    x_axis_labels = []
-    y_axis_values_1 = []
-
-    for day in date_dict:
-        x_axis_labels.append(day)
-        y_axis_values_1.append(date_dict[day]["net_discount"])
-    return x_axis_labels, y_axis_values_1
-
-def aov(db, start, end, extra=None,n_rankings=10):
-#   make a separate db without duplicate order_ids.
-    db = db.drop_duplicates(subset="order_id")
-
-    date_dict = _gen_dates(start, end, init_kvs=[("payments", "list")])
-    date_dict = collections.OrderedDict(sorted(date_dict.items()))
-
-    for index, row in db.iterrows():
-        temp_date = row["date_payment"]
-        if temp_date in date_dict:
-            date_dict[temp_date]["payments"].append(row["total_net_price"])
-    x_axis_labels = []
-    y_axis_values_1 = []
-
-    for diff_day in date_dict:
-        x_axis_labels.append(diff_day)
-        dd = date_dict[diff_day]
-        try:
-            pay_avg = sum(dd["payments"]) / float(len(dd["payments"]))
-        except ZeroDivisionError:
-            pay_avg = 0
-        y_axis_values_1.append(pay_avg)
-    return x_axis_labels, y_axis_values_1
-
-def aos(db, start, end, extra=None,n_rankings=10):
-# this gives us a reference of how many rows had this order_id giving us
-# size of each order.
-    count_db = db["order_id"].value_counts()
-#   make a separate db without duplicate order_ids.
-    single_order_db = db.drop_duplicates(subset="order_id")
-
-    date_dict = _gen_dates(start, end, init_kvs=[("sizes", "list")])
-    date_dict = collections.OrderedDict(sorted(date_dict.items()))
-
-#    for each row, check if in date range, then append its size from count_db to
-#    list of sizes for that date.
-    for index, row in single_order_db.iterrows():
-        temp_date = row["date_payment"]
-        if temp_date in date_dict:
-            ids = row["order_id"]
-            size_of_order = count_db.get(ids)
-            date_dict[temp_date]["sizes"].append(size_of_order)
-    x_axis_labels = []
-    y_axis_values_1 = []
-
-    for diff_day in date_dict:
-        x_axis_labels.append(diff_day)
-        dd = date_dict[diff_day]
-        try:
-            size_avg = sum(dd["sizes"]) / float(len(dd["sizes"]))
-        except ZeroDivisionError:
-            size_avg = 0
-        y_axis_values_1.append(size_avg)
-    return x_axis_labels, y_axis_values_1
-
-
-def days_to_ship(db, start, end, extra=None,n_rankings=10):
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]
-
-    holiday_datetimes = [datetime.strptime(
-        holiday, "%Y-%m-%d").date() for holiday in dates]
-    diff_days = []
-
-    for index, col in db.iterrows():
-        temp_date = col["date_payment"]
-        temp_shipped = col["date_shipping"]
-        temp_cancelled = col["date_cancelled"]
-        if not temp_shipped == 0 and temp_cancelled == 0:
-            diff = workdays.networkdays(temp_date, temp_shipped, holidays=holiday_datetimes)
-            diff_days.append(diff)
-
-    counter_dict_of_diffs = collections.Counter(diff_days)
-    x_axis_labels = []
-    y_axis_values = []
-    for diff_day in counter_dict_of_diffs:
-        x_axis_labels.append(diff_day)
-        y_axis_values.append(counter_dict_of_diffs[diff_day])      
-    return x_axis_labels, y_axis_values
-
-
-def days_unsent(db, start, end, extra=None,n_rankings=10):
-
-    if extra is not None and not extra == "":
-        db = db.loc[db['product_cafe24_code'] == extra]      
-
-    holiday_datetimes = [datetime.strptime(
-        holiday, "%Y-%m-%d").date() for holiday in dates]
-    diff_days = []
-
-    temp_reference = datetime.today().date()
-
-    for index, col in db.iterrows():
-        temp_date = col["date_payment"]
-        temp_shipped = col["date_shipping"]
-        temp_cancelled = col["date_cancelled"]
-       
-#        THIS SHOULD CONSIDER CANCEL DATE AS WELL IN REFERENCE
-        if temp_shipped == 0 and temp_cancelled == 0:       
-            diff = workdays.networkdays(
-                temp_date, temp_reference, holidays=holiday_datetimes)
-            diff_days.append(diff)
-
-    counter_dict_of_diffs = collections.Counter(diff_days)
-    x_axis_labels = []
-    y_axis_values = []
-    for diff_day in counter_dict_of_diffs:
-        x_axis_labels.append(diff_day)
-        y_axis_values.append(counter_dict_of_diffs[diff_day])
-    return x_axis_labels, y_axis_values
-
-def conversion_rate(db,start,end,extra=None,n_rankings=10):
-    date_dict = _gen_dates(start, end, init_kvs=[("cr",0)])
-    date_dict = collections.OrderedDict(sorted(date_dict.items()))
-    for index, row in db.iterrows():
-        temp_date = row["date"]
-        if temp_date in date_dict:
-            visitors = row["returning_visitors_count"] + row["new_visitors_count"]
-            orders = row["app_orders_count"]+row["mobile_orders_count"]+row["pc_orders_count"]
-            cr = orders/visitors * 100
-            date_dict[temp_date]["cr"] = cr
-    x_axis_labels = []
-    y_axis_values_1 = []
-
-    for date in date_dict:
-        x_axis_labels.append(date)
-        dd = date_dict[date]
-        y_axis_values_1.append(dd["cr"])
-    return x_axis_labels, y_axis_values_1    
-
-def topten_by_orders(db, start, end, extra=None,n_rankings=10):
-    count_db = db["product_cafe24_code"].value_counts().head(n_rankings)
-    x_axis_labels = []
-    y_axis_values = []
-    for index,value in count_db.iteritems():
-        x_axis_labels.append(index)
-        y_axis_values.append(value)
-    return x_axis_labels, y_axis_values
-
-def topten_by_returns(db, start, end, extra=None,n_rankings=10):
-    temp = {}
-    for index,row in db.iterrows():
+    # METRIC TYPE FILTERING
+    if mtype == "Before Discount":
+        beforedisc = True
+    elif mtype == "After Discount":
+        beforedisc = False
+    else:
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric))
         
-        if row["date_returned"] == 0:
-            continue
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="revenue")   
+
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
+        
+    result_dict = gen_result_dict(top_counts,date_list)
+            
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        if beforedisc:
+            val_to_add = row_tuple.product_price
         else:
-            if row["product_cafe24_code"] in temp:
-                x = temp[row["product_cafe24_code"]]
-                x[0]  += 1
-            else:
-                temp[row["product_cafe24_code"]] = [1]
+            val_to_add = row_tuple.product_price - row_tuple.product_standard_discount
+
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"
+            
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)              
+                
+    LOG("DONE")
+        
+    if datatype == "Percentage":
+        LOG("Converting to Percentages")
+        return convert_to_percentages(date_list,result_dict)
     
-    temp_df = pd.DataFrame.from_dict(temp,orient="index")
-    temp_df = temp_df.sort_values(0,ascending=False)
-    temp_df = temp_df.head(n_rankings)
+    elif datatype == "Average":
+        return convert_to_averages(date_list,result_dict)
     
-    x_axis_labels = []
-    y_axis_values = []
-    for index,row in temp_df.iterrows():
-        x_axis_labels.append(index)
-        y_axis_values.append(row[0])
-    return x_axis_labels, y_axis_values
+    return date_list, result_dict
+
+def count_of_orders(odb,date_list, mcfg, breakdown_keys=None):    
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"]   
     
-def apply_mask(source,start,end):
-    db = source.copy(deep=True)
-    try:
-        mask = (db['date'] >= start) & (
-            db['date'] <= end)
+    odb = odb.drop_duplicates(subset="order_id")
+    
+    # METRIC TYPE FILTERING 
+    if mtype == "Include Fully Cancelled Orders":
+        LOG("No masking needed, because cancelled items included.")
+    elif mtype == "Exclude Fully Cancelled Orders":
+        LOG("Masking DB to only include non-cancelled items.")
+        odb = odb.loc[odb['cancel_status'] != "취소"]
+    else:
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric))      
+    
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="line_orders")         
+
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
+        
+    result_dict = gen_result_dict(top_counts,date_list)
+        
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = 1
+               
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"
+            
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)       
+        
+    LOG("DONE")
+        
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    
+    return date_list, result_dict
+
+def revenue_by_order(odb, date_list, mcfg,breakdown_keys=None):    
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"] 
+    
+    odb = odb.drop_duplicates(subset="order_id") 
+    
+    # METRIC TYPE FILTERING 
+    if mtype == "Orig. Price, Incl. Cncld Orders":
+        LOG("No masking needed, because cancelled orders included.")
+        beforedisc = True
+    elif mtype == "Net. Price, Incl. Cncld Orders":
+        LOG("No masking needed, because cancelled orders included. Revenue after discount.")
+        beforedisc = False
+    elif mtype == "Orig. Price, Excl. Cncld Orders":   
+        LOG("Masking DB to only include non-cancelled orders.")
+        beforedisc = True
+        odb = odb.loc[odb['cancel_status'] != "취소"]        
+    elif mtype ==  "Net. Price, Excl. Cncld Orders":
+        LOG("Masking DB to only include non-cancelled orders. Revenue after discount.")
+        beforedisc = False
+        odb = odb.loc[odb['cancel_status'] != "취소"]
+    else:
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric))     
+        
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="line_orders") 
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
+        
+    result_dict = gen_result_dict(top_counts,date_list)
+        
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        
+        if beforedisc: val_to_add = row_tuple.total_original_price
+        else: val_to_add = row_tuple.total_net_price   
+        
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"            
+        
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+            
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    elif datatype == "Average":
+        return convert_to_averages(date_list,result_dict)
+    
+    return date_list, result_dict            
+            
+def order_size(odb,date_list, mcfg,breakdown_keys=None):    
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"] 
+    
+    # METRIC TYPE FILTERING 
+    if mtype == "Include Cancelled Items":
+        LOG("No masking needed, because cancelled items included.")
+    elif mtype == "Exclude Cancelled Items":
+        LOG("Masking DB to only include non-cancelled items.")
+        odb = odb.loc[odb['cancel_status'] == "취소안함"]
+    else:
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric)) 
+        
+    order_sizes_by_order_id = odb["order_id"].value_counts()       
+    odb = odb.drop_duplicates(subset="order_id")
+        
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="line_orders")      
+    
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
+        
+    result_dict = gen_result_dict(top_counts,date_list)    
+        
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = order_sizes_by_order_id.get(getattr(row_tuple, "order_id"))
+            
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"            
+        
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+            
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    elif datatype == "Average":
+        return convert_to_averages(date_list,result_dict)
+    
+    return date_list, result_dict  
+
+def count_of_pageviews(tdb, date_list, mcfg, breakdown_keys=None):
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"] 
+    
+    top_counts = ["All"]
+    result_dict = gen_result_dict(top_counts,date_list)
+    
+    LOG("Iterating Over Rows")           
+    for row_tuple in tdb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = getattr(row_tuple, "total_pageviews")
+        result_dict_key = "All"            
+        
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+            
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    elif datatype == "Average":
+        return convert_to_averages(date_list,result_dict)        
+    return date_list, result_dict 
+
+def count_of_visitors(tdb, date_list, mcfg, breakdown_keys=None):
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"] 
+    
+    top_counts,bkdwn_column_str,tdb = get_top_counts_and_bkdwn_column_str(tdb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="visitors")     
+    result_dict = gen_result_dict(top_counts,date_list)
+    
+    LOG("Iterating Over Rows")           
+    for row_tuple in tdb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        if breakdown == "None":
+            result_dict_key = "All"    
+            val_to_add = getattr(row_tuple, "new_visitors_count") + getattr(row_tuple, "returning_visitors_count")
+            result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+            
+        elif breakdown == "Device":
+            for top_str in top_counts:
+                result_dict_key = top_str
+                if result_dict_key == "PC":
+                    val_to_add = getattr(row_tuple, "pc_visitors_count")
+                elif result_dict_key == "Mobile":
+                    val_to_add = getattr(row_tuple, "mobile_visitors_count")
+                elif result_dict_key == "App":
+                    val_to_add = getattr(row_tuple, "app_visitors_count")
+                result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+                    
+        elif breakdown == "New/Returning":
+            for top_str in top_counts:
+                result_dict_key = top_str
+                if result_dict_key == "New":
+                    val_to_add = getattr(row_tuple, "new_visitors_count")
+                elif result_dict_key == "Returning":
+                    val_to_add = getattr(row_tuple, "returning_visitors_count") 
+                result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    elif datatype == "Average":
+        return convert_to_averages(date_list,result_dict)        
+    return date_list, result_dict 
+
+def gen_result_dict(result_dict_keys,date_list):
+#    LOG("Generating result_dict with result_dict_keys: {}".format(result_dict_keys))
+    result_dict = {
+            "total": {"count": [ 0 for date in date_list],
+                      "data": [ 0 for date in date_list]},
+            "lines":{}
+    }    
+            
+    for result_dict_key in result_dict_keys:
+        result_dict["lines"][result_dict_key] = {
+            "count": [ 0 for date in date_list],
+            "data": [ 0 for date in date_list]
+        }
+        
+    return result_dict
+
+def update_result_dict(result_dict,result_dict_key, date_index,val_to_add):
+    result_dict["total"]["count"][date_index] += 1
+    result_dict["total"]["data"][date_index] += val_to_add
+
+    try: 
+        result_dict["lines"][result_dict_key]
     except KeyError:
-        log("Requested DB has no date columns to mask on. Returning orig db")
-        return source
-    return db.loc[mask]    
+        pass
+    else:
+        result_dict["lines"][result_dict_key]["count"][date_index] += 1  
+        result_dict["lines"][result_dict_key]["data"][date_index] += val_to_add 
+        
+    return result_dict
+
+def get_top_counts_and_bkdwn_column_str(db_prime,breakdown,n_breakdown,force_top_count,topby):
+    top_counts = []
+    bkdwn_column = None
+ 
+    # DETERMINE BREAKDOWN COLUMN STRING IF NEEDED
+    if breakdown == "Gen. Platform":
+        bkdwn_column = "pc_or_mobile_platform"      
+    elif breakdown == "Top Products":
+        bkdwn_column = "product_cafe24_code"
+    elif breakdown == "Top Categories":
+        bkdwn_column = "category"
+    elif breakdown == "Spec. Platform":
+        bkdwn_column = "shopping_platform"
+    
+    # GENERATE TOP BREAKDOWN KEYS 
+    if not bkdwn_column is None:
+        if topby == "line_orders":
+            top_counts = db_prime[bkdwn_column].value_counts().head(n_breakdown).index.values  
+        elif topby == "revenue":
+            groups = db_prime.groupby([bkdwn_column])['product_price'].agg('sum')
+            top_counts = list(groups.nlargest(n_breakdown).index.values)        
+        
+    elif bkdwn_column is None:
+        # SPECIAL FORCED OR MANUAL TOP_COUNTS
+        if not force_top_count is None:
+            top_counts = force_top_count
+        elif breakdown == "None":
+            top_counts = ["All"]    
+        elif breakdown == "Device":
+            top_counts = ["PC","Mobile","App"]
+        elif breakdown == "New/Returning":
+            top_counts = ["New","Returning"]         
+            
+    return top_counts,bkdwn_column,db_prime
+
+def convert_to_averages(date_list,result_dict):
+    for index in range(0,len(date_list)):
+        for k in result_dict["lines"].keys():
+            count_on_day = result_dict["lines"][k]["count"][index]
+            if count_on_day > 0:
+                total_on_day = result_dict["lines"][k]["data"][index]
+                avg = total_on_day/count_on_day
+                result_dict["lines"][k]["data"][index] = avg  
+    return date_list, result_dict    
+
+def convert_to_percentages(date_list,result_dict):
+    for index in range(0,len(date_list)):
+        total = result_dict["total"]["data"][index]
+        if total > 0:
+            for k in result_dict["lines"].keys():
+                perc = 100 * float(result_dict["lines"][k]["data"][index])/float(total)
+                result_dict["lines"][k]["data"][index] = perc  
+    return date_list, result_dict
+    
+def get_filtered_dbs(di_dbs,req_db,filters,xtype):
+    the_db = di_dbs[req_db].copy()
+    
+    if xtype == "date_series":   
+        LOG("x_axis_type is date_series, applying time_mask.")
+        the_db = apply_time_mask(the_db,filters["start_datetime"],filters["end_datetime"])
+    else:
+        LOG("Time Mask Not Required for x_axis_type: {}".format(xtype))
+
+    c_or_p_choice = filters["category_or_product"]
+    entryinput = filters["category_or_product_entry"]     
+    if not c_or_p_choice == "DEFAULT_IGNORE":           
+        if c_or_p_choice == "All":
+            LOG("User chose no category/product filter.")
+        elif c_or_p_choice == "Product Code" or c_or_p_choice == "Category":
+            the_db = apply_product_mask(the_db,c_or_p_choice,entryinput)
+    else:
+        LOG("This metric cannot apply a category or product mask.")
+        
+    platform_choice = filters["platform"]   
+    if not platform_choice == "DEFAULT_IGNORE":           
+        if platform_choice == "All":
+            LOG("User chose no category/product filter.")
+        elif platform_choice == "Mobile" or platform_choice == "PC":
+            LOG("User chose {} platform filter.".format(platform_choice))
+            the_db = apply_platform_mask(the_db,platform_choice)
+    else:
+        LOG("This metric cannot apply a category or product mask.")    
+        
+    return the_db    
 
 def _gen_dates(start, end, init_kvs=[]):
     temp_keys = {}
@@ -619,8 +521,35 @@ def _gen_dates(start, end, init_kvs=[]):
             temp_keys[k] = []
         else:
             temp_keys[k] = v
-#            INCREDIBLY IMPORTANT TO NOTICE THE USE OF COPY.DEEPCOPY HERE
-#            BEFORE THIS, WE WOULD GET MANY DATES REFERENCING THE SAME LIST
+    # INCREDIBLY IMPORTANT TO NOTICE THE USE OF COPY.DEEPCOPY HERE
+    # BEFORE THIS, WE WOULD GET MANY DATES REFERENCING THE SAME LIST
     temp_db = {start + timedelta(days=x): copy.deepcopy(temp_keys)
                for x in range((end - start).days + 1)}
-    return temp_db
+    
+    return collections.OrderedDict(sorted(temp_db.items()))
+
+def _gen_dates_list(start,end):
+    return [start + timedelta(days=x) for x in range((end - start).days + 1)]
+    
+def apply_time_mask(db,start,end):
+    try:
+        mask = (db['date'] >= start) & (
+            db['date'] <= end)
+    except KeyError:
+        LOG("Requested DB has no date columns to mask on. Returning orig db")
+        return db
+    return db.loc[mask]     
+
+def apply_product_mask(db,filtertype,value):
+    if filtertype == "Product Code":
+        db = db.loc[db['product_cafe24_code'] == value]
+    elif filtertype == "Category":
+        db = db.loc[db['category'] == value] 
+    return db
+
+def apply_platform_mask(db,filtertype):
+    if filtertype == "PC":
+        db = db.loc[db['pc_or_mobile_platform'] == "PC"]
+    elif filtertype == "Mobile":
+        db = db.loc[db['pc_or_mobile_platform'] == "모바일"]
+    return db  

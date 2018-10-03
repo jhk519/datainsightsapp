@@ -17,6 +17,7 @@ import matplotlib
 from matplotlib import ticker
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
+matplotlib.rcParams['font.sans-serif'] = ['Source Han Sans TW', 'sans-serif']
 from pprint import pprint as PRETTYPRINT
 import logging
 import datetime
@@ -24,14 +25,10 @@ import pandas as pd
 import numpy as np
 
 # Project Modules
-from appwidget import AppWidget
-
-#log = logging.getLogger(__name__).info
-#log("{} Init.".format(__name__))    
-#bug = logging.getLogger(__name__).debug   
+from appwidget import AppWidget 
 
 class GraphFrame(AppWidget):
-    def __init__(self,parent,controller,config,dbvar=None, wd=11, ht=7):
+    def __init__(self,parent,controller,config,dbvar=None, wd=14, ht=8):
         self.widget_name = "graphframe"
         super().__init__(parent,controller, config,dbvar=None)
 
@@ -71,16 +68,8 @@ class GraphFrame(AppWidget):
             ynew = coords[1] + hover_obj.get_height()
             self.annot.xy = coords[0]+hover_obj.get_width()/2,ynew
             text = "{}-{}".format(self.axis_prime.get_xticklabels()[ind].get_text(),ynew)
-#            text = "ggg"
             self.annot.set_text(text)
-            self.annot.get_bbox_patch().set_alpha(0.4)            
-#        elif kind == "event":
-#            vertices = hover_obj.get_xy()
-#            self.annot.xycoords = "axes fraction"
-#            self.annot.xy = (0.5,0.5)
-#            text = hover_obj.get_label()
-#            self.annot.set_text(text)
-#            self.annot.get_bbox_patch().set_alpha(0.4)            
+            self.annot.get_bbox_patch().set_alpha(0.4)                   
     
     
     def hover(self,event):
@@ -110,10 +99,8 @@ class GraphFrame(AppWidget):
         self.log("Update graph call.")
         self.lines_list = []
         self.event_polygon_list = []
-        prp, srp= analysis_pack      
-#        prev_prime_y_axis_lims = self.axis_prime.get_ylim()
-#        prev_secondary_y_axis_lims = self.axis_secondary.get_ylim()
-
+        prp = analysis_pack      
+        srp = None
         try:
             self.my_legend.remove()
         except BaseException:
@@ -142,6 +129,7 @@ class GraphFrame(AppWidget):
             "event_dates":[('20180522',1),('20180601',5)]
         }
         """
+#        PRETTYPRINT(prp)
         if prp:
             try: 
                 prp["y_data"][0]
@@ -171,16 +159,16 @@ class GraphFrame(AppWidget):
         start = prp["start"]
         end = prp["end"]
         color_c = 0
-        if prp["gtype"] == "line":
+        if prp["gtype"] == "date_series":
             for x in range(0, len(prp["y_data"])):
-                if "MR" in prp["line_labels"][x]:
+                if "m_" in prp["line_labels"][x]:
                     linewidth = 0.75
                 else:
                     linewidth = 1.45
                 self.lines_list.append(self.axis_prime.plot_date(prp["x_data"],
                                      prp["y_data"][x],
-                                     color=prp_colors[color_c],
-                                     ls=prp["linestyles"][x],
+                                     color=prp_colors,
+                                     ls=prp["linestyles"],
                                      lw=linewidth,
                                      label=prp["line_labels"][x])[0])
 #                print(self.line)
@@ -220,14 +208,14 @@ class GraphFrame(AppWidget):
 #       POST PLOTTING FORMATTING
         if not prp["gtype"] == "pie":
             # Y-AXIS FORMATTING            
-            if prp["set_y"][0]:
-                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
-            elif not prp["set_y"][0]:
-                if self.axis_prime.get_ylim()[1] >= 1000:
-                    self.axis_prime.get_yaxis().set_major_formatter(
-                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
-                if self.axis_prime.get_ylim()[0] <= 0:
-                    self.axis_prime.set_ylim(bottom=0)       
+#            if prp["set_y"][0]:
+#                self.axis_prime.set_ylim(bottom=prp["set_y"][1],top=prp["set_y"][2])
+#            elif not prp["set_y"][0]:
+#                if self.axis_prime.get_ylim()[1] >= 1000:
+#                    self.axis_prime.get_yaxis().set_major_formatter(
+#                    ticker.FuncFormatter(lambda x, p: format(int(x), ',')))    
+#                if self.axis_prime.get_ylim()[0] <= 0:
+#                    self.axis_prime.set_ylim(bottom=0)       
                     
             if srp:
                 if srp["set_y"][0]:
@@ -269,7 +257,7 @@ class GraphFrame(AppWidget):
                     ax_right_top = invDisToAxFrac.transform(right_top)
 
                     final_left_top = list(ax_left_top)
-                    if ax_left_top[0] < 0:
+                    if ax_left_top[0] <= 0:
                         if ax_right_top[0] < 0:
                             continue
                         else:

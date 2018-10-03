@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 21 15:41:08 2018
+Created on Thu Sep 27 13:42:49 2018
 
 @author: Justin H Kim
 """
-# Tkinter Modules
+
 try:
     import Tkinter as tk
     import tkFont
@@ -16,637 +16,423 @@ except ImportError:  # Python 3
     import tkinter.ttk as ttk
     
 # Standard Modules
-from pprint import pprint
-import copy
 import datetime
-
+import logging
+import pickle
+from pprint import pprint as PRETTYPRINT
+    
 # Project Modules
 from appwidget import AppWidget
 import master_calendar.calendardialog as cal_dialog
 
-vardict = {"left"}
-   
 class QueryPanel(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
-        self.widget_name = "querypanel"
+        self.widget_name = "newquerypanel"
         super().__init__(parent,controller,config,dbvar) 
-            
-#        UI Vars
-        self.check_valid = "DataInsightsApp_ControlPanel"
-        self.start_date = None
-        self.end_date = None   
-
-        self.ls_query_panels = []
-        self.prime_results_pack = None
-        self.secondary_results_pack = None
-
-#        lock/unlock y-axis when skipping by week or month
-#        autosearch on query change
-        self.autosearch = tk.BooleanVar()
-        self.autosearch.set(False)        
         
-        #CALENDAR; START END
-        self.start_textvar = tk.StringVar()
-        self.start_textvar.set("Pick Start Date")    
-        self.end_textvar = tk.StringVar()
-        self.end_textvar.set("Pick End Date")  
-
-        #QUERY MENU
-        self.category_menu = None
-        self.max_num_queries = 11
+        # QUERY MENU
+        self.current_category_var = tk.StringVar()
+        self.current_x_axis_type = tk.StringVar()
+        self.categories_list = []
         
-        #OPTION VARS
-        self.aggregate_var = tk.StringVar()
-        self.aggregate_var.set("week")
+        # DATA FILTERS
+        self.start_datetime = datetime.date(2018, 5, 1)
+        self.end_datetime = datetime.date(2018, 5, 15)
         
-        self.use_product_filter = tk.BooleanVar()
-        self.use_product_filter.set(False)
-        self.product_filter_var = tk.StringVar()
+        self.start_date_button_var = tk.StringVar()
+        self.start_date_button_var.set(str(self.start_datetime))
         
-        self.category_var = tk.StringVar() 
-        self.ls_query_packs = []
+        self.end_date_button_var = tk.StringVar()
+        self.end_date_button_var.set(str(self.end_datetime))
         
-        self.x_axis_type = tk.StringVar()
-        self.x_axis_type.set("None")
+        self.current_product_var = tk.StringVar()
+        self.current_product_var.set("category")
+        self.current_product_entry_var = tk.StringVar()
         
-        self.use_mirror_var = tk.BooleanVar()
-        self.use_mirror_var.set(False)
+        self.current_platform_var = tk.StringVar()
         
-        self.mirror_days_var = tk.IntVar()
-        self.mirror_days_var.set(0)
+        # METRICS
+        self.metrics_list = []
+        self.current_metric_var = tk.StringVar()
+        self.current_metric_type_var = tk.StringVar()
+        self.current_metric_data_type_var = tk.StringVar()
+        self.current_metric_breakdown_var = tk.StringVar()
         
-        self.n_rankings_var = tk.IntVar()
-        self.n_rankings_var.set(10)
+        # RESULTS
+        self.current_aggregation_time_var = tk.StringVar()
+        self.current_aggregation_type_var = tk.StringVar()
         
-        self.axis_panels = {
-            "left": {
-                "axispanel": None,
-                "gtype":None,
-                "metric": None,
-                "queries":[],
-                "set_y":[tk.BooleanVar(), tk.IntVar(0), tk.IntVar(value=100)]
-            },
-            "right": {
-                "axispanel": None,
-                "gtype":None,
-                "metric": None,
-                "queries":[],
-                "set_y":[tk.BooleanVar(), tk.IntVar(0), tk.IntVar(value=100)]                       
-            }
-        }
+        self.current_n_rankings_var = tk.IntVar()
+        self.current_n_rankings_var.set(5)
         
-#       Set Build Config and Update
-        self.config_key = "querypanel"    
-        if config:
-            self.set_build_config(raw_config = config[self.config_key])  
-            
-#        Build Skeleton UI
-
-        self.build_date_pane()
-        self.__build_query_menu()
-        self.populate_query_menu()
-        self.build_left_queries()
-        self.build_right_queries()
-        self.populate_axis_panels()
-        self.build_options()
-        self._update_queries_menu(self.category_var.get()) 
+        self.current_compare_to_days_var = tk.StringVar()
+        self.current_compare_to_days_var.set(0)
         
-        self.columnconfigure(0,weight=1)
-        self.rowconfigure(0,weight=1) 
-        self.rowconfigure(1,weight=1) 
-        self.rowconfigure(2,weight=1) 
-        self.rowconfigure(3,weight=1)         
+        # GRAPH
+        self.current_linestyle_var = tk.StringVar() 
+        self.color_button_widget = None
+        self.current_custom_name_entry_var = tk.StringVar()
         
-#       CONFIG
-        if config:
-            if self.get_cfg_val("setdates_on_load"):
-                self._set_dates(self.get_cfg_val("setdates_gap"),
-                                 self.get_cfg_val("setdates_from_date"))            
-            
-#   API            
-    def push_search(self):
-        self.log("*** Push Search ***")
-        selection_pack = self.gen_selection_pack()
-        self.controller.request_and_graph_data(selection_pack)
-                
-    def gen_selection_pack(self):
-        self.log("Starting Selection Pack Gen.")  
-#        a single query tuple = stvar, label, choose_color, delete
-        left_comp = [(p[0].get(), p[1]["background"],p[2].get())
-                     for i,p in enumerate(self.axis_panels["left"]["queries"]) 
-                     if not p[0].get() == "None" ]
-
-        right_comp = [(p[0].get(), p[1]["background"],p[2].get()) 
-                     for i,p in enumerate(self.axis_panels["right"]["queries"]) 
-                     if not p[0].get() == "None" ]
+        # BUILD 
+        self.build_skeleton()
+        self.build_category_menu()
+        self._ux_category_changed()
+        self.build_results_options_menu(self.results_options_labelframe)
+        self.build_graph_options_menu(self.graph_options_labelframe)
+        self.build_send_to_axis_menu(self.send_to_axis_buttons_labelframe)
         
-        left_set_y = [ p.get() for i,p in enumerate(self.axis_panels["left"]["set_y"]) ]
-        
-        right_set_y = [ p.get() for i,p in enumerate(self.axis_panels["right"]["set_y"]) ]
-        
-        selpack = {
-            "aggregate_by":self.aggregate_var.get(),
-            "extra":self.product_filter_var.get().strip().replace(" ", "").replace("\n", ""),
-            "x_axis_label": self.x_axis_type.get(),
-            "mirror_days": self.mirror_days_var.get(),   
-            "n_rankings":self.n_rankings_var.get(),
-            "left": {
-                "gtype":self.axis_panels["left"]["gtype"],
-                "metric": self.axis_panels["left"]["metric"],
-                "queries": left_comp,
-                "set_y": left_set_y
-            },
-            "right": {
-                "gtype":self.axis_panels["right"]["gtype"],
-                "metric": self.axis_panels["right"]["metric"],
-                "queries": right_comp,  
-                "set_y": right_set_y    
-            }, 
-            "start": self.start_date,
-            "end": self.end_date,
-            "title":None,
-        }
-            
-#        pprint(selpack)
-        return selpack  
+    # UX EVENTS
     
-    def set_cfgvar(self,new_cfgvar):
-        self.log("Changing cfg.")
-        self.set_build_config(new_cfgvar[self.widget_name]) 
-        for widget in self.config_chain:
-            widget.set_cfgvar(new_cfgvar)
-        colors = self.get_cfg_val("colors_preferred").split("-")
-        all_query_slots = self.axis_panels["left"]["queries"] + self.axis_panels["right"]["queries"]
-        for query_index, query_slot_pack in enumerate(all_query_slots):
-            color_button = query_slot_pack[1]
-            color_button["background"] = colors[query_index]
-            
-    def _set_dates(self,setdates_gap,setdates_from_date):
-        self.start_date, self.end_date = self.engine.get_start_and_end(setdates_gap,setdates_from_date)
-        self.start_textvar.set(str(self.start_date))
-        self.end_textvar.set(str(self.end_date))              
-            
-#   UX EVENT HANDLERS AND HELPERS   
-  # ===================================================================
-#       UX EVENT HANDLERS AND HELPERS
-# =================================================================== 
-#   Note that days is positive or negative!
-    def _skip_calendars(self, days):
-        self.start_date = self.start_date + datetime.timedelta(days)
-        self.end_date = self.end_date + datetime.timedelta(days)
-        self.start_textvar.set(str(self.start_date))
-        self.end_textvar.set(str(self.end_date))
-        self._check_controller_autosearch()
-
-    def _open_start_calendar(self):
-        start_calendar = cal_dialog.CalendarDialog(
-            self,year=self.start_date.year, month=self.start_date.month)
+    def _ux_category_changed(self,event=None):
+        current_category =  self.current_category_var.get().replace(" ","_").lower()            
+        self.log("Category changed to: {}".format(current_category))
+        
+        self.reset_vars()
+        
+        self.current_x_axis_type.set(self.get_cfg_val("queries")[current_category]["x_axis_type"])
+        
+        required_data_filters_list = self.get_cfg_val("queries")[current_category]["data_filters"]
+        self.build_data_filters(self.data_filters_labelframe, required_data_filters_list)
+        
+        required_metrics_dict = self.get_cfg_val("queries")[current_category]["metrics"]
+        self.build_metric_options(self.metric_options_labelframe,required_metrics_dict)
+        
+    def _ux_open_start_cal(self):
         self.log("Getting new start date")
-        self.start_date = start_calendar.result.date()
-        self.start_textvar.set(str(self.start_date))
-        self._check_controller_autosearch()        
-
-    def _open_end_calendar(self):
-        end_calendar = cal_dialog.CalendarDialog(self,
-            year=self.end_date.year, month=self.end_date.month)
+        start_calendar = cal_dialog.CalendarDialog(self, year=self.start_datetime.year, 
+                                                   month=self.start_datetime.month)
         try:
-            self.end_date = end_calendar.result.date()
+            self.start_datetime = start_calendar.result.date()
         except AttributeError:
-            self.log("end_date is none")
-        self.end_textvar.set(str(self.end_date))
-        self._check_controller_autosearch()        
-
-    def _open_ref_calendar(self):
-        ref_calendar = cal_dialog.CalendarDialog(self)
-        self.extra_date = ref_calendar.result.date()
-        self.extra_textvar.set(str(self.extra_date))
-            
-    def _use_product_filter_changed(self):
-        need_use = self.use_product_filter.get()
-        if need_use:
-            self.extra_widget.grid()
-            for axis in ["left","right"]:
-                for ind,pack in enumerate(self.axis_panels[axis]["queries"]):
-                    qstr = pack[0].get()
-                    if qstr == "None":
-                        continue
-                    if self.get_cfg_val("queries_ref")[qstr]["can_filter"] == None:
-                        self._delete_query((axis,ind))
+            self.log("Start date probably set to None.")
         else:
-            self.extra_widget.grid_remove()
-            self.product_filter_var.set("")
-        self._update_queries_menu(self.category_var.get())
-        
-    def _use_mirror_var_changed(self):
-        need_use = self.use_mirror_var.get()
-        if need_use:
-            self.mirror_days_entry.grid()
-            self.mirror_days_var.set(30)
+            self.start_date_button_var.set(str(self.start_datetime))     
+
+    def _ux_open_end_cal(self):
+        self.log("Getting new end date")
+        end_calendar = cal_dialog.CalendarDialog(self,year=self.end_datetime.year, 
+                                                 month=self.end_datetime.month)
+        try:
+            self.end_datetime = end_calendar.result.date()
+        except AttributeError:
+            self.log("end_date probably set to None")
+            return
         else:
-            self.mirror_days_entry.grid_remove()
-            self.mirror_days_var.set(0)
+            self.end_date_button_var.set(str(self.end_datetime)) 
             
-    def _use_set_y_axis_vars_changed(self,axis):
-        self.log("set_y_axis toggled for {} axis.".format(axis))
-#        axis_vars = self.axis_panels[axis]["set_y"]
-#        need_use = axis_vars[0].get()
-#        if need_use:
-#            axis_vars[1]["state"] = "normal"
-#            axis_vars[2]["state"] = "normal"
-#        else:
-#            axis_vars[1]["state"] = "disabled"
-#            axis_vars[2]["state"] = "disabled"     
-
-    def _send_to_axis(self,which_axis,index):
-        query_str = self.ls_query_packs[index][0].get()
-        query_ref = self.get_cfg_val("queries_ref")[query_str]
+    def _ux_skip_calendars(self, days):
+        self.start_datetime += datetime.timedelta(days)
+        self.end_datetime += datetime.timedelta(days)
+        self.start_date_button_var.set(str(self.start_datetime))
+        self.end_date_button_var.set(str(self.end_datetime))  
         
-        curr_x = self.x_axis_type.get()
-        targ_metric = self.axis_panels[which_axis]["metric"]
-        targ_curr_queries = self.axis_panels[which_axis]["queries"]
+    def _ux_metric_changed(self,event=None):
+        current_category =  self.current_category_var.get().replace(" ","_").lower() 
+        current_metric = self.current_metric_var.get().replace(" ","_").lower()
+        self.log("Current metric: {}".format(current_metric))
+        required_metric_dict = self.get_cfg_val("queries")[current_category]["metrics"][current_metric]
+        self.update_metric_menus(required_metric_dict)
         
-#        if x-type already exists, and they dont match, cancel operation
-#        if they match, carry on
-        if not curr_x == "None" and not curr_x == query_ref["x-axis-label"]:
-            self.log("Current X-Axis Type: {} =/= {}".format(
-                    self.x_axis_type,query_ref["x-axis-label"]))
-            return False
-#       if no x-type exists, set it to the requested-query's x-axis type and 
-#       carry on
-        elif curr_x == "None":
-            self.x_axis_type.set(query_ref["x-axis-label"])
-
-#       check if that axis already has a y-metric, if they dont match, cancel
-#       if none exists, set metric, gtype and dbtype. 
-        if targ_metric and not targ_metric == query_ref["y-axis-label"]:   
-            self.log("Y-Axis Type: {} =/= {}".format(targ_metric,query_ref["y-axis-label"]))
-            return False
-        elif not targ_metric:
-            self.axis_panels[which_axis]["metric"] = query_ref["y-axis-label"]
-            self.axis_panels[which_axis]["gtype"] = query_ref["gtype"]
-
-        for index, select_pack in enumerate(targ_curr_queries):
-            lbl_stvar = select_pack[0]
-            if lbl_stvar.get() == "None":
-                lbl_stvar.set(query_str)
-                self._update_queries_menu(self.category_var.get())
-                self._check_controller_autosearch()
-                return True
-            elif lbl_stvar.get() == query_str:
-                self.bug("{} is already Included! It should not have been available to send.".format(
-                        query_str))
-                return False
-            elif index == 3:
-                self.bug("Cannot find a select_pack to change to {}!".format(query_str))
-                return False
+    def _ux_choose_color(self,event=None):
+        self.color_button_widget["background"] = colorchooser.askcolor()[1]
         
-    def _update_queries_menu(self, category):
-        self.log(".update_queries called for category {}".format(category))
-        req_queries = self.engine.get_queries_list(category,self.get_cfg_val("queries_ref"))
-#        self.set_y_axis_var.set(False)
+    def _ux_send_to_axis(self,which_axis="left"):
+        current_selections_pack = self.generate_current_selections_pack(which_axis)
+        try:
+            self.controller.request_and_graph_data(current_selections_pack)
+        except AttributeError:
+            self.bug("Error regarding sent and request data.")
+        
+    # SELECTIONS PACK FUNCTIONS
+    
+    def generate_current_selections_pack(self,which_axis="left"):
+        return {
+            "x_axis_type": self.current_x_axis_type.get(),
+            "data_filters": {
+                "start_datetime": self.start_datetime,
+                "end_datetime": self.end_datetime,
+                "category_or_product":self.current_product_var.get(),
+                "category_or_product_entry":self.current_product_entry_var.get(),
+                "platform":self.current_platform_var.get(),
+            },
+            "metric_options":{ 
+                "metric":self.current_metric_var.get(),
+                "metric_type":self.current_metric_type_var.get(),
+                "data_type":self.current_metric_data_type_var.get(),
+                "breakdown":self.current_metric_breakdown_var.get(),
+                "number_of_rankings":self.current_n_rankings_var.get(),
+            },
+            "result_options": {
+                "aggregation_period":self.current_aggregation_time_var.get(),
+                "aggregation_type":self.current_aggregation_type_var.get(),
+                "compare_to_days":self.current_compare_to_days_var.get(),
+            },
+            "graph_options": {
+                "line_style":self.current_linestyle_var.get(),
+                "color":self.color_button_widget["background"],
+                "axis": which_axis,
+                "custom_name": self.current_custom_name_entry_var.get()
+            } 
+        }
+        
+    def reset_vars(self):
+        self.current_x_axis_type.set("DEFAULT_IGNORE")
+        
+        self.current_product_var.set("DEFAULT_IGNORE"),
+        self.current_product_entry_var.set("None"),
+        self.current_platform_var.set("DEFAULT_IGNORE"),
+        
+        self.current_metric_var.set("DEFAULT_IGNORE"),
+        self.current_metric_type_var.set("DEFAULT_IGNORE"),
+        self.current_metric_data_type_var.set("DEFAULT_IGNORE"),
+        self.current_metric_breakdown_var.set("DEFAULT_IGNORE"),  
+        
+        self.current_compare_to_days_var.set(0)       
+        self.current_custom_name_entry_var.set("None")
                 
-        q_count = 0
-        for index,pack in enumerate(self.ls_query_packs):
-            query_var, left_axis, right_axis = pack
-            query_var.set("")
-            left_axis.grid()
-            left_axis["state"] = "disabled"
-            right_axis.grid()            
-            right_axis["state"] = "disabled"    
-
-            if not q_count < len(req_queries):
-                left_axis.grid_remove()
-                right_axis.grid_remove()
-                continue
-            
-            query_str = req_queries[q_count]
-            query_ref = self.get_cfg_val("queries_ref")[query_str]
-            query_var.set(query_str)
-
-            curr_x = self.x_axis_type.get()
-            q_count += 1 
-            
-            #if cannot use product filter, and product filter input exists       
-            if self.use_product_filter.get() == True and query_ref["can_filter"] == None:
-                continue    
-            
-            if curr_x == "None" or curr_x == query_ref["x-axis-label"]:
-                left_m = self.axis_panels["left"]["metric"] 
-                right_m = self.axis_panels["right"]["metric"]
-                if left_m == query_ref["y-axis-label"] or left_m == None:
-                    found = False
-                    for qpack in self.axis_panels["left"]["queries"]:
-                        #qpack = [stvar, label, choose_color, delete]
-                        if query_str == qpack[0].get():
-                            found = True
-                            break
-                    if not found:
-                        left_axis["state"] = "normal"
-                if right_m == query_ref["y-axis-label"] or right_m == None:   
-                    found = False
-                    for qpack in self.axis_panels["right"]["queries"]:
-                        if query_str == qpack[0].get():
-                            found = True
-                            break
-                    if not found:
-                        right_axis["state"] = "normal"
-                        
-#        self._check_controller_autosearch()
-                        
-    def _check_controller_autosearch(self):
-        if self.autosearch.get():
-            self.push_search()
-
-    def _category_changed(self,event=None):
-        self._update_queries_menu(self.category_var.get())
-        self.category_menu.selection_clear()
+    # BUILD FUNCTIONS
         
-    def _clear_axis_info(self,axis):
-        for key in ["gtype","metric"]:
-            self.axis_panels[axis][key] = None 
-
-    def _is_axis_empty(self,axis):
-        found_something = False
-        for qpack in self.axis_panels[axis]["queries"]:
-            if not qpack[0].get() == "None":
-                    found_something = True
-        return not found_something
-      
-            
-    def _clear_all_queries(self,axis):
-        self.log("Clear all queries for axis: {}".format(axis))
-        for index in range(0,4):
-          self.bug("Clear all queries iteration: {}".format(index))
-          self._delete_query((axis,0))
-            
-    def _delete_query(self,axis_index):
-        self.bug("Delete_query called for: {}".format(axis_index))
-        axis,index = axis_index
-        targ_queries = self.axis_panels[axis]["queries"]
-        targ_qpack = targ_queries[index]
-        targ_qpack[0].set("None")
+    def build_skeleton(self):
+        self.category_dropdown_labelframe = tk.LabelFrame(self,text="Category Menu")
+        self.category_dropdown_labelframe.grid(row=0,column=0,sticky="nesw")
         
-        for row_x in range(index,4):
-            try:
-                next_value = targ_queries[row_x+1][0].get()
-            except IndexError:
-                next_value = "None"
-            targ_queries[row_x][0].set(next_value)
+        self.data_filters_labelframe = tk.LabelFrame(self,text="Data Filters")
+        self.data_filters_labelframe.grid(row=1,column=0,sticky="nesw")
         
-        if self._is_axis_empty("left"):
-            self._clear_axis_info("left")
-        if self._is_axis_empty("right"):
-            self._clear_axis_info("right")
-        if self._is_axis_empty("left") and self._is_axis_empty("right"):
-            self.x_axis_type.set("None")
-        self._update_queries_menu(self.category_var.get())
-            
-    def _choose_colors(self, axis_index):
-        get_color = colorchooser.askcolor()[1]
-        axis,index = axis_index
-        pack = self.axis_panels[axis]["queries"][index]
-        pack[1]["background"] = get_color
+        self.metric_options_labelframe = tk.LabelFrame(self,text="Metric Options")
+        self.metric_options_labelframe.grid(row=2,column=0,sticky="nesw")
         
-
+        self.results_options_labelframe = tk.LabelFrame(self,text="Result Options")
+        self.results_options_labelframe.grid(row=3,column=0,sticky="nesw")
         
-#   BUILD FUNCTIONS
+        self.graph_options_labelframe = tk.LabelFrame(self,text="Graph Options")
+        self.graph_options_labelframe.grid(row=4,column=0,sticky="nesw") 
         
-    def build_date_pane(self):
-        self.date_pane = ttk.Labelframe(
-            self, text="Date Range")
-        self.date_pane.grid(row=0,column=0,columnspan=2,sticky="W")        
+        self.send_to_axis_buttons_labelframe = tk.LabelFrame(self,text="Send to Graph Axis")
+        self.send_to_axis_buttons_labelframe.grid(row=5,column=0,sticky="news")
 
-        self.back_one_month_button = ttk.Button(
-            self.date_pane, command=lambda: self._skip_calendars(-30), text="<<",width=3)
-        self.back_one_month_button.grid(
-                row=0, column=0, padx=(5, 0), pady=2)
-        self.back_one_week_button = ttk.Button(
-            self.date_pane, command=lambda: self._skip_calendars(-7), text="<",width=3)
-        self.back_one_week_button.grid(
-                row=0, column=1, padx=5, pady=2)
-
-        self.start_day_button = ttk.Button(self.date_pane,
-                                          command=self._open_start_calendar,
-                                          textvariable=self.start_textvar)
-        self.start_day_button.grid(row=0, column=2, padx=5, pady=2)
-
-        self.end_day_button = ttk.Button(self.date_pane,command=self._open_end_calendar,
-            textvariable=self.end_textvar)
-        self.end_day_button.grid(row=0, column=3, padx=5, pady=2)
-
-        self.forward_one_week_button = ttk.Button(
-            self.date_pane, command=lambda: self._skip_calendars(7), text=">",width=3)
-        self.forward_one_week_button.grid(
-                row=0, column=4, padx=5, pady=2)
-
-        self.forward_one_month_button = ttk.Button(
-            self.date_pane, command=lambda: self._skip_calendars(30), text=">>",width=3)
-        self.forward_one_month_button.grid(
-            row=0, column=5, padx=(0, 5), pady=2)
-
-
-    def __build_query_menu(self):        
-#        QUERY MENU
-        self.query_menu = ttk.LabelFrame(self,text="Select Queries")
-        self.query_menu.grid(row=1,column=0,sticky="wn",rowspan=3,padx=(5,5),pady=(8,8))
-
-        self.x_axis_type_header = ttk.Label(self.query_menu, text="Current X-Axis: ",anchor="w")
-        self.x_axis_type_header.grid(row=0,column=0,sticky="w",pady=(5,5))
+    def build_category_menu(self):
+        for key,value in self.get_config()["queries"].items():
+            self.categories_list.append(value["proper_title"])
+        rown = 0
+        self.category_dropdown = ttk.Combobox(self.category_dropdown_labelframe, textvariable=self.current_category_var,
+                                          width=30)
+        self.category_dropdown.grid(row=rown, column=0,columnspan=1,
+                                    padx=(0,0),pady=(0,0))   
         
-        self.x_axis_type_label = ttk.Label(self.query_menu, textvariable=self.x_axis_type)
-        self.x_axis_type_label.grid(row=0,column=1,sticky="W",pady=(5,5))  
+        self.category_dropdown["values"] = self.categories_list
+        self.category_dropdown["state"] = "readonly" 
+        self.category_dropdown.current(0)
+        self.category_dropdown.bind('<<ComboboxSelected>>',self._ux_category_changed)        
         
-        self.category_label = ttk.Label(self.query_menu, text="Category: ")
-        self.category_label.grid(row=1,column=0,sticky="w",padx=0,pady=(5,15))
+    # DATA FILTER BUILDS
+    
+    def build_data_filters(self,targ_frame,required_data_filters_list):
+        for child in targ_frame.winfo_children():
+            child.destroy()          
+        
+        curr_row = 0
+        for index,data_filter in enumerate(required_data_filters_list):
+            self.log("Building data_filter: {}".format(data_filter))
+            if data_filter == "start_end_dates":
+                curr_row = self.build_start_end_data_filter(targ_frame,rown=curr_row)
 
-        self.category_menu = ttk.Combobox(self.query_menu, textvariable=self.category_var,
-                                          width=17)
-        self.category_menu.grid(row=1, column=1,columnspan=2,pady=(5,5), sticky="w",
-                                padx=(0,5))
-        
-        self.category_menu["values"] = self.get_cfg_val("categories")
-        self.category_menu.current(0)         
-        self.category_menu.bind('<<ComboboxSelected>>',self._category_changed)
-        self.category_menu["state"] = "readonly"  
-      
-        self.query_menu_separator = ttk.Separator(self.query_menu)
-        self.query_menu_separator.grid(row=2,column=0,columnspan=4,sticky="ew",
-                                       padx=(45,45),pady=(5,5))
-        
-    def populate_query_menu(self):
-        for index in range(0,self.max_num_queries):
-            row_n = index + 3
-            query_var = tk.StringVar()
-            
-            query_label = tk.Label(self.query_menu,textvariable=query_var,anchor="w",
-                                   font="Helvetica 9")
-            query_label.grid(row=row_n,column=0,sticky="ew",padx=(5,0))
-            
-            send_left_axis = tk.Button(self.query_menu,text="←L",width=5,
-                      command=lambda index=index:self._send_to_axis("left",index))
-            send_left_axis.grid(row=row_n,column=1,sticky="e",padx=(10,0),pady=(5))
-            
-            send_right_axis = tk.Button(self.query_menu,text="R→",width=5,
-                      command=lambda index=index:self._send_to_axis("right",index))
-            send_right_axis.grid(row=row_n,column=2,sticky="w",padx=(5,5))
-            
-            pack = (query_var, send_left_axis, send_right_axis)
-            self.ls_query_packs.append(pack)
-            
-    #       BUILD AXIS PANELS
-    def build_left_queries(self):            
-            left_query_panel = ttk.LabelFrame(self,text="Left Axis")
-            left_query_panel.grid(row=1,column=1,sticky="wn",padx=(5,5),pady=(8,8))
-            left_clear_all = tk.Button(left_query_panel,text="Clear",foreground="red",
-                                       command=lambda: self._clear_all_queries("left"),
-                                       relief="groove",font="Helvetica 7",width=4)
-            left_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
-            self.axis_panels["left"]["axispanel"] = left_query_panel
-            
-    def build_right_queries(self):
-        right_query_panel = ttk.LabelFrame(self,text="Right Axis")
-        right_query_panel.grid(row=2,column=1,sticky="wn",padx=(5,5),pady=(8,8))  
-        right_clear_all = tk.Button(right_query_panel,text="Clear",foreground="red",
-                                   command=lambda: self._clear_all_queries("right"),
-                                   relief="groove",font="Helvetica 7",width=4)      
-        right_clear_all.grid(row=5,column=1,sticky="ne",padx=10,pady=5,columnspan=2)
-        self.axis_panels["right"]["axispanel"] = right_query_panel
-            
-    def _choose_linestyle(self,event,args=None,):
-        axis,index,style_stvar = args
-        self.log("New style: {}".format(style_stvar.get())) 
-#                    
-    def populate_axis_panels(self):        
-            available_colors = self.get_cfg_val("colors_preferred").split("-")
-            for axis in ["left","right"]:   
-                currframe = self.axis_panels[axis]["axispanel"]
-                set_y_vars = self.axis_panels[axis]["set_y"]
-                set_y_axis_button = ttk.Checkbutton(
-                    currframe,
-                    text="Lock Y-Axis Limits",
-                    variable=set_y_vars[0],
-                    onvalue=True,
-                    offvalue=False,
-                    command=lambda axis= axis:self._use_set_y_axis_vars_changed(axis))
-                set_y_axis_button.grid(row=6,column=0,sticky="w",padx=(5,0),
-                    columnspan=1)      
+            elif data_filter == "category_or_product":
+                curr_row = self.build_category_or_product_data_filter(targ_frame,rown=curr_row)
                 
-                set_y_axis_entry_low = ttk.Entry(currframe, width=3, textvariable=set_y_vars[1])
-                set_y_axis_entry_low.grid(row=6, column=2,columnspan=1, sticky="w",padx=(0,5))  
+            elif data_filter == "platform":
+                curr_row = self.build_platform_data_filter(targ_frame,rown=curr_row)
                 
-                set_y_axis_entry_high = ttk.Entry(currframe, width=5, textvariable=set_y_vars[2])
-                set_y_axis_entry_high.grid(row=6, column=3,columnspan=1, sticky="w") 
-                 
-                for index in range(0,4):
-                    #TODO: Refactor below axis generation into a separate function or class
-                    rownum = index
-                    colorindex = index
-                    if axis == "right":
-                        colorindex = index + 4        
-
-                    lbl_stvar = tk.StringVar()
-                    lbl_stvar.set("None")
-                    label = tk.Label(currframe,textvariable=lbl_stvar, wraplength=110, anchor="w",
-                                     justify="left",width=15,height=2)
-                    label.grid(row=rownum,column=0,padx=(5,0),sticky="w")
-                    
-                    axis_index = axis,index
-                    clr_btn = tk.Button(currframe,width=1,height=1,command=lambda axis_index=axis_index:self._choose_colors(axis_index))
-                    clr_btn.grid(row=rownum,column=1,padx=(10,0))
-                    clr_btn.configure(background=available_colors[colorindex])
-                    
-                    styvar = tk.StringVar()
-                    menu_args = (axis,index, styvar)
-                    linestyle_menu = ttk.Combobox(currframe, textvariable =styvar,
-                                                      width=2)
-                    linestyle_menu.grid(row=rownum, column=2,columnspan=1, sticky="w",
-                                            padx=(5,5))       
-                    
-                    
-                    linestyle_menu["values"] = ["-","--","-.",":"]
-                    linestyle_menu.current(0)         
-                    #event handlers can only pass one argument, the event. 
-                    #so, we tell the lambda function to set a default value for argument abc
-                    linestyle_menu.bind('<<ComboboxSelected>>',lambda evt,abc=menu_args :self._choose_linestyle(evt,abc))
-                    linestyle_menu["state"] = "readonly"                         
-                    delete = tk.Button(currframe,width=1, text="x",
-                        command=lambda axis_index=axis_index:self._delete_query(axis_index),
-                        font="Helvetica 7")
-                    delete.grid(row=rownum, column=3,padx=(5,10),pady=(5,0),sticky="ne")
-                    
-                    selected_query_pack = [lbl_stvar, clr_btn, styvar]
-                    self.axis_panels[axis]["queries"].append(selected_query_pack)
-                
-    def build_options(self):
-        row_n = 0
-        self.options_menu = ttk.LabelFrame(self,text="Options and Search")
-        self.options_menu.grid(row=3,column=0,sticky="nwse",columnspan=2,padx=(5,5),pady=(8,8))
+    def build_start_end_data_filter(self,targ_frame,rown=0):
+        tk.Label(targ_frame,text="Start Date:").grid(row=rown,column=0,sticky="w",
+                columnspan=1)
+        ttk.Button(targ_frame,command=self._ux_open_start_cal, textvariable=self.start_date_button_var).grid(
+                row=rown, column=1,columnspan=2, pady=2,sticky="w")        
+        rown += 1
         
-        aggregate_label = tk.Label(self.options_menu,text="Aggregate Data By: ")
-        aggregate_label.grid(row=row_n,column=0,sticky="w")
+        tk.Label(targ_frame,text="End Date:").grid(row=rown,column=0,sticky="w",
+                columnspan=1)     
+        ttk.Button(targ_frame,command=self._ux_open_end_cal,textvariable=self.end_date_button_var).grid(
+                row=rown, column=1,columnspan=2, pady=2,sticky="w")        
+        rown += 1
         
-        self.aggregate_by_day_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
-                                                      text="By Day",value="day")
-        self.aggregate_by_day_radio.grid(row=row_n,column=1,sticky="w",padx=(0,5)) 
+        tk.Label(targ_frame,text="Skip Dates:").grid(row=rown,column=0,sticky="w",
+                columnspan=1)     
+        ttk.Button(targ_frame,text="<<",width=3,command=lambda: self._ux_skip_calendars(-30)).grid(
+                row=rown,column=1,pady=2,sticky="w")
+        ttk.Button(targ_frame,text=">>",width=3,command=lambda: self._ux_skip_calendars(30)).grid(
+                row=rown, column=2, pady=2,sticky="w")   
         
-        self.aggregate_by_week_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
-                                                       text="By Week",value="week")
-        self.aggregate_by_week_radio.grid(row=row_n,column=2,sticky="w",padx=(0,5))     
+        return rown + 1
         
-        self.aggregate_by_month_radio = ttk.Radiobutton(self.options_menu, variable=self.aggregate_var, 
-                                                        text="By Month",value="month")
-        self.aggregate_by_month_radio.grid(row=row_n,column=3,sticky="w",padx=(0,5)) 
+    def build_category_or_product_data_filter(self,targ_frame, rown=0):
+        tk.Label(targ_frame,text="Product:").grid(row=rown, column=0,sticky="w")
         
-        row_n += 1
-        self.extra_use_check = ttk.Checkbutton(self.options_menu,text="Filter by Product Code",
-              onvalue=True,  offvalue=False, variable=self.use_product_filter,
-              command=self._use_product_filter_changed)
-        self.extra_use_check.grid(row=row_n,column=0,sticky="w",columnspan=1,pady=(2,2))
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_product_var,
+                                width=15)
+        dropdown.grid(row=rown, column=1,columnspan=2,padx=(0,0),
+                      pady=(0,0),sticky="w")   
         
-        self.extra_widget = ttk.Entry(self.options_menu, width=15, textvariable=self.product_filter_var)
-        self.extra_widget.grid(row=row_n, column=1,sticky="w",columnspan=2,padx=(10,0))
-        self.extra_widget.grid_remove()
-
-        row_n += 1            
-        self.mirror_days_check = ttk.Checkbutton(self.options_menu,text="Mirror with Past Data",
-              onvalue=True,  offvalue=False, variable=self.use_mirror_var,
-              command=self._use_mirror_var_changed)
-        self.mirror_days_check.grid(row=row_n,column=0,sticky="w",columnspan=2,pady=(2,2))          
+        dropdown["values"] = ["All","Category","Product Code"]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0) 
+        rown += 1
         
-        self.mirror_days_entry = ttk.Entry(self.options_menu, width=5, textvariable=self.mirror_days_var)
-        self.mirror_days_entry.grid(row=row_n, column=1,columnspan=2, sticky="w",padx=(10,10))
-        self.mirror_days_entry.grid_remove()     
+        ttk.Entry(targ_frame,textvariable=self.current_product_entry_var,justify="left").grid(
+        row=rown,column=1,columnspan=3)
+        
+        return rown + 1
+        
+    def build_platform_data_filter(self,targ_frame,rown=0):
+        coln = 0
+        
+        tk.Label(targ_frame,text="Gen. Platform: ").grid(row=rown, column=coln,sticky="w")
+        coln += 1
+        
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_platform_var,
+                                width=10)
+        dropdown.grid(row=rown, column=coln,columnspan=2,padx=(0,0),
+                      pady=(0,0),sticky="w")   
+        
+        dropdown["values"] = ["All","PC","Mobile"]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0) 
+        
+        return rown + 1
+    
+    # METRIC OPTIONS BUILD
+        
+    def build_metric_options(self,targ_frame,required_metrics_dict,rown=0):
+        for child in targ_frame.winfo_children():
+            child.destroy()  
             
-        row_n += 1
-        self.should_search_on_query_change = ttk.Checkbutton(
-            self.options_menu,
-            text="Search on Query/Date Change",
-            variable=self.autosearch,
-            onvalue=True,
-            offvalue=False)
-        self.should_search_on_query_change.grid(row=row_n, column=0,sticky="w",columnspan=2,pady=(2,2))
-        self.should_search_on_query_change.invoke()
+        self.metrics_list = []
         
-        row_n += 1
-        self.n_rankings_label = ttk.Label(self.options_menu, text="Number of Rankings:")
-        self.n_rankings_label.grid(row=row_n,column=0,sticky="w",pady=(2,2))
+        for name,config in required_metrics_dict.items():
+            self.metrics_list.append(config["proper_title"])   
+            
+        tk.Label(targ_frame,text="Metric:").grid(row=rown, column=0,sticky="w")   
         
-        self.n_rankings_entry = ttk.Entry(self.options_menu, width=5, textvariable=self.n_rankings_var)
-        self.n_rankings_entry.grid(row=row_n, column=1,columnspan=1, sticky="w",padx=(10,10))       
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_metric_var,width=20)
+        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        dropdown["values"] = self.metrics_list
+        dropdown["state"] = "readonly" 
+        dropdown.current(0)      
+        dropdown.bind('<<ComboboxSelected>>',self._ux_metric_changed)
         
-        row_n += 1
-        self.entry_input_button = ttk.Button(
-            self.options_menu,
-            command=self.push_search,
-            text="Search")
-        self.entry_input_button.grid(row=6, column=0,sticky="w")    
+        for name,config in required_metrics_dict.items():
+            self.metrics_list.append(config["proper_title"])    
+            
+        rown += 1
+        tk.Label(targ_frame,text="Metric Type:").grid(row=rown, column=0,sticky="w")
         
+        self.metric_type_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_type_var,width=20)
+        self.metric_type_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        self.metric_type_menu["state"] = "readonly" 
+        
+        rown += 1
+        tk.Label(targ_frame,text="Data Type:").grid(row=rown, column=0,sticky="w")
+        self.metric_data_type_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_data_type_var,width=20)
+        self.metric_data_type_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        self.metric_data_type_menu["state"] = "readonly"   
+        
+        rown += 1
+        tk.Label(targ_frame,text="Breakdown:").grid(row=rown, column=0,sticky="w")
+        self.metric_breakdown_menu = ttk.Combobox(targ_frame, textvariable=self.current_metric_breakdown_var,width=20)
+        self.metric_breakdown_menu.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        self.metric_breakdown_menu["state"] = "readonly"        
 
-                        
-#if __name__ == "__main__":
-#    import config2
-#    cfg = config2.backend_settings
-#    app = tk.Tk()
-#    panel = QueryPanel(app,config=cfg,panel_name="Right Axis")
-#    panel.grid(padx=20)
-#    app.mainloop()
+        rown += 1
+        tk.Label(targ_frame,text="X Rankings (Breakdown):").grid(row=rown, column=0,sticky="w")
+        tk.Spinbox(targ_frame, from_=1.0, to=10.0, wrap=True, width=4, 
+                   validate="key", state="readonly",textvariable=self.current_n_rankings_var).grid(
+                           row=rown,column=1,sticky="w",columnspan=15) 
+
+        self._ux_metric_changed()
+        
+    def update_metric_menus(self, met_cfg):
+        self.metric_type_menu["values"] = met_cfg["metric_types"]
+        self.metric_type_menu.current(0)
+        self.metric_data_type_menu["values"] = met_cfg["data_types"]
+        self.metric_data_type_menu.current(0)
+        self.metric_breakdown_menu["values"] = met_cfg["breakdown_types"]
+        self.metric_breakdown_menu.current(0)
+        
+    # RESULTS OPTIONS BUILD
+        
+    def build_results_options_menu(self,targ_frame,rown=0):
+        tk.Label(targ_frame,text="Aggregation Period: ").grid(row=rown, column=0,sticky="w")
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_time_var,width=10)
+        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        dropdown["values"] = ["Daily","Weekly","Monthly","Entire"]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0)      
+        
+        rown += 1
+        tk.Label(targ_frame,text="Aggregation Type:").grid(row=rown, column=0,sticky="w")
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_type_var,width=10)
+        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
+        dropdown["values"] = ["Sum","Average"]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0)   
+        
+        rown += 1
+        tk.Label(targ_frame,text="Compare to X Days Before:").grid(row=rown, column=0,sticky="w")
+        tk.Spinbox(targ_frame, from_=0.0, to=365.0, wrap=True, width=4, 
+                   validate="key", state="normal",textvariable=self.current_compare_to_days_var).grid(
+                           row=rown,column=1,sticky="w",columnspan=15)          
+
+    # GRAPH OPTIONS BUILD
+        
+    def build_graph_options_menu(self,targ_frame,rown=0):
+        
+        tk.Label(targ_frame,text="Line Style:").grid(row=rown, column=0,sticky="w")
+        x = ttk.Combobox(targ_frame, textvariable=self.current_linestyle_var,width=2,
+         values=["-","--","-.",":"],state="readonly")
+        x.grid(row=rown, column=1,columnspan=1, sticky="w",padx=(5,0)) 
+        x.current(0)
+        rown += 1
+
+        tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
+        self.color_button_widget = tk.Button(targ_frame,width=1,height=1,command=self._ux_choose_color)
+        self.color_button_widget.grid(row=rown,column=1,padx=(0,0),sticky="w")
+        self.color_button_widget.configure(background="black")
+        rown += 1
+        
+        tk.Label(targ_frame,text="Custom Name:").grid(row=rown, column=0,sticky="w")
+        ttk.Entry(targ_frame, width=20, textvariable=self.current_custom_name_entry_var).grid(
+                  row=rown, column=1, sticky="w",padx=(0,0))        
+        
+    # SEND TO AXIS BUILD
+    
+    def build_send_to_axis_menu(self,targ_frame,rown=0):
+        send_left_button = tk.Button(targ_frame,text="Left Axis",
+                                     command=lambda: self._ux_send_to_axis("left"))
+        send_left_button.grid(row=rown,column=0)
+
+        send_left_button = tk.Button(targ_frame,text="Right Axis",
+                                     command=lambda: self._ux_send_to_axis("right"))
+        send_left_button.grid(row=rown,column=1)
+        
+if __name__ == "__main__":
+    logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
+    ver = "v0.2.10.7 - 2018/07/22"
+    
+    logging.basicConfig(filename=r"debug\\{}".format(logname),
+        level=logging.DEBUG, 
+        format="%(asctime)s %(filename)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
+        datefmt='%H:%M:%S')
+    logging.info("-------------------------------------------------------------")
+    logging.info("DEBUGLOG @ {}".format(datetime.datetime.now().strftime("%y%m%d-%H%M")))
+    logging.info("VERSION: {}".format(ver))
+    logging.info("AUTHOR:{}".format("Justin H Kim"))
+    logging.info("-------------------------------------------------------------")
+    import config2
+    
+    controls_config = config2.backend_settings
+    dbfile =  open(r"databases/DH_DBS.pickle", "rb")
+    dbs = pickle.load(dbfile)  
+    app = tk.Tk()    
+    querypanel = QueryPanel(app,app,controls_config,dbvar=dbs)
+    querypanel.grid(padx=20)
+    app.mainloop()              

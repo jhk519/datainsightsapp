@@ -205,9 +205,16 @@ def count_of_orders(odb,date_list, mcfg, breakdown_keys=None):
     for row_tuple in odb.itertuples():
         date_index =  date_list.index(row_tuple.date)
         val_to_add = 1
-               
+            
         if not breakdown == "None":
-            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+            if breakdown == "Customer's Nth Order":
+                nth_order = getattr(row_tuple, "order_count") + 1
+                if nth_order >= 5:
+                    result_dict_key = "5"
+                else:
+                    result_dict_key= str(nth_order) 
+            else:
+                result_dict_key = getattr(row_tuple, bkdwn_column_str)
         else:
             result_dict_key = "All"
             
@@ -460,7 +467,9 @@ def get_top_counts_and_bkdwn_column_str(db_prime,breakdown,n_breakdown,force_top
         elif breakdown == "Device":
             top_counts = ["PC","Mobile","App"]
         elif breakdown == "New/Returning":
-            top_counts = ["New","Returning"]         
+            top_counts = ["New","Returning"] 
+        elif breakdown == "Customer's Nth Order":
+            top_counts = ["1", "2", "3", "4","5"]
             
     return top_counts,bkdwn_column,db_prime
 

@@ -22,7 +22,6 @@ import datetime
 from pprint import pprint as PRETTYPRINTTHIS
 #import matplotlib
 
-
 # Project Mpdules
 import config2
 from analysispage import AnalysisPage
@@ -33,7 +32,6 @@ from multigrapher import MultiGrapher
 
 class DataInsightsApp(tk.Tk):
     def __init__(self, account, init_config, ver=None,showlog=False):
-        logger = logging.getLogger(__name__)
 #        if showlog = 
         self.log = logging.getLogger(__name__).info
         self.bug = logging.getLogger(__name__).debug
@@ -89,7 +87,6 @@ class DataInsightsApp(tk.Tk):
 #        self.analysispages.append(ap)
         self.notebook.add(self.ap, text="Analysis",sticky="nsew")
 
-
 #       MULTIGRAPHER INIT
         self.multigrapher = MultiGrapher(self.notebook,self, curr_config)
         self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
@@ -98,8 +95,7 @@ class DataInsightsApp(tk.Tk):
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
         self.notebook.select(self.dbmanager)
-        #           
-#       API 
+
     def propagate_db_var_change(self,new_dbvar):       
 #        Required when DBManager does full resets of its dbvar, meaning the 
 #        correct dbvar now has a new id.
@@ -114,14 +110,13 @@ class DataInsightsApp(tk.Tk):
         
             
     def propagate_cfg_var_change(self,new_cfgvar):
-#        PRETTYPRINTTHIS(new_cfgvar)
         self.dbmanager.set_cfgvar(new_cfgvar)
         self.product_viewer_page.set_cfgvar(new_cfgvar)
         self.ap.set_cfgvar(new_cfgvar)
             
     def send_to_multigrapher(self,path,pack,slot): 
         self.log("Send_to_multigrapher for path: {}".format(path))
-        self.multigrapher.receive_image(path,pack,slot)
+        self.multigrapher.receive_image(path,pack)
         
     def get_graph_path(self,request_pack):
         self.ap.request_and_graph_data(request_pack)
@@ -136,7 +131,7 @@ class DataInsightsApp(tk.Tk):
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.3.0 - 2018/09/12"
+    ver = "v0.4.0 - 2018/10/03"
     if not os.path.exists(r"debug\\"):
         os.mkdir(r"debug\\")
     logging.basicConfig(filename=r"debug\\{}".format(logname),

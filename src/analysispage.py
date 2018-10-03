@@ -71,10 +71,6 @@ class AnalysisPage(AppWidget):
         
         self.last_graphing_pack,self.last_table_pack  = self.request_pack_to_graphing_and_table_pack(
                 request_pack,date_list,merged_list_of_plot_tuples)
-        
-        PRETTYPRINT(self.last_graphing_pack)
-        print("=======")
-        PRETTYPRINT(self.last_table_pack)
 
         self.log("Received Data")
  
@@ -149,7 +145,6 @@ class AnalysisPage(AppWidget):
         }   
         
         line_labels = [grph_pck["str_x"]] + [plot_tuple[0] for plot_tuple in merged_list_of_plot_tuples]
-#        line_labels.insert(0,grph_pck["str_x"])
         data_lists = [grph_pck["x_data"]] + [plot_tuple[1] for plot_tuple in merged_list_of_plot_tuples]
         
         table_pack = {
@@ -196,13 +191,12 @@ class AnalysisPage(AppWidget):
         self.log(fullname)
         return fullname
 
-    def send_to_multigrapher(self,slot = None):
+    def send_to_multigrapher(self):
         self.log("Send to multigrapher called.")
         slot = None
         fullname = self.export_png(outdir="exports\multigrapher")        
-        self.controller.send_to_multigrapher(fullname,self.last_selection_pack,slot)      
-
-                     
+        self.controller.send_to_multigrapher(fullname,self.last_request_pack,slot)      
+        
     def receive_new_title(self):
         title = "Edit Graph Title"
         text ="Please Enter New Title."

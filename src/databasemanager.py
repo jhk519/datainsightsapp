@@ -16,6 +16,7 @@ from tkinter import filedialog
 
 # Standard Modules
 import pickle
+import pandas as pd
 
 # Project Modules
 from appwidget import AppWidget
@@ -60,15 +61,12 @@ class DBManager(AppWidget):
     def _reset_and_gen(self,db_str,dir_list = None):
         self.log(".reset_and_gen for {} called. dir_list given: {}".format(db_str,dir_list))
         if not dir_list:
-#          returns tuple of strings
             pathstr_tuple = filedialog.askopenfilenames()
             dir_list = list(pathstr_tuple)
             self.bug(".reset_and_gen called. Filedialog returns: {}".format(dir_list))
             
         if db_str == "cdb":
             self.get_dbvar()[db_str] = self.engine.get_cdb(self.get_dbvar()["odb"])
-#        elif db_str == "pdb":
-#            self.get_dbvar()[db_str] = self.engine.get_pdb(self.get_dbvar()["odb"])
         else:            
             self.get_dbvar()[db_str] = self.engine.gen_single_db(
                             self.get_cfg_val("db_build_config")[db_str],
@@ -76,9 +74,19 @@ class DBManager(AppWidget):
                             self.get_cfg_val("header_ref")) 
             
         if db_str == "odb":
+            unique = self.get_dbvar()[db_str].drop_duplicates(subset="order_id")
+            unique["order_count"] = unique.groupby("customer_phone_number").cumcount()
+            unique = unique[["order_id","order_count"]]
+            self.log("Gen unique excel")
+            unique.to_excel("unique_counts.xlsx")
+            
             self.get_dbvar()[db_str] = self.engine.merge_odb_with_pdb(
                     odb = self.get_dbvar()["odb"],
                     pdb = self.get_dbvar()["pdb"])
+            
+            merged = pd.merge(self.get_dbvar()[db_str], unique, on="order_id", right_index=False,
+                              how='left', sort=False)
+            self.get_dbvar()[db_str] = merged
             
         self._update_statuses()
         self.log("Completed resetting and generating: {}".format(db_str))

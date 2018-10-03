@@ -491,70 +491,16 @@ class MultiGrapherEngine():
         self.bug = logging.getLogger(__name__).debug  
         
         
-    def convert_slot_pack_to_request_pack(self,slot_pack,custom_today):
-            
-        request_pack = {
-            "aggregate_by":slot_pack["aggregate_by"],
-            "start": (custom_today - datetime.timedelta(slot_pack["days_back"])),
-            "end": custom_today,
-            "extra": slot_pack["extra"],
-            "left": {
-                "gtype": slot_pack["left"]["gtype"],
-                "metric": slot_pack["left"]["metric"],
-                "queries": slot_pack["left"]["queries"],
-                "set_y": slot_pack["left"]["set_y"]
-                
-            },
-            "mirror_days": slot_pack["mirror_days"],
-            "right": {
-                "gtype": slot_pack["right"]["gtype"],
-                "metric": slot_pack["right"]["metric"],
-                "queries": slot_pack["right"]["queries"],
-                "set_y": slot_pack["right"]["set_y"]
-            },
-            "x_axis_label": slot_pack["x_axis_label"],
-            "title":slot_pack["title"]
-        }
-        return request_pack
-       
-    def convert_request_pack_to_slot_pack(self,request_pack,custom_today=None): 
-        if request_pack["title"] == None:
-            le = request_pack["left"]["queries"]
-            ri = request_pack["right"]["queries"]
-            if ri:
-                if le:
-                    newtitle = "{} vs {}".format(le[0][0],ri[0][0])
-                else:
-                    newtitle = ri[0][0]
-            else:
-                newtitle = le[0][0]
+    def update_request_pack(self,slot_pack,custom_today):
+        request_pack = dict(slot_pack)
+#        PRETTYPRINT(request_pack)
+        day_gap = (request_pack["data_filters"]["end_datetime"] - request_pack["data_filters"]["start_datetime"]).days
+        new_start = custom_today - datetime.timedelta(day_gap)
+        new_end = custom_today
+        request_pack["data_filters"]["end_datetime"] = new_end
+        request_pack["data_filters"]["start_datetime"] = new_start
 
-            self.log("New title {}".format(newtitle))
-        else:
-            newtitle = request_pack["title"] 
-        slot_pack = {
-            "aggregate_by":request_pack["aggregate_by"],
-            "extra":request_pack["extra"],
-            "x_axis_label": request_pack["x_axis_label"],
-            "mirror_days":request_pack["mirror_days"],      
-            "last_path":None,
-            "left": {
-                "gtype":request_pack["left"]["gtype"],
-                "metric": request_pack["left"]["metric"],
-                "queries": request_pack["left"]["queries"],
-                "set_y": request_pack["left"]["set_y"]
-            },
-            "right": {
-                "gtype":request_pack["right"]["gtype"],
-                "metric": request_pack["right"]["metric"],
-                "queries": request_pack["right"]["queries"],
-                "set_y": request_pack["right"]["set_y"]
-            }, 
-            "custom_today":custom_today,
-            "days_back":((request_pack["end"] - request_pack["start"]).days),
-            "title": newtitle
-        }                   
-        return slot_pack        
+        return request_pack      
         
 class AnalysisPageEngine():
     def __init__(self):    

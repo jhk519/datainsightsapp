@@ -54,7 +54,6 @@ backend_settings = {
                 "proper_title": "Order Database",
                 "core": "order_data",
                 "appends_list":[],
-#                "appends_list": ["cancel_data","return_data"],
                 "match_on_key": "order_part_id"
             },
             "tdb": {
@@ -123,17 +122,6 @@ backend_settings = {
                 "상품자체코드": "product_hcode",
                 "상품옵션":"product_option"
             },
-#            "cancel_data": {
-#                "주문번호": "order_id",
-#                "품목별주문번호": "order_part_id",
-#                "취소접수구분": "reason_cancelled",
-#                "취소접수일": "date_cancelled"
-#            },
-#            "return_data": {
-#                "주문번호": "order_id",
-#                "품목별주문번호": "order_part_id",
-#                "환불완료일": "date_returned"
-#            },
             "traffic_data": {
                 "날짜": "date",
                 "신규방문자": "new_visitors_count",
@@ -170,10 +158,7 @@ backend_settings = {
                 "main_image_url": "main_image_url",
                 "sku_image_url": "sku_image_url",
                 "category": "category",
-#                "상품공급처명": "vendor_name",
-#                "사입상품명": "vendor_code",
-                "sku_code": "sku_code",     
-#                "원가": "vendor_price",                      
+                "sku_code": "sku_code",                         
             },
                     
             "customer_data": {
@@ -221,7 +206,7 @@ backend_settings = {
                         "proper_title": "Count Of Orders",
                         "metric_types": ["Include Fully Cancelled Orders", "Exclude Fully Cancelled Orders"],
                         "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None", "Gen. Platform","Spec. Platform"]                        
+                        "breakdown_types": ["None", "Gen. Platform","Spec. Platform","Customer's Nth Order"]                        
                     },
                     "revenue_by_order":{
                         "proper_title": "Revenue By Order",
@@ -267,9 +252,8 @@ backend_settings = {
         "presetpages":[
             {
                 "pagename":"PAGE1",
-                "slots": [
-                 ]
-             }
+                "request_packs": []
+            }
         ]
     },
     "graphframe":{

@@ -67,7 +67,8 @@ class AnalysisPage(AppWidget):
         date_list,m_datelist,merged_list_of_plot_tuples = self.engine.get_results_pack(
                 request_pack,
                 self.get_dbvar(), 
-                self.get_cfg_val("event_list"))
+                self.get_cfg_val("event_list"),
+                ignore_numbers=self.get_cfg_val("ignore_numbers"))
         
         self.last_graphing_pack,self.last_table_pack  = self.request_pack_to_graphing_and_table_pack(
                 request_pack,date_list,merged_list_of_plot_tuples)
@@ -127,6 +128,7 @@ class AnalysisPage(AppWidget):
                                       title_str)              
             
         grph_pck  = {
+            "axis":req_pk["graph_options"]["axis"],
             "start":date_list[0],
             "end":date_list[-1],
             "met": req_pk["metric_options"]["metric"],

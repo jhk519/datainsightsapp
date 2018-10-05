@@ -154,12 +154,7 @@ class QueryPanel(AppWidget):
         self.color_button_widget["background"] = colorchooser.askcolor()[1]
         
     def _ux_send_to_axis(self,which_axis="left"):
-        current_selections_pack = self.generate_current_selections_pack(which_axis)
-#        PRETTYPRINT(current_selections_pack)
-#        try:
-        self.controller.request_and_graph_data(current_selections_pack)
-#        except AttributeError:
-#            self.bug("Error regarding sent and request data.")
+        self.controller.request_and_graph_data(self.generate_current_selections_pack(which_axis))
         
     # SELECTIONS PACK FUNCTIONS
     
@@ -371,7 +366,7 @@ class QueryPanel(AppWidget):
 
         rown += 1
         tk.Label(targ_frame,text="X Breakdowns:").grid(row=rown, column=0,sticky="w",pady=(0,9))
-        tk.Spinbox(targ_frame, from_=1.0, to=10.0, wrap=True, width=4, 
+        tk.Spinbox(targ_frame, from_=1.0, to=20.0, wrap=True, width=4, 
                    validate="key", state="readonly",textvariable=self.current_n_rankings_var).grid(
                            row=rown,column=1,sticky="w",columnspan=15) 
 
@@ -454,13 +449,13 @@ class QueryPanel(AppWidget):
     # SEND TO AXIS BUILD
     
     def build_send_to_axis_menu(self,targ_frame,rown=0):
-        send_left_button = tk.Button(targ_frame,text="Left Axis",
+        send_left_button = tk.Button(targ_frame,text="Get Data",
                                      command=lambda: self._ux_send_to_axis("left"))
-        send_left_button.grid(row=rown,column=0)
+        send_left_button.grid(row=rown,column=0,padx=(15,15),pady=(10,10),sticky="eswn")
 
-        send_left_button = tk.Button(targ_frame,text="Right Axis",
-                                     command=lambda: self._ux_send_to_axis("right"))
-        send_left_button.grid(row=rown,column=1)
+#        send_right_button = tk.Button(targ_frame,text="Right Axis",
+#                                     command=lambda: self._ux_send_to_axis("right"))
+#        send_right_button.grid(row=rown,column=1)
         
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))

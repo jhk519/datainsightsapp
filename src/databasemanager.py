@@ -74,18 +74,26 @@ class DBManager(AppWidget):
                             self.get_cfg_val("header_ref")) 
             
         if db_str == "odb":
-            unique = self.get_dbvar()[db_str].drop_duplicates(subset="order_id")
-            unique["order_count"] = unique.groupby("customer_phone_number").cumcount()
-            unique = unique[["order_id","order_count"]]
-            self.log("Gen unique excel")
-            unique.to_excel("unique_counts.xlsx")
-            
+            self.log("Merging odb with pdb.")
             self.get_dbvar()[db_str] = self.engine.merge_odb_with_pdb(
                     odb = self.get_dbvar()["odb"],
                     pdb = self.get_dbvar()["pdb"])
             
-            merged = pd.merge(self.get_dbvar()[db_str], unique, on="order_id", right_index=False,
-                              how='left', sort=False)
+#            unique = self.get_dbvar()[db_str].drop_duplicates(subset="order_id")
+#            unique["order_count"] = unique.groupby("customer_phone_number").cumcount() + 1
+#            unique = unique[["order_id","order_count"]]
+#            merged = pd.merge(self.get_dbvar()[db_str], unique, on="order_id", right_index=False,
+#                              how='left', sort=False)
+            
+            self.log("Generating order_counts.")
+            uniques = self.get_dbvar()[db_str].drop_duplicates(subset="order_id")   
+            no_cancels = uniques.loc[uniques["cancel_status"] !="취소"]
+            groupby_count = no_cancels.groupby("customer_phone_number").cumcount() + 1
+            uniques["order_count"] = groupby_count
+            
+            merged = pd.merge(self.get_dbvar()[db_str], uniques[["order_id","order_count"]], 
+                              right_index=False, on="order_id", how='left', sort=False)            
+
             self.get_dbvar()[db_str] = merged
             
         self._update_statuses()
@@ -286,8 +294,7 @@ class DBManager(AppWidget):
             db_export_sqlite.grid(row=row_c, column=3, padx=8)
 
             db_reset_and_gen = ttk.Button(self.middle_frame,
-                                          command=lambda db_str=db_str: self._reset_and_gen(
-                                              db_str),
+                                          command=lambda db_str=db_str: self._reset_and_gen(db_str),
                                           text="Regenerate")
             db_reset_and_gen.grid(row=row_c, column=4, padx=8)
 

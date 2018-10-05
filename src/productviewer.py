@@ -18,6 +18,8 @@ from pprint import pprint
 import pickle
 import datetime
 import logging
+from os import system
+import webbrowser
 
 # Non-standard Modules
 from PIL import ImageTk
@@ -69,6 +71,7 @@ class ProductViewer(AppWidget):
         dbstr = "product_customers_{}".format(code)
         fullname = self.get_export_full_name(dbstr,ftype="excel")
         dataframe.to_excel(fullname, sheet_name=code)
+        system('start excel.exe "%s"' % (fullname))
         
     def search_product(self,code=None):
         codetype = self.search_type_menu.get() 
@@ -85,7 +88,11 @@ class ProductViewer(AppWidget):
         elif search_product_result == "no_code_given":
             self.bug("No code given for product search.")
         else:
-            self.update_product_info(search_product_result)     
+            self.update_product_info(search_product_result) 
+            
+    def search_cafe24(self):
+        code = self.search_pcode_stvar.get().strip().replace(" ", "").replace("\n", "")
+        webbrowser.open("https://chuu.co.kr/product/search.html?keyword={}".format(code))
             
     def update_product_info(self,product_dict):
         self._clear_data()
@@ -192,23 +199,13 @@ class ProductViewer(AppWidget):
         
     def _build_product_info_frame(self):
         self.product_info_frame = ttk.LabelFrame(self,text="Product Information")
-        self.product_info_frame.grid(row=1,column=0,sticky="ew")
+        self.product_info_frame.grid(row=1,column=0,sticky="ewn")
         
         self.product_info_frame.columnconfigure(0,weight=0)
         self.product_info_frame.columnconfigure(1,weight=0)        
         self.product_info_frame.columnconfigure(2,weight=1)   
         
-        self.export_customers_button = ttk.Button(
-            self.product_info_frame,
-            text = "Export Customers List",
-            command = self.export_customers
-        )
-        self.export_customers_button.grid(row=0,column=0,padx=5,sticky="w")
-
-        required_details = ["product_code",
-#                            "vendor_name",
-#                            "vendor_code",
-#                            "vendor_price",
+        required_details = ["product_cafe24_code",
                             "category"]
         start_row = 1   
         for key in required_details:
@@ -219,6 +216,21 @@ class ProductViewer(AppWidget):
             detail_value.grid(row=start_row,column=1,sticky="w")
             start_row += 1
             self.product_detail_packs.append([key,detail_var,detail_value])
+            
+        self.export_customers_button = ttk.Button(
+            self.product_info_frame,
+            text = "Export Customers List",
+            command = self.export_customers
+        )
+        self.export_customers_button.grid(row=start_row,column=0,padx=5,sticky="w")    
+
+        self.search_cafe24_button = ttk.Button(
+            self.product_info_frame,
+            text = "Search Code in Cafe24",
+            command = self.search_cafe24
+        )
+        self.search_cafe24_button.grid(row=start_row,column=1,padx=5,sticky="w")    
+        start_row += 1
 
         self.main_image_url_label = ttk.Label(self.product_info_frame,text = "Image URL")        
         self.main_image_url_label.grid(row=0,column=3,rowspan=10,sticky="e",padx=15)

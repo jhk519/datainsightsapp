@@ -42,7 +42,7 @@ BUG = logging.getLogger(__name__).debug
 """
 
 
-def main(rpack, di_dbs,mirror_breakdown=None):
+def main(rpack, di_dbs,breakdown_keys=None,ignore_numbers=None):
     raw_metrics_ref = {
         "Count Of Items": [count_of_items,"odb"],
         "Revenue By Item": [revenue_by_item,"odb"],
@@ -51,6 +51,7 @@ def main(rpack, di_dbs,mirror_breakdown=None):
         "Order Size": [order_size,"odb"],
         "Count Of Pageviews": [count_of_pageviews,"tdb"],
         "Count Of Visitors": [count_of_visitors,"tdb"],
+        "Count of Cancels By Item": [count_of_cancels_by_item,"odb"]
     }    
     xtype = rpack["x_axis_type"]
     data_cfg = rpack["data_filters"]
@@ -69,10 +70,69 @@ def main(rpack, di_dbs,mirror_breakdown=None):
     # GATHER RAW METRIC DATA
     if xtype == "date_series":
         raw_date_list = _gen_dates_list(data_cfg["start_datetime"], data_cfg["end_datetime"])
-        date_list, result_dict = raw_metric_func(filtered_db,raw_date_list,metric_cfg,mirror_breakdown)
+        date_list, result_dict = raw_metric_func(filtered_db,
+                                                 raw_date_list,
+                                                 metric_cfg,
+                                                 breakdown_keys,
+                                                 ignore_numbers=ignore_numbers)
         return  date_list, result_dict
     
-def count_of_items(odb, date_list, mcfg,breakdown_keys=None):
+def count_of_cancels_by_item(odb,date_list,mcfg,breakdown_keys,**args):
+    LOG("Starting Cancels by Items")
+    metric = mcfg["metric"]
+    mtype = mcfg["metric_type"]
+    datatype = mcfg["data_type"]
+    breakdown = mcfg["breakdown"]
+    n_breakdown = mcfg["number_of_rankings"]  
+    
+    """    
+        "proper_tile": "Count of Cancels By Item (BETA)",
+        "metric_types": ["Include Full Order Cancels", "Exclude Full Order Cancels"],
+        "data_types": ["Sum","Percentage","% of Total Sales BETA"],
+        "breakdown_types": ["None","Top Products","Top Categories","Gen. Platform","Spec.Platform"]  
+    """
+
+    odb = odb.loc[odb['cancel_status'] != "취소안함"]
+
+    # METRIC TYPE FILTERING 
+    if mtype == "Include Full Order Cancels":
+        LOG("No masking needed, because fully cancelled orders included.")
+    elif mtype == "Exclude Full Order Cancels":
+        LOG("Masking DB to only include non-cancelled items.")
+        odb = odb.loc[odb['cancel_status'] == "취소"]
+    else:
+        BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric)) 
+        
+    top_counts,bkdwn_column_str,odb = get_top_counts_and_bkdwn_column_str(odb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="line_orders")       
+    
+    if top_counts == []:
+        BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))   
+    result_dict = gen_result_dict(top_counts,date_list)     
+    LOG("Iterating Over Rows")           
+    for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = 1
+        
+        if not breakdown == "None":
+            result_dict_key = getattr(row_tuple, bkdwn_column_str)
+        else:
+            result_dict_key = "All"
+            
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)           
+                
+    LOG("DONE")        
+        
+           
+    if datatype == "Percentage":
+        return convert_to_percentages(date_list,result_dict)
+    
+    return date_list, result_dict        
+
+def count_of_items(odb, date_list, mcfg,breakdown_keys,**args):
     LOG("Starting Count of Items")
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
@@ -120,7 +180,7 @@ def count_of_items(odb, date_list, mcfg,breakdown_keys=None):
     
     return date_list, result_dict
 
-def revenue_by_item(odb, date_list, mcfg,breakdown_keys=None):
+def revenue_by_item(odb, date_list, mcfg,breakdown_keys,**args):
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
@@ -172,13 +232,20 @@ def revenue_by_item(odb, date_list, mcfg,breakdown_keys=None):
     
     return date_list, result_dict
 
-def count_of_orders(odb,date_list, mcfg, breakdown_keys=None):    
+#def count_of_orders(odb,date_list, mcfg, breakdown_keys,**args): 
+def count_of_orders(odb,date_list, mcfg,breakdown_keys, **args): 
+   
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
     breakdown = mcfg["breakdown"]
     n_breakdown = mcfg["number_of_rankings"]   
     
+    ignore_numbers = args["ignore_numbers"]
+    if ignore_numbers is None:
+        ignore_numbers = []
+#    ignore_numbers = []
+        
     odb = odb.drop_duplicates(subset="order_id")
     
     # METRIC TYPE FILTERING 
@@ -201,23 +268,32 @@ def count_of_orders(odb,date_list, mcfg, breakdown_keys=None):
         
     result_dict = gen_result_dict(top_counts,date_list)
         
-    LOG("Iterating Over Rows")           
+    LOG("Iterating Over Rows") 
+    
     for row_tuple in odb.itertuples():
-        date_index =  date_list.index(row_tuple.date)
-        val_to_add = 1
-            
-        if not breakdown == "None":
+        if breakdown == "None":
+            result_dict_key = "All"        
+        else:
+            date_index =  date_list.index(row_tuple.date)
+            val_to_add = 1
+                
             if breakdown == "Customer's Nth Order":
-                nth_order = getattr(row_tuple, "order_count") + 1
-                if nth_order >= 5:
-                    result_dict_key = "5"
+                try: 
+                    nth_order = int(getattr(row_tuple, "order_count") )
+                except ValueError:
+#                    nth_order_got = getattr(row_tuple, "order_count") 
+                    continue  
+                phone_number = str(getattr(row_tuple, "customer_phone_number"))
+                
+                if phone_number in ignore_numbers:
+                    result_dict_key = "IGNORE_NUMBER"
+                elif nth_order >= n_breakdown:
+                    result_dict_key = str(top_counts[n_breakdown-1])
                 else:
                     result_dict_key= str(nth_order) 
             else:
                 result_dict_key = getattr(row_tuple, bkdwn_column_str)
-        else:
-            result_dict_key = "All"
-            
+                
         result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)       
         
     LOG("DONE")
@@ -227,7 +303,7 @@ def count_of_orders(odb,date_list, mcfg, breakdown_keys=None):
     
     return date_list, result_dict
 
-def revenue_by_order(odb, date_list, mcfg,breakdown_keys=None):    
+def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):    
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
@@ -285,7 +361,7 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys=None):
     
     return date_list, result_dict            
             
-def order_size(odb,date_list, mcfg,breakdown_keys=None):    
+def order_size(odb,date_list, mcfg,breakdown_keys,**args):    
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
@@ -334,7 +410,7 @@ def order_size(odb,date_list, mcfg,breakdown_keys=None):
     
     return date_list, result_dict  
 
-def count_of_pageviews(tdb, date_list, mcfg, breakdown_keys=None):
+def count_of_pageviews(tdb, date_list, mcfg, breakdown_keys,**args):
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
@@ -358,7 +434,7 @@ def count_of_pageviews(tdb, date_list, mcfg, breakdown_keys=None):
         return convert_to_averages(date_list,result_dict)        
     return date_list, result_dict 
 
-def count_of_visitors(tdb, date_list, mcfg, breakdown_keys=None):
+def count_of_visitors(tdb, date_list, mcfg, breakdown_keys,**args):
     metric = mcfg["metric"]
     mtype = mcfg["metric_type"]
     datatype = mcfg["data_type"]
@@ -460,17 +536,22 @@ def get_top_counts_and_bkdwn_column_str(db_prime,breakdown,n_breakdown,force_top
         
     elif bkdwn_column is None:
         # SPECIAL FORCED OR MANUAL TOP_COUNTS
-        if not force_top_count is None:
-            top_counts = force_top_count
-        elif breakdown == "None":
+#        if not force_top_count is None:
+#            top_counts = force_top_count
+        if breakdown == "None":
             top_counts = ["All"]    
         elif breakdown == "Device":
             top_counts = ["PC","Mobile","App"]
         elif breakdown == "New/Returning":
             top_counts = ["New","Returning"] 
         elif breakdown == "Customer's Nth Order":
-            top_counts = ["1", "2", "3", "4","5"]
+            top_counts = [str(num) for num in range(1,n_breakdown+1)]
+            top_counts[-1] += "+"
+            top_counts.append("IGNORE_NUMBER")
             
+    if not force_top_count is None:
+        top_counts = force_top_count            
+        
     return top_counts,bkdwn_column,db_prime
 
 def convert_to_averages(date_list,result_dict):
@@ -551,9 +632,20 @@ def apply_time_mask(db,start,end):
 
 def apply_product_mask(db,filtertype,value):
     if filtertype == "Product Code":
-        db = db.loc[db['product_cafe24_code'] == value]
+        if "," in value:
+            values_iter = value.split(",")
+#            print(values_iter)
+            db = db.loc[db['product_cafe24_code'].isin(values_iter)]
+#            df.loc[df['column_name'].isin(some_values)]
+        else:
+            db = db.loc[db['product_cafe24_code'] == value]
     elif filtertype == "Category":
-        db = db.loc[db['category'] == value] 
+        if "," in value:
+            values_iter = value.split(",")
+#            print(values_iter)
+            db = db.loc[db['category'].isin(values_iter)]        
+        else:
+            db = db.loc[db['category'] == value] 
     return db
 
 def apply_platform_mask(db,filtertype):

@@ -121,7 +121,9 @@ class SettingsManager(AppWidget):
     def edit_events(self,masterindex):
         self.log("Editing Events, located at index: {}".format(masterindex))
         self.events_list = []
+        
         events_string = self.setting_packs[masterindex][2].get()
+        
         for index, event in enumerate(events_string.split("%%")):
             event_parts = event.split(",")
             name_var = tk.StringVar(value=event_parts[0])
@@ -129,12 +131,19 @@ class SettingsManager(AppWidget):
             end_date = event_parts[2]
             self.events_list.append([name_var,start_date,end_date])            
         self.extra_window["text"] = "Edit Events"
+        
         for child in self.extra_window.winfo_children():
             child.destroy()        
-        save_events_button = ttk.Button(self.extra_window,text="Save Events",
-            command=lambda index=index: self.save_events(masterindex))    
+ 
         last_row = self.populate_extra_window_for_events(self.events_list,index)
-        save_events_button.grid(row=last_row,column=0,sticky="w",columnspan=1,padx=(10,10),pady=(15,0))  
+        
+        add_events_button = ttk.Button(self.extra_window,text="Add An Event",
+            command=lambda index=index: self.add_events(masterindex))         
+        add_events_button.grid(row=last_row,column=0,sticky="nw",pady=(15,0),padx=(15,15))
+        
+        save_events_button = ttk.Button(self.extra_window,text="Save Events",
+            command=lambda index=index: self.save_events(masterindex))         
+        save_events_button.grid(row=last_row,column=1,sticky="nw",columnspan=1,pady=(15,0))  
         
     def populate_extra_window_for_events(self,events_list,masterindex=0):
 
@@ -170,19 +179,29 @@ class SettingsManager(AppWidget):
             real_row_count += 2
             
         return real_row_count
+    
+    def add_events(self,masterindex):
+         self.log("Adding event, located at masterindex:{}".format(masterindex))
+         events_string = self.setting_packs[masterindex][2].get()     
+         new_events_string = events_string + "%%New Event,20180101,20180101"
+         self.setting_packs[masterindex][2].set(new_events_string)
+         
+         self.edit_events(masterindex)
 
     def save_events(self,masterindex):
         self.log("Saving events, located at masterindex:{}".format(masterindex))
         all_events_str = ""
         temp_iter = []
+        
         for event_tuple in self.events_list:
             add_str = ",".join([event_tuple[0].get(),event_tuple[1],event_tuple[2]])
-            self.log("Adding {}".format(add_str))
+#            self.log("Adding {}".format(add_str))
             temp_iter.append(add_str)
         all_events_str = "%%".join(temp_iter)
+        
         self.setting_packs[masterindex][2].set(all_events_str)
         self._validate_and_set(masterindex)
-        self.log("Final string: {}".format(all_events_str))
+#        self.log("Final string: {}".format(all_events_str))
             
     def set_new_color(self, settingrowcolumn):
         indexrow, indexcolor = settingrowcolumn
@@ -220,7 +239,10 @@ class SettingsManager(AppWidget):
                 string = string + "-" + color_button["background"]
             stvar.set(string)
         curr_val = stvar.get()
-        self.log("For setting: {}, curr_val now: {}".format(label["text"],curr_val))
+        try:
+            self.log("For setting: {}, curr_val now: {}".format(label["text"],curr_val))
+        except UnicodeEncodeError:
+            self.log("For setting: {}, curr_Val changed.".format(label["text"],curr_val))
         self.parser.set(header,label["text"],set_type+"$$"+curr_val)
         with open('settings//user_settings.ini', 'w') as configfile:
             self.parser.write(configfile)

@@ -75,7 +75,7 @@ backend_settings = {
                 "proper_title":"Product Database",
                 "core": "product_data",
                 "appends_list": [],
-                "match_on_key": "sku_code"
+                "match_on_key": "sellmate_barcode"
             },
             
             "cdb":{
@@ -110,6 +110,7 @@ backend_settings = {
                 
                 "주문자휴대전화": "customer_phone_number",
                 "주문자ID": "customer_id",
+                "카데고리": "category",
                 
                 "취소구분":"cancel_status",
         
@@ -153,12 +154,15 @@ backend_settings = {
                 "매출": "revenue"
             },
             "product_data": {
-                "product_code": "product_cafe24_code",
-                "option_text": "option_text",
-                "main_image_url": "main_image_url",
-                "sku_image_url": "sku_image_url",
-                "category": "category",
-                "sku_code": "sku_code",                         
+                "바코드번호": "sku_sellmate_code",
+                "상품분류": "product_brand",
+                "상품명": "product_name",
+                "옵션내용": "sku_option_text",
+                "대표이미지주소": "product_img_url",
+                "상품코드": "product_cafe24_code",
+                "상품등록일자": "upload_date",
+                "상품메모1": "product_h_code",
+                "옵션메모3": "sku_h_code",                        
             },
                     
             "customer_data": {
@@ -177,8 +181,15 @@ backend_settings = {
         "automatic export location": "exports\search_results", 
         "automatically open excel exports": True,
         "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520",
-        "breakdown colors": "firebrick-dodgerblue-seagreen-darkorchid-gray-yellow-salmon-deeppink",
-        
+        "breakdown colors": "#f5010a-#8000ff-#ff8040-#0080c0-#00ff00-#ffff00-#808040-#800000-#ff80ff-#666666-salmon-#0000ff",
+        "ignore_numbers": ["010-0000-0000",
+                           "000-0000-0000",
+                           "010-000-0000",
+                           "010-1111-1111",
+                           "010-111-1111",
+                           "010-0000-0000",
+                           "nan",
+                           "0"]  
     },
     "querypanel":{
         "setdates_on_load": True,
@@ -222,6 +233,12 @@ backend_settings = {
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Average"],
                         "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                        
+                    },
+                    "count_of_cancels_by_item":{
+                        "proper_title": "Count of Cancels By Item",
+                        "metric_types": ["Include Full Order Cancels", "Exclude Full Order Cancels"],
+                        "data_types": ["Sum","Percentage","% of Total Sales (BETA)"],
+                        "breakdown_types": ["None","Top Products","Top Categories","Gen. Platform","Spec.Platform"]
                     }
                 }
             },

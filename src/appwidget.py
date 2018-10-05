@@ -414,8 +414,8 @@ class ProductViewerEngine():
                 self.bug("No orders for this product code: {}".format(code))
                 return "no_results"
             else:
-                dropped = filtered_odb.drop_duplicates(subset="customer_phone_number")
-                return dropped
+#                dropped = filtered_odb.drop_duplicates(subset="customer_phone_number")
+                return filtered_odb
         else:
             self.bug("No Code Given")
             return "no_code_given"
@@ -508,7 +508,7 @@ class AnalysisPageEngine():
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug   
         
-    def get_results_pack(self,pack,dbvar,event_string):
+    def get_results_pack(self,pack,dbvar,event_string,ignore_numbers):
         self.log("Start results_pack generation.")
         need_mirror = False
         compare_days_str = pack["result_options"]["compare_to_days"]
@@ -527,8 +527,10 @@ class AnalysisPageEngine():
         date_list = []
         m_datelist = []
         list_of_plot_tuples = []
-        date_list, result_dict = queries.main(pack,dbvar)
+        date_list, result_dict = queries.main(pack,dbvar,ignore_numbers=ignore_numbers)
         breakdown_keys = list(result_dict["lines"].keys())
+        
+#        PRETTYPRINT(result_dict)
         
         date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
         list_of_plot_tuples = self.generate_list_of_plot_tuples(result_dict,
@@ -540,7 +542,10 @@ class AnalysisPageEngine():
         if need_mirror:
             pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))
             pack["data_filters"]["end_datetime"] = (pack["data_filters"]["end_datetime"] - datetime.timedelta(compare_int))
-            m_datelist,m_resultdict = queries.main(pack,dbvar,mirror_breakdown=breakdown_keys)
+            m_datelist,m_resultdict = queries.main(pack,
+                                                   dbvar,
+                                                   breakdown_keys=breakdown_keys,
+                                                   ignore_numbers=ignore_numbers)
                 
             m_datelist = [chunk[0] for chunk in self.get_chunks(m_datelist,agg_len)]
             list_of_plot_tuples = self.generate_list_of_plot_tuples(

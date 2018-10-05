@@ -131,7 +131,7 @@ class DataInsightsApp(tk.Tk):
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.4.0 - 2018/10/03"
+    ver = "v0.4.1 - 2018/10/04"
     if not os.path.exists(r"debug\\"):
         os.mkdir(r"debug\\")
     logging.basicConfig(filename=r"debug\\{}".format(logname),

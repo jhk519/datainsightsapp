@@ -62,7 +62,7 @@ class AnalysisPage(AppWidget):
 # ================================================================       
         
     def request_and_graph_data(self,request_pack):
-        self.log("***START*** search query.")     
+        self.log("****************** START REQUEST ****************** .")     
         self.last_request_pack = request_pack
         date_list,m_datelist,merged_list_of_plot_tuples = self.engine.get_results_pack(
                 request_pack,
@@ -77,7 +77,7 @@ class AnalysisPage(AppWidget):
  
         self.draw_graph(self.last_graphing_pack)
         self.datatable.update_table(self.last_table_pack)
-        self.log("***END*** Search Query")
+        self.log("****************** END REQUEST ******************")
         
 # ================================================================
 # ================================================================

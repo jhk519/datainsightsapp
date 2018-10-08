@@ -123,7 +123,7 @@ class GraphFrame(AppWidget):
             self.canvas.draw_idle()                    
 
     def update_graph(self,gr_pk):
-        
+#        PRETTYPRINT(gr_pk)
         """
         {'axis': 'left',
          'breakdown_colors': ['firebrick',
@@ -253,7 +253,7 @@ class GraphFrame(AppWidget):
                     start_str = event_tuple[1]
                     end_str = event_tuple[2]
                     
-                    self.log("{}: {} -> {}".format(name_str,start_str,end_str))
+                    self.log("{} -> {}".format(start_str,end_str))
                     start_date = datetime.date(int(start_str[0:4]),int(start_str[4:6]),int(start_str[6:8]))
                     end_date = datetime.date(int(end_str[0:4]),int(end_str[4:6]),int(end_str[6:8]))
                     axis_left_lim = matplotlib.dates.num2date(self.axis_prime.get_xlim()[0]).date()      
@@ -283,13 +283,13 @@ class GraphFrame(AppWidget):
                     stagger_y = 0.95 - (0.10*e_index)                    
                     self.axis_prime.text(final_left_top[0]+ 0.01,stagger_y,
                         s=name_str,horizontalalignment="left",
-                        transform=self.axis_prime.transAxes)
+                        transform=self.axis_prime.transAxes,
+                        fontproperties=propF)
 #
 #    #       GENERAL FORMATTING
 
         self.my_legend = self.axis_prime.legend(
-#                loc=0,
-#                ncol=5,
+                ncol=2,
                 fontsize="x-small",
 #                borderaxespad=-0.1,
                 markerscale=0.6,

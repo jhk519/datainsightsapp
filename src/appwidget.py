@@ -66,8 +66,8 @@ class AppWidget(tk.Frame):
             self.engine = ProductViewerEngine()
         elif self.widget_name == "multigrapher":
             self.engine = MultiGrapherEngine()
-        elif self.widget_name == "settingsmanager":
-            self.engine = SettingsManagerEngine()
+#        elif self.widget_name == "settingsmanager":
+#            self.engine = SettingsManagerEngine()
             return
         else:
             self.bug("{} does not match any available engines".format(self.widget_name))
@@ -181,11 +181,11 @@ class CreateToolTip(object):
     """
     create a tooltip for a given widget
     CREDIT FOR THIS CLASS HERE:
-        crxguy52 @ https://stackoverflow.com/questions/3221956/how-do-i-display-tooltips-in-tkinter
+    crxguy52 @ https://stackoverflow.com/questions/3221956/how-do-i-display-tooltips-in-tkinter
     """
     def __init__(self, widget, text='widget info'):
-        self.waittime = 500     #miliseconds
-        self.wraplength = 180   #pixels
+        self.waittime = 400     #miliseconds
+        self.wraplength = 280   #pixels
         self.widget = widget
         self.text = text
         self.widget.bind("<Enter>", self.enter)
@@ -214,8 +214,8 @@ class CreateToolTip(object):
     def showtip(self, event=None):
         x = y = 0
         x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
+        x += self.widget.winfo_pointerx() + 5
+        y += self.widget.winfo_rooty() + 25
         # creates a toplevel window
         self.tw = tk.Toplevel(self.widget)
         # Leaves only the label and removes the app window
@@ -510,6 +510,7 @@ class AnalysisPageEngine():
         
     def get_results_pack(self,pack,dbvar,event_string,ignore_numbers):
         self.log("Start results_pack generation.")
+        
         need_mirror = False
         compare_days_str = pack["result_options"]["compare_to_days"]
         try: 
@@ -519,6 +520,7 @@ class AnalysisPageEngine():
         else:
             if compare_int > 0:
                 need_mirror = True
+
                 
         agg_len = pack["result_options"]["aggregation_period"]
         agg_type = pack["result_options"]["aggregation_type"]   
@@ -528,16 +530,18 @@ class AnalysisPageEngine():
         m_datelist = []
         list_of_plot_tuples = []
         date_list, result_dict = queries.main(pack,dbvar,ignore_numbers=ignore_numbers)
-        breakdown_keys = list(result_dict["lines"].keys())
-        
-#        PRETTYPRINT(result_dict)
         
         date_list = [chunk[0] for chunk in self.get_chunks(date_list,agg_len)]
         list_of_plot_tuples = self.generate_list_of_plot_tuples(result_dict,
                                                                 list_of_plot_tuples,
                                                                 agg_len,
-                                                                agg_type)   
-                
+                                                                agg_type)         
+        
+        if pack["result_options"]["use_new_breakdowns"]:
+            breakdown_keys = None
+        else:
+            breakdown_keys = list(result_dict["lines"].keys())
+
         # COLLECT MIRROR DATA IF NEEDED
         if need_mirror:
             pack["data_filters"]["start_datetime"] = (pack["data_filters"]["start_datetime"] - datetime.timedelta(compare_int))

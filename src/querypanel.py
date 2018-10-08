@@ -69,6 +69,9 @@ class QueryPanel(AppWidget):
         self.current_compare_to_days_var = tk.StringVar()
         self.current_compare_to_days_var.set(0)
         
+        self.use_new_breakdowns_var = tk.BooleanVar()
+        self.use_new_breakdowns_var.set(False)
+        
         # GRAPH
         self.current_linestyle_var = tk.StringVar() 
         self.color_button_widget = None
@@ -79,6 +82,8 @@ class QueryPanel(AppWidget):
         self.current_force_y_axis_var = tk.BooleanVar()
         self.current_force_y_axis_min_var = tk.IntVar()
         self.current_force_y_axis_max_var = tk.IntVar()
+        
+
         
         # BUILD 
         self.build_skeleton()
@@ -147,6 +152,7 @@ class QueryPanel(AppWidget):
         current_category =  self.current_category_var.get().replace(" ","_").lower() 
         current_metric = self.current_metric_var.get().replace(" ","_").lower()
         self.log("Current metric: {}".format(current_metric))
+        self.current_force_y_axis_var.set(False)        
         required_metric_dict = self.get_cfg_val("queries")[current_category]["metrics"][current_metric]
         self.update_metric_menus(required_metric_dict)
         
@@ -179,6 +185,7 @@ class QueryPanel(AppWidget):
                 "aggregation_period":self.current_aggregation_period_var.get(),
                 "aggregation_type":self.current_aggregation_type_var.get(),
                 "compare_to_days":self.current_compare_to_days_var.get(),
+                "use_new_breakdowns":self.use_new_breakdowns_var.get(),
             },
             "graph_options": {
                 "line_style":self.current_linestyle_var.get(),
@@ -407,7 +414,12 @@ class QueryPanel(AppWidget):
         tk.Label(targ_frame,text="Compare to X Days Before:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         tk.Spinbox(targ_frame, from_=0.0, to=365.0, wrap=True, width=4, 
                    validate="key", state="normal",textvariable=self.current_compare_to_days_var).grid(
-                           row=rown,column=1,sticky="w",columnspan=15)          
+                           row=rown,column=1,sticky="w",columnspan=15)     
+        rown += 1
+        
+        tk.Label(targ_frame,text="Use New Breakdown for Comparison:").grid(row=rown, column=0,sticky="w")
+        ttk.Checkbutton(targ_frame, variable=self.use_new_breakdowns_var,
+                        onvalue=True,offvalue=False).grid(row=rown, column=1, sticky="w",padx=(5,0))              
 
     # GRAPH OPTIONS BUILD
         
@@ -424,16 +436,16 @@ class QueryPanel(AppWidget):
                 row=rown,column=4,sticky="w")        
         rown += 1        
 
-        tk.Label(targ_frame,text="Line Style:").grid(row=rown, column=0,sticky="w")
+        tk.Label(targ_frame,text="Line Style & Color:").grid(row=rown, column=0,sticky="w")
         x = ttk.Combobox(targ_frame, textvariable=self.current_linestyle_var,width=2,
          values=["-","--","-.",":"],state="readonly")
-        x.grid(row=rown, column=1,columnspan=4, sticky="w",padx=(5,0)) 
+        x.grid(row=rown, column=1,columnspan=1, sticky="w",padx=(5,0)) 
         x.current(0)
-        rown += 1
-
-        tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
+#        rown += 1
+#
+##        tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
         self.color_button_widget = tk.Button(targ_frame,width=1,height=1,command=self._ux_choose_color)
-        self.color_button_widget.grid(row=rown,column=1,columnspan=2,padx=(5,0),sticky="w",pady=(5,5))
+        self.color_button_widget.grid(row=rown,column=2,columnspan=3,padx=(5,0),sticky="w",pady=(5,5))
         self.color_button_widget.configure(background="black")
         rown += 1
         

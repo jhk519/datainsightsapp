@@ -16,29 +16,97 @@ Created on Fri Jun 22 00:58:46 2018
 
 backend_settings = {
     "settingsmanager":{
-        "descriptions": {
             "dbmanager": {
-                "loaddb_on_load":"Automatically load database file on app startup.",
-                "loaddb_loc":"File location for automatic load database on startup.",
-                "automatic db export":"Automatically choose file location for database export.",
-                "automatic export location":"File location for automatic database export",
+                "proper_title": "Database Manager",
+                "settings":{
+                    "loaddb_on_load": {
+                        "proper_title": "Auto-load Databases On Startup",
+                        "description": "If ON, app will automatically load the database on start-up.",
+                        "type":"bool"
+                    },
+                    "loaddb_loc": {
+                        "proper_title": "File Location for DB auto-load.",
+                        "description": "For automatic loading on app startup, will use the file at this location.",
+                        "type": "fileloc",
+                    },
+                    "automatic db export": {
+                        "proper_title": "Auto-choose File Location for DB Export",
+                        "description": "If ON, app will automatically export Databases. \nIf OFF, app will prompt user for name and location for export.",
+                        "type": "bool",
+                    },
+                    "automatic export location": {
+                        "proper_title": "Folder Location for Auto-choose DB Export",
+                        "description": "If automatic db export is ON, will use this folder location for export.",
+                        "type": "dirloc",
+                    }
+                }
             },
             "analysispage": {
-                "automatic search export": "Automatically choose file location export search results.",
-                "automatic export location": "File location for automatic search result export.",
-                "setdates_on_load": "Automatically set dates on loading.",
-                "automatically open excel exports": "Automatically open Excels after exporting results.",
-                "event_list": "List of Events",
-                "breakdown colors": "In the case of data breakdowns, use these colors for breakdown lines."
+                "proper_title": "Analysis Page",
+                "settings":{
+                    "automatic search export": {
+                        "proper_title": "Auto-choose File Location for Results Exports",
+                        "description":  "If ON, app will automatically choose location and filename of search result exports. \nIf OFF, app will prompt user for name and location for export.",
+                        "type": "bool",
+                    },
+                    "automatic export location": {
+                        "proper_title": "Folder Location for Auto-Choose Results Exports",
+                        "description":  "If automatic db export is ON, will use this folder location for export.",
+                        "type": "dirloc",
+                    },
+
+                    "automatically open excel exports":  {
+                        "proper_title": "Open Excels After Results Exports",
+                        "description": "If ON, Excel search result exports will automatically open.",
+                        "type": "bool"
+                    },
+                    "event_list":  {
+                        "proper_title": "List of Events",
+                        "description": "List of Events to be used in search results.",
+                        "type": "event_dates",
+                    },
+                    "breakdown colors":  {
+                        "proper_title": "Colors for Multi-Line Breakdowns",
+                        "description": "When splitting data into multiple breakdowns, will use the following colors in order.",
+                        "type": "colors"
+                    },
+                    "ignore_numbers": {
+                        "proper_title":"Customer Phone Numbers to Ignore",
+                        "description":"When applying metrics involving 'Customer's Nth Order', orders using these numbers will be ignored and set aside separately.",
+                        "type":"phone_numbers",
+                    },
+                }
             },
             "querypanel": {
-                "setdates_gap": "The required number of days between automatic date setting on startup.",
-                "setdates_from_date": "The end date for automatic date settings on startup."
+                "proper_title": "Query Panel",
+                "settings":{
+                    "setdates_gap":  {
+                        "proper_title": "Number of Days for Auto-Setting of Dates",
+                        "description": "If Set Dates on Start-up is ON, will set this many days between Start and End Dates.",
+                        "type": "int",
+                    },
+                    "setdates_from_date": {
+                        "proper_title": "End Date for Dates Auto-Setting",
+                        "description":  "If Sets Dates on Start-up is ON, will use this date as the END date.",
+                        "type": "date",
+                    },
+                    "setdates_on_load": {
+                        "proper_title": "Set Dates on Start-up",
+                        "description":  "If ON, will set dates automatically on app start-up. If OFF, date will be Yesterday.",
+                        "type": "bool",
+                    },
+                }
             },
             "productviewer": {
-                "automatic export location": "File location for exporting customer order lists."
+                "proper_title": "Product Viewer",
+                "settings":{
+                    "automatic export location":  {
+                        "proper_title": "Folder Location for Data Exports",
+                        "description": "Folder location for exporting data from Product Viewer.",
+                        "type": "dirloc",
+                    }
+                }
             }
-        }
     },
             
     "dbmanager":{
@@ -181,15 +249,8 @@ backend_settings = {
         "automatic export location": "exports\search_results", 
         "automatically open excel exports": True,
         "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520",
-        "breakdown colors": "#f5010a-#8000ff-#ff8040-#0080c0-#00ff00-#ffff00-#808040-#800000-#ff80ff-#666666-salmon-#0000ff",
-        "ignore_numbers": ["010-0000-0000",
-                           "000-0000-0000",
-                           "010-000-0000",
-                           "010-1111-1111",
-                           "010-111-1111",
-                           "010-0000-0000",
-                           "nan",
-                           "0"]  
+        "breakdown colors": "#008080-#004993-#fc5f7a-#00ff40-#d7d700-#888888-#8000ff-#f5010a-#fee0e6-#180105-#ff8040-#3c9dff",
+        "ignore_numbers": "010-0000-0000%%000-0000-0000%%010-000-0000%%010-1111-1111%%010-111-1111%%010-0000-0000%%nan%%0",
     },
     "querypanel":{
         "setdates_on_load": True,

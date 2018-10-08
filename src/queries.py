@@ -271,12 +271,12 @@ def count_of_orders(odb,date_list, mcfg,breakdown_keys, **args):
     LOG("Iterating Over Rows") 
     
     for row_tuple in odb.itertuples():
+        date_index =  date_list.index(row_tuple.date)
+        val_to_add = 1
+        
         if breakdown == "None":
             result_dict_key = "All"        
-        else:
-            date_index =  date_list.index(row_tuple.date)
-            val_to_add = 1
-                
+        else:                
             if breakdown == "Customer's Nth Order":
                 try: 
                     nth_order = int(getattr(row_tuple, "order_count") )
@@ -574,6 +574,7 @@ def convert_to_percentages(date_list,result_dict):
     return date_list, result_dict
     
 def get_filtered_dbs(di_dbs,req_db,filters,xtype):
+#    PRETTYPRINT(filters)
     the_db = di_dbs[req_db].copy()
     
     if xtype == "date_series":   
@@ -588,6 +589,7 @@ def get_filtered_dbs(di_dbs,req_db,filters,xtype):
         if c_or_p_choice == "All":
             LOG("User chose no category/product filter.")
         elif c_or_p_choice == "Product Code" or c_or_p_choice == "Category":
+            LOG("User chose {} produdt/category filter.".format(entryinput))
             the_db = apply_product_mask(the_db,c_or_p_choice,entryinput)
     else:
         LOG("This metric cannot apply a category or product mask.")
@@ -595,7 +597,7 @@ def get_filtered_dbs(di_dbs,req_db,filters,xtype):
     platform_choice = filters["platform"]   
     if not platform_choice == "DEFAULT_IGNORE":           
         if platform_choice == "All":
-            LOG("User chose no category/product filter.")
+            LOG("User chose no platform filter.")
         elif platform_choice == "Mobile" or platform_choice == "PC":
             LOG("User chose {} platform filter.".format(platform_choice))
             the_db = apply_platform_mask(the_db,platform_choice)
@@ -640,11 +642,14 @@ def apply_product_mask(db,filtertype,value):
         else:
             db = db.loc[db['product_cafe24_code'] == value]
     elif filtertype == "Category":
+#        print(filtertype)
         if "," in value:
             values_iter = value.split(",")
+#            print(va)
 #            print(values_iter)
             db = db.loc[db['category'].isin(values_iter)]        
         else:
+#            print(value)
             db = db.loc[db['category'] == value] 
     return db
 

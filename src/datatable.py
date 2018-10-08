@@ -12,15 +12,6 @@ except ImportError:  # Python 3
     import tkinter as tk
     import tkinter.ttk as ttk
 
-# Tkinter Modules
-try:
-    import Tkinter as tk
-    import tkFont
-    import ttk
-except ImportError:  # Python 3
-    import tkinter as tk
-    import tkinter.ttk as ttk
-
 # Standard Modules
 from pprint import pprint
 import pickle

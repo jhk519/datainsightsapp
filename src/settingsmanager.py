@@ -1,22 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May  2 22:57:53 2018
+Created on Mon Oct  8 09:20:22 2018
 
 @author: Justin H Kim
-
-settingsmanager acts as a way to make changes to the default config2 dictionary. 
-it loads user_settings.ini, and parses the section header and the key:value pairs 
-by config2[SECTION_HEADER][key] = value, it replaces the config2 dict in memory 
-BUT DOES NOT make changes to it directly. 
-
-When user makes change:
-(Possible setting change handler before validating, see: .set_new_color )
-.validate_and_set() - rewrite ini, and replace on disk. 
-.reload_ini_and_propagate_new_cfg()
-    .update_settings
-        .engine.load_ini_settings
-    .controller.propagate_settings()
 """
+
 # Tkinter Modules
 try:
     import Tkinter as tk
@@ -30,12 +18,13 @@ except ImportError:  # Python 3
 
 # Standard Modules
 import configparser 
-from pprint import pprint as PPRINT
+from pprint import pprint as PRETTYPRINT
 import logging
 import os
 import pickle
 import datetime
 import copy 
+import codecs
 
 # Project Modules    
 from appwidget import AppWidget,CreateToolTip
@@ -45,28 +34,34 @@ class SettingsManager(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "settingsmanager"
         super().__init__(parent,controller,config,dbvar)
-            
-        self.parser = configparser.ConfigParser()   
-        self.app_cfg = config
-        self.setting_packs = []
-        self.user_settings = []
+        self.engine = SettingsManagerEngine()
         
+        # AppWidget will take settingmanager's specific cfg, but we
+        # also need to store a copy of the "app"'s config separately.
+        
+        has_user_config = self.engine.load_full_config()
+        if not has_user_config:
+            self.full_config = config
+            self.bug("User's user_config.pickle file is missing. Using default settings.")
+        else:
+            self.full_config = has_user_config
+        
+        self.setting_packs = []
+        self.nums_indx = None
+        self.nums_list = []
+        self.evnt_indx = None
         self.events_list = []
         
-        self.parser.read("settings//user_settings.ini")  
-        self.app_cfg, self.user_settings = self.engine.get_updated_config(self.app_cfg, self.parser._sections)
-        
-        
         self.settings_menu = tk.LabelFrame(self, text="Menu")
-        self.settings_menu.grid(row=0,column=0,sticky="w")
-        self._build_settings(self.settings_menu)
-        self._build_entries(self.settings_menu)
+        self.settings_menu.grid(row=0,column=0,sticky="nw")
         
         self.extra_window = tk.LabelFrame(self,text="More Details")
-        self.extra_window.grid(row=0,column=1,sticky="nsew")
+        self.extra_window.grid(row=0,column=1,sticky="nsew",padx=(15,0))
+        tk.Label(self.extra_window,text=":)").grid()
         
-#        pprint(self.engine.get_config()["multigrapher"])
-        
+        self.populate_settings_menu()
+        self.build_entries()
+
         self.columnconfigure(0, weight=0)
         self.columnconfigure(1, weight=0)
         self.columnconfigure(2, weight=0)
@@ -78,144 +73,38 @@ class SettingsManager(AppWidget):
         self.columnconfigure(8, weight=0)
         self.columnconfigure(9, weight=0)
         self.columnconfigure(10, weight=0)
-        self.columnconfigure(11, weight=1)        
-        
-# ================================================================
-# ================================================================
-#       API
-# ================================================================
-# ================================================================   
+        self.columnconfigure(11, weight=1)  
         
     def get_latest_config(self,needcopy=True):
         if needcopy:
-            return copy.deepcopy(self.app_cfg)
-        return self.app_cfg   
+            return copy.deepcopy(self.full_config)
+        return self.app_cfg          
 
-    def set_new_presets(self,presetpageslist):
-        self.log("Setting new presets")
-        with open('settings//presets.pickle', 'wb') as dbfile:
-            pickle.dump(presetpageslist, dbfile) 
-        self.user_settings = []            
-        self.app_cfg, self.user_settings = self.engine.get_updated_config(self.app_cfg, self.parser._sections)
-        
-# ================================================================
-# ================================================================
-#       UX EVENT 
-# ================================================================
-# ================================================================   
-        
-    def event_date_change(self,arg):
-        eventindex,infotype = arg
-        event_tuple = self.events_list[eventindex]
-        event_info = event_tuple[infotype]
-        year,month =  int(event_info[0:4]), int(event_info[4:6])
-        date_calendar = cal_dialog.CalendarDialog(self,year=year, month=month)
-        self.log("Getting new start date")
-        try:
-            result_date = date_calendar.result.date()
-        except AttributeError:
-            self.bug("Date returned from calendar not functional: {}".format(result_date))
-        self.events_list[eventindex][infotype] = result_date.strftime("%Y%m%d")
-        self.populate_extra_window_for_events(self.events_list)
-    
-    def edit_events(self,masterindex):
-        self.log("Editing Events, located at index: {}".format(masterindex))
-        self.events_list = []
-        
-        events_string = self.setting_packs[masterindex][2].get()
-        
-        for index, event in enumerate(events_string.split("%%")):
-            event_parts = event.split(",")
-            name_var = tk.StringVar(value=event_parts[0])
-            start_date = event_parts[1]
-            end_date = event_parts[2]
-            self.events_list.append([name_var,start_date,end_date])            
-        self.extra_window["text"] = "Edit Events"
-        
-        for child in self.extra_window.winfo_children():
-            child.destroy()        
- 
-        last_row = self.populate_extra_window_for_events(self.events_list,index)
-        
-        add_events_button = ttk.Button(self.extra_window,text="Add An Event",
-            command=lambda index=index: self.add_events(masterindex))         
-        add_events_button.grid(row=last_row,column=0,sticky="nw",pady=(15,0),padx=(15,15))
-        
-        save_events_button = ttk.Button(self.extra_window,text="Save Events",
-            command=lambda index=index: self.save_events(masterindex))         
-        save_events_button.grid(row=last_row,column=1,sticky="nw",columnspan=1,pady=(15,0))  
-        
-    def populate_extra_window_for_events(self,events_list,masterindex=0):
-
-        real_row_count = 0
-        for index, event in enumerate(events_list):
-            namevar = event[0]
-            start_date = event[1]
-            end_date = event[2]
-            
-            arg = index,0
-            name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
-            name_str_widget.grid(row=real_row_count,column=0,sticky="ew",
-                                 columnspan=1,padx=(15,10),pady=(15,0))  
-            
-            
-            arg = index,1
-            start_date_widget = ttk.Button(self.extra_window,text=start_date,
-               command=lambda arg=arg: self.event_date_change(arg))  
-            start_date_widget.grid(row=real_row_count,column=1,sticky="w",
-                                   columnspan=1,padx=(10,0),pady=(15,0))      
-            
-            arg = index,2
-            end_date_widget = ttk.Button(self.extra_window,text=end_date, 
-               command=lambda arg=arg: self.event_date_change(arg))    
-            end_date_widget.grid(row=real_row_count,column=2,sticky="w",
-                                 columnspan=1,padx=(10,15),pady=(15,0)) 
-            
-    
-            event_separator = ttk.Separator(self.extra_window)
-            event_separator.grid(row=real_row_count+1,column=0,columnspan=3,sticky="ew"
-                                   ,pady=(15,0))       
-
-            real_row_count += 2
-            
-        return real_row_count
-    
-    def add_events(self,masterindex):
-         self.log("Adding event, located at masterindex:{}".format(masterindex))
-         events_string = self.setting_packs[masterindex][2].get()     
-         new_events_string = events_string + "%%New Event,20180101,20180101"
-         self.setting_packs[masterindex][2].set(new_events_string)
-         
-         self.edit_events(masterindex)
-
-    def save_events(self,masterindex):
-        self.log("Saving events, located at masterindex:{}".format(masterindex))
+    def save_events(self):
+        self.log("Saving events, located at masterindex:{}".format(self.evnt_indx))
         all_events_str = ""
         temp_iter = []
         
         for event_tuple in self.events_list:
             add_str = ",".join([event_tuple[0].get(),event_tuple[1],event_tuple[2]])
-#            self.log("Adding {}".format(add_str))
             temp_iter.append(add_str)
         all_events_str = "%%".join(temp_iter)
         
-        self.setting_packs[masterindex][2].set(all_events_str)
-        self._validate_and_set(masterindex)
-#        self.log("Final string: {}".format(all_events_str))
-            
+        self.setting_packs[self.evnt_indx][2].set(all_events_str)
+        self._ux_settings_changed(self.evnt_indx)     
+        
     def set_new_color(self, settingrowcolumn):
         indexrow, indexcolor = settingrowcolumn
         self.log("Settings new color at indexrow: {}, indexcolor: {}".format(indexrow,indexcolor))
-        header, label, stvar, set_type, entry_list = self.setting_packs[indexrow]
+        section,setting,stvar, set_type, widget_list,rown = self.setting_packs[indexrow]
         get_color = colorchooser.askcolor()[1]
-        stvar.set(get_color)
-        button = entry_list[indexcolor]
-        button["background"] = get_color
-        self._validate_and_set(indexrow)
+        widget_list[indexcolor]["background"] = get_color
+        self._ux_settings_changed(indexrow)     
         
-    def _validate_and_set(self,index):
+    def set_new_stvar_value(self,index):
         self.log("Validating and settings for index {}".format(index))
-        header, label, stvar, set_type, entry_list = self.setting_packs[index]
+        section,setting,stvar, set_type, widget_list,rown = self.setting_packs[index]
+        
         if set_type == "dirloc":
             dirloc = tk.filedialog.askdirectory() 
             dirloc = os.path.relpath(dirloc)
@@ -232,147 +121,292 @@ class SettingsManager(AppWidget):
             new_date = date_calendar.result.date()
             stvar.set(str(new_date).replace("-",""))
         elif set_type == "colors":
-            string = entry_list[0]["background"]
-            for index, color_button in enumerate(entry_list):
-                if index == 0:
-                    continue
+            string = widget_list[0]["background"]
+            for index, color_button in enumerate(widget_list[1:]):
                 string = string + "-" + color_button["background"]
-            stvar.set(string)
-        curr_val = stvar.get()
-        try:
-            self.log("For setting: {}, curr_val now: {}".format(label["text"],curr_val))
-        except UnicodeEncodeError:
-            self.log("For setting: {}, curr_Val changed.".format(label["text"],curr_val))
-        self.parser.set(header,label["text"],set_type+"$$"+curr_val)
-        with open('settings//user_settings.ini', 'w') as configfile:
-            self.parser.write(configfile)
-        self.reload_ini_and_propagate_new_cfg()
-        return 1
+            stvar.set(string)        
+        return True        
     
-    def reload_ini_and_propagate_new_cfg(self):
-        self.app_cfg, self.user_settings = self.engine.get_updated_config(self.app_cfg, self.parser._sections)
-        try:
-            self.controller.propagate_cfg_var_change
-            logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
-        except:
-            self.bug("No suitable controlelr to propagate_cfg_var")
-        else:
-            self.bug("Propagating updated settings to controller")
-            self.controller.propagate_cfg_var_change(self.app_cfg)          
-                   
-# ================================================================
-# ================================================================
-#       BUILD 
-# ================================================================
-# ================================================================   
-           
-    def _build_settings(self,frame):
-        self.log("Building settings.")
-        frame_row = 0
-        curr_section = ""
-        for user_setting_tuple in self.user_settings:
-            section_header,setting_header,final_val,set_type = user_setting_tuple
-            self.log("Building settings: {}-{} = {}".format(section_header,setting_header,final_val))
-            if not curr_section == section_header:
-                curr_section = section_header
-                section_text = section_header.replace("_config","")
-                
-                section_separator = ttk.Separator(frame)
-                section_separator.grid(row=frame_row,column=0,columnspan=10,sticky="ew",
-                                       padx=(0,45),pady=(10,5))   
-                frame_row += 1
-                
-                section_label = tk.Label(frame,text=section_text,font=("Helvetica", 12))
-                section_label.grid(row=frame_row, column=0, sticky="wn", padx=(0,25)) 
-                
-                
-                frame_row += 1
-            stvar_check_var = tk.StringVar()
-            stvar_check_var.set(str(final_val))
-            
-            title_label = ttk.Label(frame,text=setting_header)
-            title_label.grid(row=frame_row, column=0, sticky="nw", padx=(15,25),pady=7)
-            
+    def _ux_settings_changed(self,index):
+        if self.set_new_stvar_value(index):
+            self.update_full_config()
+            self.engine.save_full_config(self.full_config)
             try:
-                s = CreateToolTip(title_label, self.get_cfg_val("descriptions")[section_header][setting_header])
-            except KeyError:
-                self.bug("Missing settingsmanager description for: {}-{}".format(section_header,setting_header))
-            section_header,setting_header
-            new_pack = [section_header, title_label, stvar_check_var, set_type, []]
-            self.setting_packs.append(new_pack)
-            frame_row += 1  
+                self.controller.propagate_cfg_var_change
+                logging.info("Setting Page's Controller has .propagate_cfg_var_change method.")
+            except:
+                self.bug("No suitable controlelr to propagate_cfg_var")
+            else:
+                self.bug("Propagating updated settings to controller")
+                self.controller.propagate_cfg_var_change(self.full_config)  
+        else:
+            self.bug("Error with setting new var at index: {}".format(index))
             
-    def _build_entries(self,frame):
-        self.log("Building entries")
-        #For some reason, in order for the Entry widgets to initialize with
-        #their StVars, we have to initialize the two separate, thus,
-        #the above workaround   
-        # new_pack = [section_header, title_label, stvar_check_var, set_type, []]
-        iter_row = 0
-        curr_section = ""
+        return True       
+
+    def update_full_config(self):
+        for setting_pack in self.setting_packs:
+            section,setting,stvar, set_type, empty_widget_list,rown = setting_pack
+            python_val = self.engine._get_clean_val(stvar.get(),set_type)
+            self.full_config[section][setting] = python_val    
+            
+    def open_numbers_list(self):
+        self.log("Editing Events, located at index: {}".format(self.nums_indx))
+        raw_nums_list = self.setting_packs[self.nums_indx][2].get().split("%%")
+
+        self.extra_window["text"] = "Edit Ignore Numbers"
+        self.nums_list = []
+        
+        for child in self.extra_window.winfo_children():
+            child.destroy()  
+            
+#        raw_nums_list = ["010-0000-0000",
+#                           "000-0000-0000",
+#                           "010-000-0000",
+#                           "010-1111-1111",
+#                           "010-111-1111",
+#                           "010-0000-0000",
+#                           "nan",
+#                           "0"]            
+            
+        rown = 0
+        for num in raw_nums_list:
+            namevar = tk.StringVar()
+            namevar.set(num)
+            name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
+            name_str_widget.grid(row=rown,column=0,sticky="ew",
+                                 columnspan=1,padx=(15,10),pady=(5,0))  
+            rown += 1            
+            
+            self.nums_list.append(namevar)
+
+        ttk.Button(self.extra_window,text="Add Number",command=self.add_num).grid(
+                row=rown,column=0,sticky="nw",pady=(15,0),padx=(15,15))
+        
+        ttk.Button(self.extra_window,text="Save Number",command=self.save_nums).grid(
+                row=rown,column=1,sticky="nw",columnspan=1,pady=(15,0))   
+        
+    def add_num(self):
+        nums_str = self.setting_packs[self.nums_indx][2].get()
+        nums_str += "%%000-000-000"
+        self.setting_packs[self.nums_indx][2].set(nums_str)
+        self.open_numbers_list()
+        
+    def save_nums(self):
+        num_str = "%%".join([numvar.get() for numvar in self.nums_list])
+        self.setting_packs[self.nums_indx][2].set(num_str)
+        self._ux_settings_changed(self.nums_indx)
+            
+    def open_events_list(self):     
+        self.log("Editing Events, located at index: {}".format(self.evnt_indx))
+
+        self.events_list = []
+        for child in self.extra_window.winfo_children():
+            child.destroy()   
+        events_tuples = self.setting_packs[self.evnt_indx][2].get().split("%%")
+        
+        for index, event in enumerate(events_tuples):
+            event_parts = event.split(",")
+            name_var = tk.StringVar(value=event_parts[0])
+            start_date = event_parts[1]
+            end_date = event_parts[2]
+            self.events_list.append([name_var,start_date,end_date])  
+            
+        self.extra_window["text"] = "Edit Events"
+        self.populate_extra_window_for_events()
+
+    def populate_extra_window_for_events(self):
+        real_row_count = 0
+        for index, event in enumerate(self.events_list):
+            namevar = event[0]
+            start_date = event[1]
+            end_date = event[2]
+            
+            arg = index,0
+            name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
+            name_str_widget.grid(row=real_row_count,column=0,sticky="ew",
+                                 columnspan=1,padx=(15,10),pady=(5,0))  
+            
+            
+            arg = index,1
+            start_date_widget = ttk.Button(self.extra_window,text=start_date,
+               command=lambda arg=arg: self.event_date_change(arg))  
+            start_date_widget.grid(row=real_row_count,column=1,sticky="w",
+                                   columnspan=1,padx=(10,0),pady=(5,0))      
+            
+            arg = index,2
+            end_date_widget = ttk.Button(self.extra_window,text=end_date, 
+               command=lambda arg=arg: self.event_date_change(arg))    
+            end_date_widget.grid(row=real_row_count,column=2,sticky="w",
+                                 columnspan=1,padx=(10,15),pady=(5,0)) 
+            
+    
+            event_separator = ttk.Separator(self.extra_window)
+            event_separator.grid(row=real_row_count+1,column=0,columnspan=3,sticky="ew"
+                                   ,pady=(5,0),padx=10)       
+
+            real_row_count += 2
+            
+        add_events_button = ttk.Button(self.extra_window,text="Add An Event",
+            command=self.add_events)         
+        add_events_button.grid(row=real_row_count,column=0,sticky="nw",pady=(15,0),padx=(15,15))
+        
+        save_events_button = ttk.Button(self.extra_window,text="Save Events",
+            command=self.save_events)         
+        save_events_button.grid(row=real_row_count,column=1,sticky="nw",columnspan=1,pady=(15,0))             
+            
+    
+    def event_date_change(self,arg):
+        eventindex,infotype = arg
+        event_tuple = self.events_list[eventindex]
+        event_info = event_tuple[infotype]
+        year,month =  int(event_info[0:4]), int(event_info[4:6])
+        date_calendar = cal_dialog.CalendarDialog(self,year=year, month=month)
+        self.log("Getting new start date")
+        try:
+            result_date = date_calendar.result.date()
+#            print(result_date)
+        except AttributeError:
+            self.bug("Date returned from calendar not functional: {}".format(result_date))
+        self.events_list[eventindex][infotype] = result_date.strftime("%Y%m%d")
+#        print(self.events_list)
+        self.populate_extra_window_for_events()    
+        
+    def add_events(self):
+         self.log("Adding event, located at masterindex:{}".format(self.evnt_indx))
+         events_string = self.setting_packs[self.evnt_indx][2].get()     
+         new_events_string = events_string + "%%New Event,20180101,20180101"
+         self.setting_packs[self.evnt_indx][2].set(new_events_string)
+         self.open_events_list() 
+         
+#    def add_num(self):
+        
+            
+    def populate_settings_menu(self):
+        self.log("Building settings.")
+        
+        rown = 0
+
+        for section,section_cfg in self.get_config().items():
+            section_separator = ttk.Separator(self.settings_menu)
+            section_separator.grid(row=rown,column=0,columnspan=10,sticky="ew",
+                                   padx=(5,45),pady=(15,10))   
+            rown += 1
+            
+            section_label = tk.Label(self.settings_menu,text=section_cfg["proper_title"],font=("Helvetica", 12))
+            section_label.grid(row=rown, column=0, sticky="wn", padx=(5,25)) 
+            rown += 1
+
+            for setting,setting_cfg in section_cfg["settings"].items():
+                title_label = ttk.Label(self.settings_menu,text=setting_cfg["proper_title"])
+                title_label.grid(row=rown, column=0, sticky="nw", padx=(15,25),pady=7)
+                
+                desc = setting_cfg["description"]
+                s = CreateToolTip(title_label, desc)
+                set_type = setting_cfg["type"]
+                
+                stvar = tk.StringVar()
+                stvar.set(str(self.full_config[section][setting]))  
+                empty_widget_list = []
+                
+                self.setting_packs.append([section,setting,stvar, set_type, empty_widget_list,rown]) 
+                rown += 1
+                
+    def build_entries(self):
+        frm = self.settings_menu
+        
         for index, setting_pack in enumerate(self.setting_packs):
-            section_header = setting_pack[0]
-            setting_header = setting_pack[1]
-            stvar = setting_pack[2] 
-            set_type = setting_pack[3] 
-            emptywidgetlist = setting_pack[4]
+            section,setting,stvar, set_type, empty_widget_list,rown = setting_pack
             
-            self.log("{}. Unpacking: {}-{} = {}".format(index,section_header,setting_header["text"],stvar.get()))
-            
-            if not curr_section == section_header:
-                curr_section = section_header
-                iter_row += 2            
-            
-            def_lambda = lambda index = index: self._validate_and_set(index)
+            def_lambda = lambda index = index: self._ux_settings_changed(index)
             
             if set_type == "dirloc" or set_type == "fileloc":
-                widget = ttk.Button(frame,command=def_lambda,textvariable=stvar)
-                widget.grid(row=iter_row,column=1,sticky="w",columnspan=15) 
-                emptywidgetlist.append(widget)
+                widget = ttk.Button(frm,command=def_lambda,textvariable=stvar)
+                widget.grid(row=rown,column=1,sticky="w",columnspan=15) 
+                empty_widget_list.append(widget)
               
             elif set_type == "bool":
-                on_widget = ttk.Radiobutton(frame, variable=stvar, text="On",value="True", 
+                on_widget = ttk.Radiobutton(frm, variable=stvar, text="On",value="True", 
                                             command=def_lambda)
-                on_widget.grid(row=iter_row,column=1,sticky="w",padx=(0,5),columnspan=10) 
-                emptywidgetlist.append(on_widget)
+                on_widget.grid(row=rown,column=1,sticky="w",padx=(0,5),columnspan=10) 
+                empty_widget_list.append(on_widget)
                 
-                off_widget = ttk.Radiobutton(frame, variable=stvar, text="Off",value="False",
+                off_widget = ttk.Radiobutton(frm, variable=stvar, text="Off",value="False",
                                              command=def_lambda)
-                off_widget.grid(row=iter_row,column=3,sticky="w",padx=(0,5),columnspan=10)  
-                emptywidgetlist.append(off_widget)
+                off_widget.grid(row=rown,column=3,sticky="w",padx=(0,5),columnspan=10)  
+                empty_widget_list.append(off_widget)
                 
             elif set_type == "colors": 
                 split_colors = stvar.get().split("-")
                 for clindex, color in enumerate(split_colors):
                     settingrowcolumn = (index,clindex)
-                    color_lambda = lambda settingrowcolumn = settingrowcolumn: self.set_new_color(settingrowcolumn)
-                    butt = tk.Button(frame, width=2, command=color_lambda, background=split_colors[clindex])
-                    butt.grid(row=iter_row,column=clindex+1,sticky="w",padx=(0,5))
-                    emptywidgetlist.append(butt)
+                    color_lambda = lambda settingrowcolumn=settingrowcolumn: self.set_new_color(settingrowcolumn)
+                    butt = tk.Button(frm, width=2, command=color_lambda, background=split_colors[clindex])
+                    butt.grid(row=rown,column=clindex+1,sticky="w",padx=(0,5),pady=7)
+                    empty_widget_list.append(butt)
                     
             elif set_type == "date":
-                date_widget = ttk.Button(frame,command=def_lambda,textvariable=stvar)         
-                date_widget.grid(row=iter_row,column=1,sticky="w",columnspan=15)
-                emptywidgetlist.append(date_widget)
+                date_widget = ttk.Button(frm,command=def_lambda,textvariable=stvar)         
+                date_widget.grid(row=rown,column=1,sticky="w",columnspan=15)
+                empty_widget_list.append(date_widget)
                 
             elif set_type == "int":
-                days_widget = tk.Spinbox(frame, from_=1.0, to=30.0, wrap=True, width=4, 
+                days_widget = tk.Spinbox(frm, from_=1.0, to=30.0, wrap=True, width=4, 
                                          validate="key", state="readonly",
                                          textvariable = stvar, command=def_lambda)  
-                days_widget.grid(row=iter_row,column=1,sticky="w",columnspan=15) 
-                emptywidgetlist.append(days_widget)
+                days_widget.grid(row=rown,column=1,sticky="w",columnspan=15) 
+                empty_widget_list.append(days_widget)
                 
             elif set_type == "event_dates":
-                event_lambda = lambda index = index: self.edit_events(index)
-                edit_events_button = ttk.Button(frame,command=event_lambda,text="Edit Events")  
-                edit_events_button.grid(row=iter_row,column=1,sticky="w",columnspan=10)
-
-#                    iter_row += 1
-                    
-#                    end_date_widget = ttk.Button(self,command=def_lambda,textvariable=)  
-#                    end_date_widget.grid(row=iter_row,column=2,sticky="w",columnspan=1)                    
-                    
-            iter_row += 1 
+                self.evnt_indx = index
+#                event_lambda = self.open_events_list
+                edit_events_button = ttk.Button(frm,command=self.open_events_list,text="See Events List")  
+                edit_events_button.grid(row=rown,column=1,sticky="w",columnspan=10)
+                empty_widget_list.append(edit_events_button)
+                
+            elif set_type == "phone_numbers":
+                self.nums_indx = index
+                edit_numbers_button = ttk.Button(frm, command=self.open_numbers_list, text="See Ignore Numbers List")
+                edit_numbers_button.grid(row=rown,column=1,sticky="w",columnspan=10)
+                empty_widget_list.append(edit_numbers_button)
+                
+                
+class SettingsManagerEngine():
+    def __init__(self):    
+        self.log = logging.getLogger(__name__).info
+        self.log("Init.")
+        self.bug = logging.getLogger(__name__).debug    
+        
+    def load_full_config(self):
+        try:
+            with open('user_config.pickle',"rb") as user_config:
+                self.log("user_config pickle file found.")
+                return pickle.load(user_config) 
+        except FileNotFoundError:
+            self.bug("No preset pickle file found. Skipping.")     
+            return False
+        
+    def save_full_config(self,new_config):
+        with open('user_config.pickle', 'wb') as dbfile:
+            pickle.dump(new_config, dbfile) 
+        
+    def _get_clean_val(self,setting_val,setting_type):
+        if setting_type == "bool":
+            if setting_val == "True":
+                val = True
+            elif setting_val == "False":
+                val = False
+            else:
+                self.bug("ERROR, {} NOT SUITABLE VAL: FOR {}".format(setting_val,setting_type))
+                raise ValueError
+        elif setting_type == "int":
+            val = int(setting_val)
+        elif setting_type in ["list","date","str","dirloc","fileloc","colors","event_dates","phone_numbers"]:
+            val = setting_val
+        else:
+            self.bug("INVALID TYPE FOR SETTING! - {} - {}".format(setting_type, setting_val))
+            val = None   
+        return val                
 
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
@@ -390,14 +424,7 @@ if __name__ == "__main__":
     
     import config2
     controls_config = config2.backend_settings
-#    dbfile =  open(r"databases/DH_DBS.pickle", "rb")
-#    dbs = pickle.load(dbfile)  
     app = tk.Tk()
     test_widget = SettingsManager(app, app,controls_config)
     test_widget.grid(padx=20)
-    app.mainloop()   
-        
-
-                                    
-            
-        
+    app.mainloop()          

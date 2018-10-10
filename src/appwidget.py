@@ -23,7 +23,7 @@ from pprint import pprint as PRETTYPRINT
 
 import queries
 #import newqueries
-import exceltodataframe as etdf
+
 
 class AppWidget(tk.Frame):
     def __init__(self,parent,controller,config,dbvar,usedebuglog=True):
@@ -42,32 +42,29 @@ class AppWidget(tk.Frame):
         self.config_chain = []
         self.popupentryvar = tk.StringVar()        
         
+#        PRETTYPRINT(config["dbmanager"])
+        
         try:
             config[self.widget_name]
         except KeyError:
             self.bug("{} not in config. Check config2 file.".format(self.widget_name))
             self.set_build_config({})
         else:
+            self.log("Setting build config for {}".format(self.widget_name))
             self.set_build_config(config[self.widget_name])
             
         self.__dbvar = dbvar  
         
-        if self.widget_name == "dbmanager":
-            self.engine = DBManagerEngine()
-        elif self.widget_name == "analysispage":
+        if self.widget_name == "analysispage":
             self.engine = AnalysisPageEngine()
         elif self.widget_name == "querypanel":
             self.engine = QueryPanelEngine()
-#        elif self.widget_name == "newquerypanel":
-#            self.engine = QueryPanelEngine()
         elif self.widget_name == "datatable":
             self.engine = DataTableEngine()
         elif self.widget_name == "productviewer":
             self.engine = ProductViewerEngine()
         elif self.widget_name == "multigrapher":
             self.engine = MultiGrapherEngine()
-#        elif self.widget_name == "settingsmanager":
-#            self.engine = SettingsManagerEngine()
             return
         else:
             self.bug("{} does not match any available engines".format(self.widget_name))
@@ -151,9 +148,11 @@ class AppWidget(tk.Frame):
             tk.Button(self.popup,text=firstb[0],command=firstb[1]).pack()
             tk.Button(self.popup,text=secondb[0],command=secondb[1]).pack()
             tk.Button(self.popup,text="OK",command=self.popup.destroy).pack()
-        if entrycommand:
+        elif entrycommand:
             tk.Entry(self.popup,textvariable=self.popupentryvar).pack()
             tk.Button(self.popup,text="Set",command=entrycommand).pack()
+            tk.Button(self.popup,text="Close",command=self.popup.destroy).pack()
+        else:
             tk.Button(self.popup,text="Close",command=self.popup.destroy).pack()
             
         return self.popup
@@ -279,103 +278,7 @@ class SettingsManagerEngine():
         else:
             self.bug("INVALID TYPE FOR SETTING! - {} - {}".format(setting_type, setting_val))
             val = None   
-        return val
-
-class DBManagerEngine():
-    def __init__(self):    
-        self.log = logging.getLogger(__name__).info
-        self.log("Init.")
-        self.bug = logging.getLogger(__name__).debug  
-        
-    def _gen_bare_dbs(self):
-        dbs = {}
-        template = self.get_cfg_val("db_build_config")
-        for key in template:
-            dbs[key] = None
-        return dbs   
-    
-    def get_cdb(self,odb):
-#        print(odb.head)
-        adb = odb[["customer_phone_number","customer_id"]]
-#        print(type(adb))
-        cdb = adb.drop_duplicates()
-        return cdb
-    
-    #    to get a pdb roughly from an odb
-    def get_pdb(self,odb):
-        adb = odb[["product_cafe24_code","product_option"]]
-        cdb = adb.drop_duplicates()
-        return cdb        
-        
-    def gen_single_db(self, db_ref, path_list,header_ref):
-        ext = ".xlsx"
-        req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
-        match_on_key = db_ref["match_on_key"]
-        
-        if len(path_list) == 0:
-            new_df = None
-        
-        for index, path in enumerate(path_list):
-            if index == 0:
-                new_df = etdf.gen_single_db_from_excels(path, ext, header_ref,
-                                                        req_excels_tpl, match_on_key)
-            else:
-                new_df =  etdf.add_data(new_df, path, ext, header_ref, 
-                               req_excels_tpl,match_on_key)   
-                        
-        return new_df        
-
-    def update_single_db(self,db_str,path_list,db_ref,new_df,header_ref):
-#        self.log("Adding Data to: {}".format(db_str))
-        ext = ".xlsx"
-        req_excels_tpl = (db_ref["core"], db_ref["appends_list"])
-        match_on_key = db_ref["match_on_key"]
-        
-        for index, path in enumerate(path_list):
-#            self.log("Updating from path {}".format(path))
-            new_df =  etdf.add_data(new_df, path, ext, header_ref, 
-                               req_excels_tpl,match_on_key)
-        return new_df
-            
-    def load_online_dbs(self,counter=None,ticker=None):
-        url = self.get_cfg_val("URL for Online DB Download")
-        first_response = requests.get(url,stream=True)
-#        x=0
-        with open('databases//DH_DBS.pickle', 'wb') as dbfile:
-            for chunk in first_response.iter_content(chunk_size=1000000):
-                if counter:
-                    counter.set(counter.get()+1)
-                    ticker.update()
-                dbfile.write(chunk)
-#                x += 1
-                
-        with open('databases//DH_DBS.pickle', "rb") as dbfile:
-            return dbfile
-
-    def df2sqlite(self,dataframe, db_name="import.sqlite", tbl_name="import"):
-        self.log("Preparing conversion to sqlite for: {}".format(db_name))
-        conn = sqlite3.connect(db_name)
-        cur = conn.cursor()
-    
-        wildcards = ','.join(['?'] * len(dataframe.columns))
-        data = [tuple(x) for x in dataframe.values]
-        count = 0
-        for x in data[3]:
-            count += 1
-    
-        cur.execute("drop table if exists %s" % tbl_name)
-    
-        col_str = '"' + '","'.join(dataframe.columns) + '"'
-        cur.execute("create table %s (%s)" % (tbl_name, col_str))
-        cur.executemany("insert into %s values(%s)" % (tbl_name, wildcards), data)
-        conn.commit()
-        conn.close()
-        self.log("Export to Sqlite Completed")  
-        
-    def merge_odb_with_pdb(self,odb,pdb):
-        self.log("Merging odb with pdb...")
-        return pd.merge(odb, pdb.drop_duplicates(subset="product_cafe24_code"), on="product_cafe24_code", right_index=False,
-                       how='left', sort=False)            
+        return val     
         
 class ProductViewerEngine():
     def __init__(self):    

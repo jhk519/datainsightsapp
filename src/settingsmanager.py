@@ -57,7 +57,6 @@ class SettingsManager(AppWidget):
         
         self.extra_window = tk.LabelFrame(self,text="More Details")
         self.extra_window.grid(row=0,column=1,sticky="nsew",padx=(15,0))
-        tk.Label(self.extra_window,text=":)").grid()
         
         self.populate_settings_menu()
         self.build_entries()
@@ -152,39 +151,37 @@ class SettingsManager(AppWidget):
             
     def open_numbers_list(self):
         self.log("Editing Events, located at index: {}".format(self.nums_indx))
-        raw_nums_list = self.setting_packs[self.nums_indx][2].get().split("%%")
 
         self.extra_window["text"] = "Edit Ignore Numbers"
         self.nums_list = []
         
         for child in self.extra_window.winfo_children():
             child.destroy()  
-            
-#        raw_nums_list = ["010-0000-0000",
-#                           "000-0000-0000",
-#                           "010-000-0000",
-#                           "010-1111-1111",
-#                           "010-111-1111",
-#                           "010-0000-0000",
-#                           "nan",
-#                           "0"]            
-            
+
         rown = 0
-        for num in raw_nums_list:
+        for index,num in enumerate(self.setting_packs[self.nums_indx][2].get().split("%%")):
+#            print(index)
             namevar = tk.StringVar()
             namevar.set(num)
             name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
             name_str_widget.grid(row=rown,column=0,sticky="ew",
-                                 columnspan=1,padx=(15,10),pady=(5,0))  
-            rown += 1            
+                                 columnspan=2,padx=(15,10),pady=(5,0))  
+                     
+            
+            del_widget = ttk.Button(self.extra_window,text="X", 
+               command=lambda index=index: self.delete_num(index),
+               width=2)    
+            del_widget.grid(row=rown,column=2,sticky="w",
+                                 columnspan=1,padx=(10,15),pady=(5,0))             
+            rown += 1   
             
             self.nums_list.append(namevar)
 
         ttk.Button(self.extra_window,text="Add Number",command=self.add_num).grid(
-                row=rown,column=0,sticky="nw",pady=(15,0),padx=(15,15))
+                row=rown,column=0,sticky="nw",pady=(15,0),padx=(15,0))
         
-        ttk.Button(self.extra_window,text="Save Number",command=self.save_nums).grid(
-                row=rown,column=1,sticky="nw",columnspan=1,pady=(15,0))   
+        ttk.Button(self.extra_window,text="Save Numbers",command=self.save_nums).grid(
+                row=rown,column=1,sticky="nw",columnspan=1,padx=(5,15),pady=(15,15))   
         
     def add_num(self):
         nums_str = self.setting_packs[self.nums_indx][2].get()
@@ -192,7 +189,13 @@ class SettingsManager(AppWidget):
         self.setting_packs[self.nums_indx][2].set(nums_str)
         self.open_numbers_list()
         
+    def delete_num(self,index):
+        del self.nums_list[index]
+        self.save_nums()
+        self.open_numbers_list()
+        
     def save_nums(self):
+#        print()
         num_str = "%%".join([numvar.get() for numvar in self.nums_list])
         self.setting_packs[self.nums_indx][2].set(num_str)
         self._ux_settings_changed(self.nums_indx)
@@ -225,27 +228,32 @@ class SettingsManager(AppWidget):
             arg = index,0
             name_str_widget = ttk.Entry(self.extra_window,textvariable=namevar)  
             name_str_widget.grid(row=real_row_count,column=0,sticky="ew",
-                                 columnspan=1,padx=(15,10),pady=(5,0))  
+                                 columnspan=2,padx=(15,10),pady=(5,0))  
             
             
             arg = index,1
             start_date_widget = ttk.Button(self.extra_window,text=start_date,
                command=lambda arg=arg: self.event_date_change(arg))  
-            start_date_widget.grid(row=real_row_count,column=1,sticky="w",
+            start_date_widget.grid(row=real_row_count,column=2,sticky="w",
                                    columnspan=1,padx=(10,0),pady=(5,0))      
             
             arg = index,2
             end_date_widget = ttk.Button(self.extra_window,text=end_date, 
                command=lambda arg=arg: self.event_date_change(arg))    
-            end_date_widget.grid(row=real_row_count,column=2,sticky="w",
+            end_date_widget.grid(row=real_row_count,column=3,sticky="w",
                                  columnspan=1,padx=(10,15),pady=(5,0)) 
             
-    
-            event_separator = ttk.Separator(self.extra_window)
-            event_separator.grid(row=real_row_count+1,column=0,columnspan=3,sticky="ew"
-                                   ,pady=(5,0),padx=10)       
+            del_date_widget = ttk.Button(self.extra_window,text="X", 
+               command=lambda index=index: self.delete_event(index),
+               width=2)    
+            del_date_widget.grid(row=real_row_count,column=4,sticky="w",
+                                 columnspan=1,padx=(10,15),pady=(5,0)) 
+            
+#            event_separator = ttk.Separator(self.extra_window)
+#            event_separator.grid(row=real_row_count+1,column=0,columnspan=3,sticky="ew"
+#                                   ,pady=(5,0),padx=10)       
 
-            real_row_count += 2
+            real_row_count += 1
             
         add_events_button = ttk.Button(self.extra_window,text="Add An Event",
             command=self.add_events)         
@@ -253,8 +261,7 @@ class SettingsManager(AppWidget):
         
         save_events_button = ttk.Button(self.extra_window,text="Save Events",
             command=self.save_events)         
-        save_events_button.grid(row=real_row_count,column=1,sticky="nw",columnspan=1,pady=(15,0))             
-            
+        save_events_button.grid(row=real_row_count,column=1,sticky="nw",columnspan=1,pady=(15,15))                
     
     def event_date_change(self,arg):
         eventindex,infotype = arg
@@ -265,11 +272,9 @@ class SettingsManager(AppWidget):
         self.log("Getting new start date")
         try:
             result_date = date_calendar.result.date()
-#            print(result_date)
         except AttributeError:
             self.bug("Date returned from calendar not functional: {}".format(result_date))
         self.events_list[eventindex][infotype] = result_date.strftime("%Y%m%d")
-#        print(self.events_list)
         self.populate_extra_window_for_events()    
         
     def add_events(self):
@@ -277,11 +282,14 @@ class SettingsManager(AppWidget):
          events_string = self.setting_packs[self.evnt_indx][2].get()     
          new_events_string = events_string + "%%New Event,20180101,20180101"
          self.setting_packs[self.evnt_indx][2].set(new_events_string)
-         self.open_events_list() 
+         self.open_events_list()   
          
-#    def add_num(self):
-        
-            
+    def delete_event(self,event_index):
+        del self.events_list[event_index]
+        self.save_events()
+#        print(self.setting_packs[self.evnt_indx])
+        self.open_events_list()
+
     def populate_settings_menu(self):
         self.log("Building settings.")
         
@@ -359,7 +367,6 @@ class SettingsManager(AppWidget):
                 
             elif set_type == "event_dates":
                 self.evnt_indx = index
-#                event_lambda = self.open_events_list
                 edit_events_button = ttk.Button(frm,command=self.open_events_list,text="See Events List")  
                 edit_events_button.grid(row=rown,column=1,sticky="w",columnspan=10)
                 empty_widget_list.append(edit_events_button)

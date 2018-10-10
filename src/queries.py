@@ -280,13 +280,12 @@ def count_of_orders(odb,date_list, mcfg,breakdown_keys, **args):
             if breakdown == "Customer's Nth Order":
                 try: 
                     nth_order = int(getattr(row_tuple, "order_count") )
-                except ValueError:
-#                    nth_order_got = getattr(row_tuple, "order_count") 
+                except ValueError: 
                     continue  
                 phone_number = str(getattr(row_tuple, "customer_phone_number"))
                 
                 if phone_number in ignore_numbers:
-                    result_dict_key = "IGNORE_NUMBER"
+                    result_dict_key = "IGNORE_NUMBER"  
                 elif nth_order >= n_breakdown:
                     result_dict_key = str(top_counts[n_breakdown-1])
                 else:

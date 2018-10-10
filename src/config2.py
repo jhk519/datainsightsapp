@@ -116,128 +116,86 @@ backend_settings = {
         "loaddb_on_load": True, 
         "loaddb_loc": "databases//DH_DBS.pickle",
         
-        "db_build_config": {
+        "dbs_cfg": {
             "odb": {
-                "data": None,
                 "proper_title": "Order Database",
-                "core": "order_data",
-                "appends_list":[],
-                "match_on_key": "order_part_id"
+                "match_on_key": "order_part_id",
+                "header_translations":{
+                    "주문번호": "order_id",
+                    "품목별주문번호": "order_part_id",
+            
+                    "주문일시": "date",
+                    "배송시작일":"date_shipping",
+                    "결제일시(입금확인일)": "date_payment",
+                    "총주문금액(KRW)": "total_original_price",
+                    "총배송비(KRW)": "original_shipping_fee",
+                    "총결제금액(KRW)": "total_net_price",
+                    
+                    "회원등급추가할인금액": "total_membership_level_discount",
+                    "사용한적립금액": "total_membership_points_discount",
+                    "예치금": "total_cash_credit_discount",
+                    "쿠폰할인금액": "total_coupon_discount",
+                    "결제수단": "payment_method",
+                    "매출경로": "shopping_platform",
+                    "주문경로(PC/모바일)": "pc_or_mobile_platform",
+                    
+                    
+                    "주문자휴대전화": "customer_phone_number",
+                    "주문자ID": "customer_id",
+                    "카데고리": "category",
+                    
+                    "취소구분":"cancel_status",
+            
+                    "상품구매금액(KRW)": "product_price",
+                    "상품별추가할인금액": "product_standard_discount",
+                    "수량": "product_quantity",
+
+                    "상품코드": "product_cafe24_code",
+                    "상품옵션":"product_option"
+                },
             },
             "tdb": {
-                "data": None,
                 "proper_title":"Traffic Database",
-                "core": "traffic_data",
-                "appends_list": [],
-                "match_on_key": "date"
-            },
-            "rdb": {
-                "data": None,
-                "proper_title":"Referral Database",
-                "core": "referral_data",
-                "appends_list": [],
-                "match_on_key": "date"
+                "match_on_key": "date",
+                "header_translations": {
+                    "날짜": "date",
+                    "신규방문자": "new_visitors_count",
+                    "재방문자": "returning_visitors_count",
+            
+                    "총PC방문자수": "pc_visitors_count",
+                    "모바일웹방문자수": "mobile_visitors_count",
+                    "앱방문자수": "app_visitors_count",
+            
+                    "페이지뷰": "total_pageviews",
+            
+                    "쿠딩매출": "kooding_revenue",
+                    "PC매출(쿠딩제외)": "pc_revenue",
+                    "모바일웹매출": "mobile_revenue",
+                    "지그재그매출": "zigzag_revenue",
+                    "앱매출": "app_revenue",
+            
+                    "PC주문건수": "pc_orders_count",
+                    "모바일웹주문건수": "mobile_orders_count",
+                    "앱주문건수": "app_orders_count",
+                },
             },
             "pdb": {
-                "data": None,
                 "proper_title":"Product Database",
-                "core": "product_data",
-                "appends_list": [],
-                "match_on_key": "sellmate_barcode"
+                "match_on_key": "sellmate_barcode",
+                "header_translations": {
+                    "바코드번호": "sku_sellmate_code",
+                    "상품분류": "product_brand",
+                    "상품명": "product_name",
+                    "옵션내용": "sku_option_text",
+                    "대표이미지주소": "product_img_url",
+                    "상품코드": "product_cafe24_code",
+                    "상품등록일자": "upload_date",
+                    "상품메모1": "product_h_code",
+                    "옵션메모3": "sku_h_code", 
+                    "BRAOBRW":"grwgw"                       
+                },
             },
-            
-            "cdb":{
-                "data":None,
-                "proper_title":"Customer Database",
-                "core":"customer_data",
-                "appends_list":[],
-                "match_on_key":"customer_phone"
-            }
-        },
-            
-        "header_ref" :{
-            "order_data": {
-                "주문번호": "order_id",
-                "품목별주문번호": "order_part_id",
-        
-                "주문일시": "date",
-                "배송시작일":"date_shipping",
-                "결제일시(입금확인일)": "date_payment",
-                "총주문금액(KRW)": "total_original_price",
-                "총배송비(KRW)": "original_shipping_fee",
-                "총결제금액(KRW)": "total_net_price",
-                
-                "회원등급추가할인금액": "total_membership_level_discount",
-                "사용한적립금액": "total_membership_points_discount",
-                "예치금": "total_cash_credit_discount",
-                "쿠폰할인금액": "total_coupon_discount",
-                "결제수단": "payment_method",
-                "매출경로": "shopping_platform",
-                "주문경로(PC/모바일)": "pc_or_mobile_platform",
-                
-                
-                "주문자휴대전화": "customer_phone_number",
-                "주문자ID": "customer_id",
-                "카데고리": "category",
-                
-                "취소구분":"cancel_status",
-        
-                "상품구매금액(KRW)": "product_price",
-                "상품별추가할인금액": "product_standard_discount",
-                "수량": "product_quantity",
-                
-                "주문상품명": "product_name",
-                "상품코드": "product_cafe24_code",
-                "상품자체코드": "product_hcode",
-                "상품옵션":"product_option"
-            },
-            "traffic_data": {
-                "날짜": "date",
-                "신규방문자": "new_visitors_count",
-                "재방문자": "returning_visitors_count",
-        
-                "총PC방문자수": "pc_visitors_count",
-                "모바일웹방문자수": "mobile_visitors_count",
-                "앱방문자수": "app_visitors_count",
-        
-                "페이지뷰": "total_pageviews",
-        
-                "쿠딩매출": "kooding_revenue",
-                "PC매출(쿠딩제외)": "pc_revenue",
-                "모바일웹매출": "mobile_revenue",
-                "지그재그매출": "zigzag_revenue",
-                "앱매출": "app_revenue",
-        
-                "PC주문건수": "pc_orders_count",
-                "모바일웹주문건수": "mobile_orders_count",
-                "앱주문건수": "app_orders_count",
-            },
-                
-            "referral_data": {
-                "날짜": "date",
-                "방문채널": "source_channel",
-        
-                "방문자": "visitors_count",
-                "구매건수": "order_count",
-                "매출": "revenue"
-            },
-            "product_data": {
-                "바코드번호": "sku_sellmate_code",
-                "상품분류": "product_brand",
-                "상품명": "product_name",
-                "옵션내용": "sku_option_text",
-                "대표이미지주소": "product_img_url",
-                "상품코드": "product_cafe24_code",
-                "상품등록일자": "upload_date",
-                "상품메모1": "product_h_code",
-                "옵션메모3": "sku_h_code",                        
-            },
-                    
-            "customer_data": {
-                "주문자휴대전화": "customer_phone",
-                "주문자명": "customer_name"
-            },
-        }              
+        },                   
     },        
             
     "productviewer":{

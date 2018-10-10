@@ -19,7 +19,7 @@ except ImportError:  # Python 3
 import os
 import logging   
 import datetime
-from pprint import pprint as PRETTYPRINTTHIS
+from pprint import pprint as PRETTYPRINT
 #import matplotlib
 
 # Project Mpdules
@@ -72,6 +72,8 @@ class DataInsightsApp(tk.Tk):
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
         curr_config = self.settingsmanager.get_latest_config(needcopy=True)
+        
+#        PRETTYPRINT(curr_config["dbmanager"])
         
 #        DATA MANAGER PAGE INIT 
         self.dbmanager = DBManager(self.notebook, self, curr_config)

@@ -397,7 +397,7 @@ class DBManagerEngine():
 
     def add_rows_to_dataframe_from_excel(self,curr_df,append_df,drop_on):
         new_df = pd.concat([curr_df, append_df], axis=0, ignore_index = True,
-                           join = "outer").drop_duplicates(subset=drop_on)
+                           join = "outer").drop_duplicates(subset=drop_on,sort=False)
         return self.sanitize_df(new_df)    
 
     def update_columns(self,orig_odb, excel_path, db_cfg):
@@ -407,14 +407,6 @@ class DBManagerEngine():
             
             update_excel = pd.read_excel(excel_path, 0)
             update_excel = self.get_translated_and_dropped_df(update_excel,header_ref)
-#            update_excel.rename(
-#                columns=lambda x: x.strip().replace(" ", "").replace("\n", ""), inplace=True)
-#            for header in list(update_excel):
-#                if header not in header_ref and header not in header_ref.values():
-#                    update_excel = update_excel.drop(labels=header, axis=1)
-#                else:
-#                    continue
-#            update_excel.rename(columns=header_ref, inplace=True)
             
             current_headers = set(sorted(list(update_excel.columns)))
             

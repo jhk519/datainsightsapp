@@ -188,9 +188,9 @@ def revenue_by_item(odb, date_list, mcfg,breakdown_keys,**args):
     n_breakdown = mcfg["number_of_rankings"]    
     
     # METRIC TYPE FILTERING
-    if mtype == "Before Discount":
+    if mtype == "Original Price":
         beforedisc = True
-    elif mtype == "After Discount":
+    elif mtype == "Net Price":
         beforedisc = False
     else:
         BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric))
@@ -343,8 +343,12 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):
     for row_tuple in odb.itertuples():
         date_index =  date_list.index(row_tuple.date)
         
-        if beforedisc: val_to_add = row_tuple.total_original_price
-        else: val_to_add = row_tuple.total_net_price   
+        if beforedisc: 
+            val_to_add = row_tuple.total_original_price
+        
+        else: 
+            val_to_add = row_tuple.total_net_price   
+#        print(val_to_add)
         
         if not breakdown == "None":
             result_dict_key = getattr(row_tuple, bkdwn_column_str)
@@ -601,7 +605,12 @@ def get_filtered_dbs(di_dbs,req_db,filters,xtype):
             LOG("User chose {} platform filter.".format(platform_choice))
             the_db = apply_platform_mask(the_db,platform_choice)
     else:
-        LOG("This metric cannot apply a category or product mask.")    
+        LOG("This metric cannot apply a category or product mask.")  
+        
+    phone_numbers = filters["phone_numbers"]
+    if not phone_numbers == "":
+        LOG("User chose {} for phone_number data filter".format(phone_numbers))
+        the_db = apply_phone_numbers_mask(the_db,phone_numbers)
         
     return the_db    
 
@@ -634,7 +643,7 @@ def apply_time_mask(db,start,end):
 def apply_product_mask(db,filtertype,value):
     if filtertype == "Product Code":
         if "," in value:
-            values_iter = value.split(",")
+            values_iter = value.strip().replace(" ", "").replace("\n", "").split(",")
 #            print(values_iter)
             db = db.loc[db['product_cafe24_code'].isin(values_iter)]
 #            df.loc[df['column_name'].isin(some_values)]
@@ -643,7 +652,7 @@ def apply_product_mask(db,filtertype,value):
     elif filtertype == "Category":
 #        print(filtertype)
         if "," in value:
-            values_iter = value.split(",")
+            values_iter = value.strip().replace(" ", "").replace("\n", "").split(",")
 #            print(va)
 #            print(values_iter)
             db = db.loc[db['category'].isin(values_iter)]        
@@ -658,3 +667,11 @@ def apply_platform_mask(db,filtertype):
     elif filtertype == "Mobile":
         db = db.loc[db['pc_or_mobile_platform'] == "모바일"]
     return db  
+
+def apply_phone_numbers_mask(db,phone_numbers):
+    if "," in phone_numbers:
+        values_iter = phone_numbers.strip().replace(" ", "").replace("\n", "").split(",")
+        db = db.loc[db['customer_phone_number'].isin(values_iter)]
+    else:
+        db = db.loc[db['customer_phone_number'] == phone_numbers]
+    return db

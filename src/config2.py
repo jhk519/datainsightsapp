@@ -218,7 +218,7 @@ backend_settings = {
             "order_data-date_series": {
                 "proper_title": "Order Data-Date Series",
                 "x_axis_type":"date_series",
-                "data_filters": ["start_end_dates","platform","category_or_product",],
+                "data_filters": ["start_end_dates","platform","category_or_product","phone_numbers"],
                 "metrics": {
                     "count_of_items": {
                         "proper_title": "Count Of Items",
@@ -228,7 +228,7 @@ backend_settings = {
                     },
                     "revenue_by_item":{
                         "proper_title": "Revenue By Item",
-                        "metric_types": ["Before Discount", "After Discount"],
+                        "metric_types": ["Original Price", "Net Price"],
                         "data_types": ["Sum","Percentage","Average"],
                         "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
                     },

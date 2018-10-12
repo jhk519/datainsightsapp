@@ -22,7 +22,9 @@ from os import system
 import webbrowser
 
 # Non-standard Modules
+import PIL
 from PIL import ImageTk
+import urllib
 
 #Package Modules
 from appwidget import AppWidget
@@ -31,7 +33,8 @@ from appwidget import AppWidget
 class ProductViewer(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "productviewer"
-        super().__init__(parent,controller,config,dbvar)                   
+        super().__init__(parent,controller,config,dbvar)     
+        self.engine = ProductViewerEngine()              
 
         self.product_detail_packs = []
         self.sku_detail_packs = []
@@ -256,6 +259,113 @@ class ProductViewer(AppWidget):
         
         self.sku_image_label = ttk.Label(self.sku_frame,text="Default SKU URL")
         self.sku_image_label.grid(row=0,column=3,rowspan=10,sticky="e",padx=15)
+        
+class ProductViewerEngine():
+    def __init__(self):    
+        self.log = logging.getLogger(__name__).info
+        self.log("Init.")
+        self.bug = logging.getLogger(__name__).debug   
+#        
+#        self.bug("Post-Super Init for {} Engine".format(name))
+        
+#    def get_cdb_data(self):
+#        cdb = self.get_dbvar()["cdb"]
+#        return cdb
+#    
+#    def _get_orders_by_product(self,product_code):
+#        temp_odb = self.get_dbvar()["odb"]
+#        locced = temp_odb.loc[temp_odb["product_cafe24_code"] == product_code]
+#        self.log(".get_orders_by_product locced df length: {}".format(locced.shape[0]))
+#        return locced
+        
+    def get_pdb_product_data(self,pdb, code,codetype):
+        self.log("Getting pdb data for {}, search_type: {}, objecttype: {}".format(code,codetype,str(type(code))))
+        
+        self.log("Orig. pdb length: {}".format(pdb.shape[0]))
+        if codetype == "Product Code":
+            returndf = pdb.loc[pdb['product_cafe24_code'] == code]  
+        elif codetype == "Barcode":
+            returndf = pdb.loc[pdb['sku_code'] == int(code)]
+        self.log("Locced pdb length: {}".format(returndf.shape[0]))
+        return returndf
+    
+    def get_customers_list(self,temp_odb,code):
+        self.log("Called with code: {}".format(code))
+        if not code is None and not code == "":
+            filtered_odb = temp_odb.loc[temp_odb["product_cafe24_code"] == code]            
+            if filtered_odb.shape[0] < 1:
+                self.bug("No orders for this product code: {}".format(code))
+                return "no_results"
+            else:
+#                dropped = filtered_odb.drop_duplicates(subset="customer_phone_number")
+                return filtered_odb
+        else:
+            self.bug("No Code Given")
+            return "no_code_given"
+        
+    def search_product(self,pdb, code,codetype):
+        self.log("Code Search: {}".format(code))
+        if not code is None and not code == "":
+            
+            filtered_pdb = self.get_pdb_product_data(pdb,code, codetype)
+        else:
+            return "no_code_given"
+            
+        if filtered_pdb.shape[0] < 1:
+            self.bug("Search yielded a DF less than 1 length.")
+            return "no_results"
+        else:
+            self.log("Search yielded DF of {} length.".format(filtered_pdb.shape[0]))
+             
+        plist = filtered_pdb.to_dict(orient='records')
+        
+        final_dict = {
+            "product_info": {
+                "product_code": "DEFAULT PRODUCT CODE",
+#                "vendor_name": "DEFAULT VENDOR NAME",
+#                "vendor_code": "DEFAULT VENDOR CODE",
+#                "vendor_price": "DEFAULT VENDOR PRICE",
+                "main_image_url": "DEFAULT URL",
+                "category": "DEFAULT  CATEGORY"
+            },
+            "sku_list": []
+        }
+            
+        for sku_dict in plist:
+            final_dict["product_info"]["product_cafe24_code"] = sku_dict["product_cafe24_code"]
+#            final_dict["product_info"]["vendor_name"] = sku_dict["vendor_name"]
+#            final_dict["product_info"]["vendor_code"] = sku_dict["vendor_code"]
+#            final_dict["product_info"]["vendor_price"] = sku_dict["vendor_price"]
+#            final_dict["product_info"]["main_image_url"] = sku_dict["main_image_url"]
+            final_dict["product_info"]["category"] = sku_dict["category"]
+            
+            sku_full_options_text_split = sku_dict["option_text"].split(",")
+            sku_color = sku_full_options_text_split[0]
+            sku_size = sku_full_options_text_split[1]
+            
+            final_dict["sku_list"].append(
+                (sku_dict["sku_code"],sku_color,sku_size, sku_dict["sku_image_url"])   
+            )
+        return final_dict
+            
+    def get_PIL_image(self,url):
+        if url == "DEFAULT URL":
+            self.bug("Received url of default value. Skipping download attempt.")
+            return None
+        try:        
+            self.log("Trying PIL Image from {}...".format(url))
+            raw_data = urllib.request.urlopen(url).read()
+            self.log("urllib.request.urlopen(ABOVE URL).read() successfully called.")   
+        except ValueError:
+            self.bug("THIS IMAGE AT {} IS NOT WORKING!".format(url))
+            return None
+        except AttributeError:
+            self.bug("CANNOT READ URLOPEN FOR ", url)
+            return None
+        else: 
+            PILim = PIL.Image.open(io.BytesIO(raw_data)).resize((300, 300))
+            TKim = PIL.ImageTk.PhotoImage(image=PILim)         
+            return TKim           
         
 
 if __name__ == "__main__":

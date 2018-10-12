@@ -56,7 +56,8 @@ class MultiGrapher(AppWidget):
     
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "multigrapher"
-        super().__init__(parent,controller,config,dbvar)  
+        super().__init__(parent,controller,config,dbvar)
+        self.engine = MultiGrapherEngine()
 
         self.build_tree_frame()
         self.build_graphs_frame()
@@ -519,7 +520,26 @@ class MultiGrapher(AppWidget):
             command=self.delete_page,
             text="Delete Page")
         self.delete_page_button.grid(
-            row=rown, column=0, padx=0, pady=2, sticky="w")          
+            row=rown, column=0, padx=0, pady=2, sticky="w")     
+        
+class MultiGrapherEngine():
+    def __init__(self):    
+        self.log = logging.getLogger(__name__).info
+        self.log("Init.")
+        self.bug = logging.getLogger(__name__).debug  
+        
+        
+    def update_request_pack(self,slot_pack,custom_today):
+        request_pack = dict(slot_pack)
+#        PRETTYPRINT(request_pack)
+        day_gap = (request_pack["data_filters"]["end_datetime"] - request_pack["data_filters"]["start_datetime"]).days
+        new_start = custom_today - datetime.timedelta(day_gap)
+        new_end = custom_today
+        request_pack["data_filters"]["end_datetime"] = new_end
+        request_pack["data_filters"]["start_datetime"] = new_start
+
+        return request_pack      
+        
         
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))

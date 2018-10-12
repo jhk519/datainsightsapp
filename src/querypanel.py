@@ -29,6 +29,7 @@ class QueryPanel(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "querypanel"
         super().__init__(parent,controller,config,dbvar) 
+        self.engine = QueryPanelEngine()
         
         # QUERY MENU
         self.current_category_var = tk.StringVar()
@@ -50,6 +51,8 @@ class QueryPanel(AppWidget):
         self.current_product_entry_var = tk.StringVar()
         
         self.current_platform_var = tk.StringVar()
+        
+        self.current_phone_number_var = tk.StringVar()
         
         # METRICS
         self.metrics_list = []
@@ -82,9 +85,7 @@ class QueryPanel(AppWidget):
         self.current_force_y_axis_var = tk.BooleanVar()
         self.current_force_y_axis_min_var = tk.IntVar()
         self.current_force_y_axis_max_var = tk.IntVar()
-        
 
-        
         # BUILD 
         self.build_skeleton()
         self.build_category_menu()
@@ -99,12 +100,6 @@ class QueryPanel(AppWidget):
                                 self.get_cfg_val("setdates_from_date"))         
         
     # UX EVENTS
-    def _set_dates(self,setdates_gap,setdates_from_date):
-        self.start_datetime, self.end_datetime = self.engine.get_start_and_end(setdates_gap,setdates_from_date)
-        self.start_date_button_var.set(str(self.start_datetime))
-        self.end_date_button_var.set(str(self.end_datetime))     
-    
-    
     def _ux_category_changed(self,event=None):
         current_category =  self.current_category_var.get().replace(" ","_").lower()            
         self.log("Category changed to: {}".format(current_category))
@@ -118,6 +113,11 @@ class QueryPanel(AppWidget):
         
         required_metrics_dict = self.get_cfg_val("queries")[current_category]["metrics"]
         self.build_metric_options(self.metric_options_labelframe,required_metrics_dict)
+        
+    def _set_dates(self,setdates_gap,setdates_from_date):
+        self.start_datetime, self.end_datetime = self.engine.get_start_and_end(setdates_gap,setdates_from_date)
+        self.start_date_button_var.set(str(self.start_datetime))
+        self.end_date_button_var.set(str(self.end_datetime))            
         
     def _ux_open_start_cal(self):
         self.log("Getting new start date")
@@ -173,6 +173,7 @@ class QueryPanel(AppWidget):
                 "category_or_product":self.current_product_var.get(),
                 "category_or_product_entry":self.current_product_entry_var.get(),
                 "platform":self.current_platform_var.get(),
+                "phone_numbers":self.current_phone_number_var.get(),
             },
             "metric_options":{ 
                 "metric":self.current_metric_var.get(),
@@ -272,6 +273,9 @@ class QueryPanel(AppWidget):
             elif data_filter == "platform":
                 curr_row = self.build_platform_data_filter(targ_frame,rown=curr_row)
                 
+            elif data_filter == "phone_numbers":
+                curr_row = self.build_phone_numbers_data_filter(targ_frame,rown=curr_row)
+                
     def build_start_end_data_filter(self,targ_frame,rown=0):
         tk.Label(targ_frame,text="Start Date:").grid(row=rown,column=0,sticky="w",
                 columnspan=1,pady=(0,5))
@@ -328,6 +332,18 @@ class QueryPanel(AppWidget):
         dropdown.current(0) 
         
         return rown + 1
+    
+    def build_phone_numbers_data_filter(self,targ_frame,rown=0):
+        coln = 0
+        
+        tk.Label(targ_frame,text="Phone Number: ").grid(
+                row=rown, column=coln,sticky="w",pady=(0,5))
+        coln += 1
+        
+        ttk.Entry(targ_frame,textvariable=self.current_phone_number_var,justify="left").grid(
+        row=rown,column=coln,columnspan=3,pady=(0,5))
+        
+        return rown + 1        
     
     # METRIC OPTIONS BUILD
         
@@ -389,14 +405,7 @@ class QueryPanel(AppWidget):
         
     # RESULTS OPTIONS BUILD
         
-    def build_results_options_menu(self,targ_frame,rown=0):
-#        tk.Label(targ_frame,text="Aggregation Period: ").grid(row=rown, column=0,sticky="w",pady=(0,5))
-#        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_aggregation_time_var,width=10)
-#        dropdown.grid(row=rown, column=1,padx=(0,0),pady=(0,0),sticky="w")   
-#        dropdown["values"] = ["Daily","Weekly","Monthly","Entire"]
-#        dropdown["state"] = "readonly" 
-#        dropdown.current(0)     
-        
+    def build_results_options_menu(self,targ_frame,rown=0):        
         tk.Label(targ_frame,text="Aggregation Period:").grid(row=rown, column=0,sticky="w",pady=(0,5))
         tk.Spinbox(targ_frame, from_=1.0, to=365.0, wrap=True, width=4, 
                    validate="key", state="normal",textvariable=self.current_aggregation_period_var).grid(
@@ -441,9 +450,7 @@ class QueryPanel(AppWidget):
          values=["-","--","-.",":"],state="readonly")
         x.grid(row=rown, column=1,columnspan=1, sticky="w",padx=(5,0)) 
         x.current(0)
-#        rown += 1
-#
-##        tk.Label(targ_frame,text="Color:").grid(row=rown, column=0,sticky="w")
+
         self.color_button_widget = tk.Button(targ_frame,width=1,height=1,command=self._ux_choose_color)
         self.color_button_widget.grid(row=rown,column=2,columnspan=3,padx=(5,0),sticky="w",pady=(5,5))
         self.color_button_widget.configure(background="black")
@@ -457,9 +464,9 @@ class QueryPanel(AppWidget):
         tk.Label(targ_frame,text="Show Events:").grid(row=rown, column=0,sticky="w")
         ttk.Checkbutton(targ_frame, variable=self.current_show_events_var,
                         onvalue=True,offvalue=False).grid(row=rown, column=1, sticky="w",padx=(5,0))         
-#        rown += 1
-    # SEND TO AXIS BUILD
+        rown += 1
     
+    # SEND TO AXIS BUILD 
     def build_send_to_axis_menu(self,targ_frame,rown=0):
         send_left_button = tk.Button(targ_frame,text="Get Data",
                                      command=lambda: self._ux_send_to_axis("left"))
@@ -468,6 +475,44 @@ class QueryPanel(AppWidget):
 #        send_right_button = tk.Button(targ_frame,text="Right Axis",
 #                                     command=lambda: self._ux_send_to_axis("right"))
 #        send_right_button.grid(row=rown,column=1)
+        
+class QueryPanelEngine():
+    def __init__(self):    
+        self.log = logging.getLogger(__name__).info
+        self.log("Init.")
+        self.bug = logging.getLogger(__name__).debug   
+    
+    def get_queries_list(self,category,queries_ref):
+        qlist = []
+        if category:
+            for k,v in queries_ref.items():
+                if v["category"] == category:
+                    qlist.append(k)    
+        else:
+            qlist = list(queries_ref.keys())
+        qlist.sort()
+        return qlist
+    
+    def get_start_and_end(self,setdates_gap,setdates_from_date):
+        days_back = int(setdates_gap)
+        from_what_day = setdates_from_date
+        
+        if from_what_day == "today":
+            end_date = datetime.datetime.today().date()
+        elif from_what_day == "yesterday":
+            end_date = (datetime.datetime.today() - datetime.timedelta(1)).date()
+        elif len(from_what_day) == 8:
+            try:
+                int(from_what_day)
+            except ValueError:
+                self.bug("from_what_day in ._auto_test is not a valid date string.")
+                return
+            year = int(from_what_day[0:4])
+            month = int(from_what_day[4:6])
+            day = int(from_what_day[6:8]) 
+            end_date = datetime.date(year, month, day)
+            start_date = end_date - datetime.timedelta(days_back)
+        return start_date,end_date            
         
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))

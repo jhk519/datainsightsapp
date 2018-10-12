@@ -16,6 +16,7 @@ except ImportError:  # Python 3
 from pprint import pprint
 import pickle
 import numpy as np
+import logging
 
 # Project Modules
 from appwidget import AppWidget
@@ -24,7 +25,7 @@ class DataTable(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
         self.widget_name = "datatable"
         super().__init__(parent,controller,config,dbvar)
-#        self["width"] = 60
+        self.engine = DataTableEngine()
             
         self.nav_tree = ttk.Treeview(self)
         self.xscroll = ttk.Scrollbar(self, orient=tk.HORIZONTAL, command=self.nav_tree.xview)
@@ -75,5 +76,33 @@ class DataTable(AppWidget):
         self.nav_tree.pack(side="top", fill="both", expand=True)            
         
         self.log("Completed updating datatable.")
+        
+class DataTableEngine():
+    def __init__(self):    
+        self.log = logging.getLogger(__name__).info
+        self.log("Init.")
+        self.bug = logging.getLogger(__name__).debug   
+        
+        """
+        cfg/mrp = {
+            "start":start,
+            "end":end,
+            "title": title,
+            "line_labels": labels,
+            "data_list_of_lists": datas
+        }      
+        """
+
+    def get_rows_of_data(self,data_list_of_lists):
+        list_of_rows = []
+        for row_c,data_pt in enumerate(data_list_of_lists[0]):
+            row_values = []
+            for index, data_list in enumerate(data_list_of_lists):
+                val = data_list[row_c]
+                if isinstance(val, float) or isinstance(val, np.float64):
+                    val = round(val, 2)
+                row_values.append(val)
+            list_of_rows.append(row_values)
+        return list_of_rows           
             
                     

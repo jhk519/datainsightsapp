@@ -98,6 +98,10 @@ class AppWidget(tk.Frame):
             ext = ".png"
         elif ftype =="sqlite":
             ext = ".db"
+        elif ftype == "pickle":
+            ext = ".pkl"
+        elif ftype == "json":
+            ext = ".json"
             
         outname = base_string + self.get_time_str() + ext
         if not outdir:

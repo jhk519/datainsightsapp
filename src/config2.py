@@ -133,16 +133,16 @@ backend_settings = {
                     
                     "회원등급추가할인금액": "total_membership_level_discount",
                     "사용한적립금액": "total_membership_points_discount",
-                    "예치금": "total_cash_credit_discount",
-                    "쿠폰할인금액": "total_coupon_discount",
-                    "결제수단": "payment_method",
+#                    "예치금": "total_cash_credit_discount",
+#                    "쿠폰할인금액": "total_coupon_discount",
+
                     "매출경로": "shopping_platform",
                     "주문경로(PC/모바일)": "pc_or_mobile_platform",
                     
                     
                     "주문자휴대전화": "customer_phone_number",
                     "주문자ID": "customer_id",
-                    "카데고리": "category",
+#                    "카데고리": "category",
                     
                     "취소구분":"cancel_status",
             
@@ -191,8 +191,7 @@ backend_settings = {
                     "상품코드": "product_cafe24_code",
                     "상품등록일자": "upload_date",
                     "상품메모1": "product_h_code",
-                    "옵션메모3": "sku_h_code", 
-                    "BRAOBRW":"grwgw"                       
+                    "옵션메모3": "sku_h_code",                      
                 },
             },
         },                   
@@ -245,13 +244,13 @@ backend_settings = {
                                          "Orig. Price, Excl. Cncld Orders",
                                          "Net. Price, Excl. Cncld Orders"],
                         "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                     
+                        "breakdown_types": ["None","Gen. Platform","Spec. Platform","Customer's Nth Order"]                     
                     },
                     "order_size":{
                         "proper_title": "Order Size",
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Average"],
-                        "breakdown_types": ["None","Gen. Platform","Spec. Platform"]                        
+                        "breakdown_types": ["None","Gen. Platform","Spec. Platform","Customer's Nth Order"]                        
                     },
                     "count_of_cancels_by_item":{
                         "proper_title": "Count of Cancels By Item",
@@ -297,7 +296,31 @@ backend_settings = {
     },
     "datatable":{
         "gg":"hh"
-    }
+    },
+    "cafe24manager":{
+        "header_reference": {
+                "cancel_date_x":"cancel_status",
+                "member_id":"customer_id",
+                "buyer_cellphone":"customer_phone_number",
+                "order_date":"date",
+                "payment_date":"date_payment",
+                "shipped_date":"date_shipping",
+                "order_id":"order_id",
+                "order_item_code":"order_part_id",
+                "shipping_fee":"original_shipping_fee",
+                "order_from_mobile":"pc_or_mobile_platform",
+                "product_code":"product_cafe24_code",
+                "option_value":"product_option",
+                "product_price":"product_price",
+                "quantity":"product_quantity",
+                "additional_discount_price":"product_standard_discount",
+                "inflow_name":"shopping_platform",
+                "membership_discount_amount":"total_membership_level_discount",
+                "mileage_spent_amount":"total_membership_points_discount",
+                "actual_payment_amount":"total_net_price",
+                "order_price_amount":"total_original_price",
+        }                
+    },
 }
     
            

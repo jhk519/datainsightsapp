@@ -80,7 +80,7 @@ class QueryPanel(AppWidget):
         self.color_button_widget = None
         self.current_custom_name_entry_var = tk.StringVar()
         self.current_show_events_var = tk.BooleanVar()
-        self.current_show_events_var.set(False)
+        self.current_show_events_var.set(True)
         
         self.current_force_y_axis_var = tk.BooleanVar()
         self.current_force_y_axis_min_var = tk.IntVar()

@@ -29,6 +29,7 @@ from productviewer import ProductViewer
 from databasemanager import DBManager
 from settingsmanager import SettingsManager
 from multigrapher import MultiGrapher
+from cafe24manager import Cafe24Manager
 
 class DataInsightsApp(tk.Tk):
     def __init__(self, account, init_config, ver=None,showlog=False):
@@ -93,6 +94,10 @@ class DataInsightsApp(tk.Tk):
         self.multigrapher = MultiGrapher(self.notebook,self, curr_config)
         self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
         
+#       Cafe24 INIT
+        self.cafe24manager = Cafe24Manager(self.notebook,self, curr_config)
+        self.notebook.add(self.cafe24manager,text="Cafe24 Manager",sticky="snew")        
+        
 #       FINALIZE NOTEBOOK
         self.notebook.grid(row=0, column=0, sticky="ENSW")
         self.notebook.enable_traversal()
@@ -110,7 +115,6 @@ class DataInsightsApp(tk.Tk):
         except AttributeError:
             self.bug("Tried to send new db to productviewer, but it does not exist yet.")            
         
-            
     def propagate_cfg_var_change(self,new_cfgvar):
         self.dbmanager.set_cfgvar(new_cfgvar)
         self.product_viewer_page.set_cfgvar(new_cfgvar)

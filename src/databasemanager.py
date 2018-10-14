@@ -169,6 +169,34 @@ class DBManager(AppWidget):
         self.log("Export Sqlite Completed.")         
         self._update_statuses()
         
+    def ux_export_db_json(self,db_str):
+        self.log("Export DB Excel for {}".format(db_str))
+        if self.get_cfg_val("automatic db export"):
+            fullname = self.get_export_full_name(db_str,ftype="pickle")
+        else:
+            dir_loc = filedialog.asksaveasfilename()
+            fullname = dir_loc + ".json"        
+        
+        
+        with open(fullname, 'wb') as dbfile:
+            pickle.dump(self.get_dbvar()[db_str].to_json(), dbfile)               
+        
+        self.log("End JSON Conversion")
+        self._update_statuses()  
+        
+    def ux_export_db_pickle(self,db_str):
+        self.log("Export DB Excel for {}".format(db_str))
+        if self.get_cfg_val("automatic db export"):
+            fullname = self.get_export_full_name(db_str,ftype="pickle")
+        else:
+            dir_loc = filedialog.asksaveasfilename()
+            fullname = dir_loc + ".pkl"        
+            
+        self.get_dbvar()[db_str].to_pickle(fullname)
+        
+        self.log("End Pickle Conversion")
+        self._update_statuses()          
+        
     def ux_load_dbs(self):
         title = "Load from Online or from Computer?"
         text = "Please Choose to Load DB from Online or Offline."
@@ -260,6 +288,17 @@ class DBManager(AppWidget):
             ttk.Button(targ_frame,command=sql_cmd, text="SQLite").grid(
                     row=rown, column=coln,padx=(5,5))
             coln += 1
+            
+            json_cmd = lambda db_str=db_str: self.ux_export_db_json(db_str)
+            ttk.Button(targ_frame,command=json_cmd,text="JSON").grid(
+                    row=rown, column=coln,padx=(5,5))
+            coln += 1
+            
+            pickle_cmd = lambda db_str=db_str: self.ux_export_db_pickle(db_str)
+            ttk.Button(targ_frame,command=pickle_cmd, text="DF-Pickle").grid(
+                    row=rown, column=coln,padx=(5,5))
+            coln += 1
+                        
             
             self.db_status_labels.append([db_str,status_var])
             rown += 1

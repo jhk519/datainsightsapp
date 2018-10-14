@@ -25,6 +25,7 @@ BUG = logging.getLogger(__name__).debug
                           'category_or_product_entry': 'P0000BHV',
                           'end_datetime': datetime.date(2018, 5, 15),
                           'platform': 'All',
+                          'phone_numbers': "010-000-000,000-000-000",
                           'start_datetime': datetime.date(2018, 4, 15)},
          'graph_options': {'axis': 'right',
                            'color': '#0000ff',
@@ -279,7 +280,7 @@ def count_of_orders(odb,date_list, mcfg,breakdown_keys, **args):
         else:                
             if breakdown == "Customer's Nth Order":
                 try: 
-                    nth_order = int(getattr(row_tuple, "order_count") )
+                    nth_order = int(getattr(row_tuple, "order_count")) # Probably no phone_number
                 except ValueError: 
                     continue  
                 phone_number = str(getattr(row_tuple, "customer_phone_number"))
@@ -308,6 +309,10 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):
     datatype = mcfg["data_type"]
     breakdown = mcfg["breakdown"]
     n_breakdown = mcfg["number_of_rankings"] 
+    
+    ignore_numbers = args["ignore_numbers"]
+    if ignore_numbers is None:
+        ignore_numbers = []    
     
     odb = odb.drop_duplicates(subset="order_id") 
     
@@ -348,14 +353,27 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):
         
         else: 
             val_to_add = row_tuple.total_net_price   
-#        print(val_to_add)
         
-        if not breakdown == "None":
-            result_dict_key = getattr(row_tuple, bkdwn_column_str)
-        else:
-            result_dict_key = "All"            
-        
-        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+        if breakdown == "None":
+            result_dict_key = "All"        
+        else:                
+            if breakdown == "Customer's Nth Order":
+                try: 
+                    nth_order = int(getattr(row_tuple, "order_count")) # Probably no phone_number
+                except ValueError: 
+                    continue  
+                phone_number = str(getattr(row_tuple, "customer_phone_number"))
+                
+                if phone_number in ignore_numbers:
+                    result_dict_key = "IGNORE_NUMBER"  
+                elif nth_order >= n_breakdown:
+                    result_dict_key = str(top_counts[n_breakdown-1])
+                else:
+                    result_dict_key= str(nth_order) 
+            else:
+                result_dict_key = getattr(row_tuple, bkdwn_column_str)
+                
+        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)     
             
     if datatype == "Percentage":
         return convert_to_percentages(date_list,result_dict)
@@ -380,6 +398,10 @@ def order_size(odb,date_list, mcfg,breakdown_keys,**args):
     else:
         BUG("Metric Type {} is not compatible with Metric: {}".format(mtype,metric)) 
         
+    ignore_numbers = args["ignore_numbers"]
+    if ignore_numbers is None:
+        ignore_numbers = []            
+        
     order_sizes_by_order_id = odb["order_id"].value_counts()       
     odb = odb.drop_duplicates(subset="order_id")
         
@@ -399,10 +421,24 @@ def order_size(odb,date_list, mcfg,breakdown_keys,**args):
         date_index =  date_list.index(row_tuple.date)
         val_to_add = order_sizes_by_order_id.get(getattr(row_tuple, "order_id"))
             
-        if not breakdown == "None":
-            result_dict_key = getattr(row_tuple, bkdwn_column_str)
-        else:
-            result_dict_key = "All"            
+        if breakdown == "None":
+            result_dict_key = "All"        
+        else:                
+            if breakdown == "Customer's Nth Order":
+                try: 
+                    nth_order = int(getattr(row_tuple, "order_count")) # Probably no phone_number
+                except ValueError: 
+                    continue  
+                phone_number = str(getattr(row_tuple, "customer_phone_number"))
+                
+                if phone_number in ignore_numbers:
+                    result_dict_key = "IGNORE_NUMBER"  
+                elif nth_order >= n_breakdown:
+                    result_dict_key = str(top_counts[n_breakdown-1])
+                else:
+                    result_dict_key= str(nth_order) 
+            else:
+                result_dict_key = getattr(row_tuple, bkdwn_column_str)      
         
         result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
             

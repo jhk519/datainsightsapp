@@ -274,8 +274,6 @@ class DBManager(AppWidget):
         self.save_dbs_status.set("Saved DBs at " + self.get_time_str())
         self._update_statuses()
         
-        
-        
 # ================================================================
 # ================================================================
 #       FUNCTIONS
@@ -292,7 +290,8 @@ class DBManager(AppWidget):
             
         if file_loc: dir_loc = file_loc
         else: dir_loc = filedialog.askopenfilename()
-            
+         
+        self.log("Attempting to open database @{}".format(file_loc))
         with open(dir_loc, "rb") as dbfile:
             try:
                 self.set_dbvar(pickle.load(dbfile))
@@ -526,7 +525,7 @@ class DBManagerEngine():
 
     def add_rows_to_dataframe_from_excel(self,curr_df,append_df,drop_on):
         new_df = pd.concat([curr_df, append_df], axis=0, ignore_index = True,
-                           join = "outer").drop_duplicates(subset=drop_on,sort=False)
+                           join = "outer").drop_duplicates(subset=drop_on)
         return self.sanitize_df(new_df)    
 
     def update_columns(self,orig_odb, excel_path, db_cfg):
@@ -564,10 +563,12 @@ class DBManagerEngine():
         return temp        
     
     def convert_to_date(self,data_point, debugdb = ""):
+
         if type(data_point) == datetime.datetime or type(data_point) == pd._libs.tslib.Timestamp:
             return_val = data_point.date()
             if str(return_val) == "1970-01-01":
-                return_val = 0        
+                return_val = 0      
+
         else:
             return_val = data_point
         return return_val    

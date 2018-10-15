@@ -37,13 +37,14 @@ import master_calendar.calendardialog as cal_dialog
 from appwidget import AppWidget
 
 class Cafe24Manager(AppWidget):
-    def __init__(self,parent,controller,config,dbvar=None):
+    def __init__(self,parent,controller,config,dbvar=None,user="normal"):
         self.widget_name = "cafe24manager"
+        self.user = user
         super().__init__(parent,controller,config,dbvar)     
         
         
         # TOKEN VARS
-        self.token_doc_name = "tokens.txt"
+        self.token_doc_name = r"settings/tokens.txt"
         self.salt = b"\x97\xa1\x8dU\xe8\xad\xd6\x85\xa9\xc0\x7f\xd2+t\x9e\xfa"
         self.pass_var = tk.StringVar()
         self.last_update_var = tk.StringVar()
@@ -111,6 +112,7 @@ class Cafe24Manager(AppWidget):
         req_pages = (total_count // 500) + 1
         if req_pages > 16:
             self.bug("CANNOT CALL MORE THAN 16 PAGES!")
+            self.bug("Currently need {} pages for {} orders.".format(req_pages,total_count))
             return
         self.log("Required pages: {}".format(req_pages))
 
@@ -288,6 +290,10 @@ class Cafe24Manager(AppWidget):
         except AttributeError:
             self.log("Start date probably set to None.")
         else:
+            if which_cal == "start":
+                self.order_start_datetime = the_datetime
+            else:
+                self.order_end_datetime = the_datetime            
             the_date_var.set(str(the_datetime))           
         
         
@@ -338,7 +344,9 @@ class Cafe24Manager(AppWidget):
         if string == 0:
             return ""
         else:
-            return string[0:10]
+            a_str = string[0:10]
+            datetime_obj = datetime.datetime.strptime(a_str, "%Y-%m-%d")
+            return datetime_obj
     
     def convert_cancel_date_to_cancel_status(self,cancel_date):
 #        self.bug(cancel_date)
@@ -348,16 +356,22 @@ class Cafe24Manager(AppWidget):
             return "부분취소"
     
     def __gen_df_excel(self,df,transpose=False,open_excel=True):
-        time_str = datetime.datetime.now().strftime("%y%m%d-%H%M%S")       
-        path = "results{}.xlsx".format(time_str)
-        self.log("Exporting excel to: {}".format(path))
+#        time_str = datetime.datetime.now().strftime("%y%m%d-%H%M%S")    
+        if self.get_cfg_val("automatic_db_export"):
+            fullname = self.get_export_full_name("cafe24result")
+#            self.log(".export_db_csb auto-fullname: {}".format(fullname))
+        else:
+            dir_loc = tk.filedialog.asksaveasfilename() 
+            fullname = dir_loc + ".xlsx"
+            self.bug("_export_db_csv manual fullname: {}".format(fullname))        
+
         if transpose:
             df = df.transpose()
-        df.to_excel(path)
+        df.to_excel(fullname)
         self.log("Completed Excel Export...")
         if open_excel:
             self.log("Opening Excel...")
-            os.system('start excel.exe "%s"' % (path)) 
+            os.system('start excel.exe "%s"' % (fullname)) 
             
     def set_new_encrytion_suite(self):
         self.tokens["password"] = self.pass_var.get()
@@ -431,6 +445,9 @@ class Cafe24Manager(AppWidget):
     def toggle_functions_buttons(self,toggle):
         for child in self.functions_frame.winfo_children():
             if type(child) == tk.Button:
+                if "ADMIN" in child["text"] and self.user == "normal":
+                    child["state"] = "disabled"
+                    continue
                 if toggle:
                     child["state"] = "active"
                 else:
@@ -487,7 +504,10 @@ class Cafe24Manager(AppWidget):
         rewrite_button = tk.Button(targ_frame,text="Rewrite Token Encryption File\nADMIN ONLY!",
                             command=self.rewrite_tokens_doc)
         rewrite_button.grid(row=rown,column=0,sticky="w",padx=(10,5),pady=(8,5))
-        rewrite_button["state"] = "active"
+        if self.user == "normal":
+            rewrite_button["state"] = "disabled"
+        else:
+            rewrite_button["state"] = "active"
             
         rown += 1             
         
@@ -495,7 +515,7 @@ class Cafe24Manager(AppWidget):
         rown = 0
 
         
-        tk.Button(targ_frame,text="Refresh Access-Token",command=self.ux_refresh_access_token).grid(
+        tk.Button(targ_frame,text="Refresh Access-Token - ADMIN ONLY",command=self.ux_refresh_access_token).grid(
                   row=rown,column=0,columnspan=2,sticky="w",padx=(10,0),pady=(8,5))
         rown += 1
 

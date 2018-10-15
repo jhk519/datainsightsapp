@@ -386,7 +386,7 @@ class SettingsManagerEngine():
         
     def load_full_config(self):
         try:
-            with open('user_config.pickle',"rb") as user_config:
+            with open(r'settings/user_config.pickle',"rb") as user_config:
                 self.log("user_config pickle file found.")
                 return pickle.load(user_config) 
         except FileNotFoundError:
@@ -394,7 +394,7 @@ class SettingsManagerEngine():
             return False
         
     def save_full_config(self,new_config):
-        with open('user_config.pickle', 'wb') as dbfile:
+        with open('settings/user_config.pickle', 'wb') as dbfile:
             pickle.dump(new_config, dbfile) 
         
     def _get_clean_val(self,setting_val,setting_type):

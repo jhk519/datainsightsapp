@@ -21,6 +21,7 @@ import logging
 import datetime
 from pprint import pprint as PRETTYPRINT
 import requests
+import pandas
 #import matplotlib
 
 # Project Mpdules
@@ -98,7 +99,7 @@ class DataInsightsApp(tk.Tk):
         self.notebook.add(self.multigrapher,text="MultiGrapher",sticky="snew")
         
 #       Cafe24 INIT
-        self.cafe24manager = Cafe24Manager(self.notebook,self, curr_config)
+        self.cafe24manager = Cafe24Manager(self.notebook,self, curr_config,user=self.account)
         self.notebook.add(self.cafe24manager,text="Cafe24 Manager",sticky="snew")        
         
 #       FINALIZE NOTEBOOK
@@ -140,7 +141,7 @@ class DataInsightsApp(tk.Tk):
 if __name__ == "__main__":
     
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
-    ver = "v0.4.1 - 2018/10/04"
+    ver = "v0.4.2- 2018/10/15"
     if not os.path.exists(r"debug\\"):
         os.mkdir(r"debug\\")
     logging.basicConfig(filename=r"debug\\{}".format(logname),
@@ -158,10 +159,11 @@ if __name__ == "__main__":
     
     logging.info("Checking uplink...")
     response = requests.get("https://furyoo.pythonanywhere.com/app")
+    
     if not response.json()["uplink"] == "OK":
         logging.debug("App Uplink Failed: {}".format(response.text))
     else:
-        app = DataInsightsApp("admin",config,ver=ver,showlog=False)
+        app = DataInsightsApp("normal",config,ver=ver,showlog=False)
         logging.info("App Initialized...")
         
         app.state("zoomed")

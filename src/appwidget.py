@@ -106,7 +106,7 @@ class AppWidget(tk.Frame):
         outname = base_string + self.get_time_str() + ext
         if not outdir:
             outdir = self.get_cfg_val("automatic export location")
-            self.log("outdir from config: {}".format(outdir))
+#            self.log("outdir from config: {}".format(outdir))
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         fullname = os.path.join(outdir, outname)      

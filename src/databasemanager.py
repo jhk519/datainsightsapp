@@ -26,29 +26,46 @@ import os
 
 # Project Modules
 from appwidget import AppWidget
+import master_calendar.calendardialog as cal_dialog
 
 class DBManager(AppWidget):
     def __init__(self,parent,controller,config,dbvar=None):
-#        PRETTYPRINT(config)
         self.widget_name = "dbmanager"
         super().__init__(parent,controller,config,dbvar)     
         self.engine = DBManagerEngine()
  
 #       WIDGET SPECIFIC        
-#        PRETTYPRINT(self.get_cfg_val("dbs_cfg"))
         self.set_dbvar(self.engine.gen_bare_dbvar(self.get_cfg_val("dbs_cfg")))
         
         self.online_loaded = tk.IntVar(value=0)
         self.db_status_labels = []
         
+        # EXPORT VARS
+        self.current_export_db = tk.StringVar()
+        self.current_export_type = tk.StringVar()
+        
+        self.export_start_datetime = datetime.date(2018, 8, 1)
+        self.export_end_datetime = datetime.date(2018, 8, 1)
+        
+        self.export_start_date_button_var = tk.StringVar()
+        self.export_start_date_button_var.set(str(self.export_start_datetime))
+        
+        self.export_end_date_button_var = tk.StringVar()
+        self.export_end_date_button_var.set(str(self.export_end_datetime)) 
+        
+        # BUILD
         self.dbs_overview_frame = tk.LabelFrame(self,text="Overview")
-        self.dbs_overview_frame.grid(row=0,column=0,sticky="nw")
+        self.dbs_overview_frame.grid(row=0,rowspan=2,column=0,sticky="new")
         
         self.dbs_controls_frame = tk.LabelFrame(self,text="Misc. Controls")
-        self.dbs_controls_frame.grid(row=0,column=1,sticky="nw",padx=(15,15))
+        self.dbs_controls_frame.grid(row=0,column=1,sticky="new",padx=(15,15))
+        
+        self.dbs_export_frame = tk.LabelFrame(self,text="Export Databases")
+        self.dbs_export_frame.grid(row=1,column=1,sticky="new",padx=(15,15),pady=(10,1))
         
         self.build_dbs_overview_frame(self.dbs_overview_frame)
         self.build_dbs_controls_frame(self.dbs_controls_frame)
+        self.build_dbs_export_frame(self.dbs_export_frame)
         
         if self.get_cfg_val("loaddb_on_load"):
             self.load_offline_dbs(file_loc=self.get_cfg_val("loaddb_loc"))        
@@ -143,7 +160,33 @@ class DBManager(AppWidget):
         self.log("Completed Updating Columns: {}".format(db_str))  
         self._update_statuses()
         
-    def ux_export_db_excel(self,db_str):
+    def ux_export_db_handler(self):
+        type_str = self.current_export_type.get().lower()
+        
+        if type_str == "excel":
+            func = self.ux_export_db_excel
+        elif type_str == "sqlite":
+            func = self.ux_export_db_sqlite
+        elif type_str == "json":
+            func = self.ux_export_db_json
+        elif type_str == "pickle":
+            func = self.ux_export_db_pickle
+        else:
+            self.bug("Unknown type_str to export.")
+            
+        start = self.export_start_datetime
+        end = self.export_end_datetime
+        
+        proper = self.current_export_db.get()   
+        for db_str,db_cfg in self.get_cfg_val("dbs_cfg").items():
+            if db_cfg["proper_title"] == proper:
+                self.log("Exporting {} as {} file for range {} to {}".format(proper,type_str,start,end))
+                the_db = self.get_dbvar()[db_str]
+                masked = self.engine.apply_time_mask(the_db,start,end)
+                func(db_str,masked)
+                break
+        
+    def ux_export_db_excel(self,db_str,curr_df):
         self.log("Export DB Excel for {}".format(db_str))
         if self.get_cfg_val("automatic db export"):
             fullname = self.get_export_full_name(db_str)
@@ -152,24 +195,23 @@ class DBManager(AppWidget):
             dir_loc = filedialog.asksaveasfilename() 
             fullname = dir_loc + ".xlsx"
             self.bug("_export_db_csv manual fullname: {}".format(fullname))
-        self.get_dbvar()[db_str].to_excel(fullname)
-        
-#        os.system('start excel.exe "%s"' % (fullname))
+        curr_df.to_excel(fullname)
+
         self.log("End Excel Conversion")
         self._update_statuses()
         
-    def ux_export_db_sqlite(self,db_str):
+    def ux_export_db_sqlite(self,db_str,curr_df):
         self.log("Starting Export DB Sqlite: {}".format(db_str))
         if self.get_cfg_val("automatic db export"):
             fullname = self.get_export_full_name(db_str,ftype="sqlite")
         else:
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".db"
-        self.engine.df2sqlite(self.get_dbvar()[db_str], fullname)
+        self.engine.df2sqlite(curr_df, fullname)
         self.log("Export Sqlite Completed.")         
         self._update_statuses()
         
-    def ux_export_db_json(self,db_str):
+    def ux_export_db_json(self,db_str,curr_df):
         self.log("Export DB Excel for {}".format(db_str))
         if self.get_cfg_val("automatic db export"):
             fullname = self.get_export_full_name(db_str,ftype="pickle")
@@ -177,14 +219,13 @@ class DBManager(AppWidget):
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".json"        
         
-        
         with open(fullname, 'wb') as dbfile:
-            pickle.dump(self.get_dbvar()[db_str].to_json(), dbfile)               
+            pickle.dump(curr_df.to_json(), dbfile)               
         
         self.log("End JSON Conversion")
         self._update_statuses()  
         
-    def ux_export_db_pickle(self,db_str):
+    def ux_export_db_pickle(self,db_str,curr_df):
         self.log("Export DB Excel for {}".format(db_str))
         if self.get_cfg_val("automatic db export"):
             fullname = self.get_export_full_name(db_str,ftype="pickle")
@@ -192,11 +233,34 @@ class DBManager(AppWidget):
             dir_loc = filedialog.asksaveasfilename()
             fullname = dir_loc + ".pkl"        
             
-        self.get_dbvar()[db_str].to_pickle(fullname)
+        curr_df.to_pickle(fullname)
         
         self.log("End Pickle Conversion")
         self._update_statuses()          
-        
+
+    def _ux_open_order_cal(self,which_cal):
+        self.log("Getting new cal date")
+        if which_cal == "start":
+            the_datetime = self.export_start_datetime
+            the_date_var = self.export_start_date_button_var
+        else:
+            the_datetime = self.export_end_datetime
+            the_date_var = self.export_end_date_button_var
+            
+        get_calendar = cal_dialog.CalendarDialog(self, 
+                                                 year=the_datetime.year,
+                                                 month=the_datetime.month)
+        try:
+            the_datetime = get_calendar.result.date()
+        except AttributeError:
+            self.log("Start date probably set to None.")
+        else:
+            if which_cal == "start":
+                self.export_start_datetime = the_datetime
+            else:
+                self.export_end_datetime = the_datetime
+            the_date_var.set(str(the_datetime)) 
+            
     def ux_load_dbs(self):
         title = "Load from Online or from Computer?"
         text = "Please Choose to Load DB from Online or Offline."
@@ -209,6 +273,8 @@ class DBManager(AppWidget):
             pickle.dump(self.get_dbvar(), dbfile)           
         self.save_dbs_status.set("Saved DBs at " + self.get_time_str())
         self._update_statuses()
+        
+        
         
 # ================================================================
 # ================================================================
@@ -249,7 +315,6 @@ class DBManager(AppWidget):
         ttk.Label(targ_frame, text="Name").grid(row=rown, column=0)
         ttk.Label(targ_frame, text="Info").grid(row=rown, column=1)
         ttk.Label(targ_frame, text="Update").grid(row=rown, column=2,columnspan=3)       
-        ttk.Label(targ_frame, text="Export").grid(row=rown, column=5,columnspan=2)
         rown += 1
         
         for db_str,db_cfg in self.get_cfg_val("dbs_cfg").items():
@@ -278,28 +343,7 @@ class DBManager(AppWidget):
             ttk.Button(targ_frame,command=update_columns_cmd,text="Update Columns").grid(
                     row=rown, column=coln,padx=(5,5))     
             coln += 1
-            
-            excel_cmd = lambda db_str=db_str: self.ux_export_db_excel(db_str)
-            ttk.Button(targ_frame,command=excel_cmd,text="Excel").grid(
-                    row=rown, column=coln,padx=(5,5))
-            coln += 1
-            
-            sql_cmd = lambda db_str=db_str: self.ux_export_db_sqlite(db_str)
-            ttk.Button(targ_frame,command=sql_cmd, text="SQLite").grid(
-                    row=rown, column=coln,padx=(5,5))
-            coln += 1
-            
-            json_cmd = lambda db_str=db_str: self.ux_export_db_json(db_str)
-            ttk.Button(targ_frame,command=json_cmd,text="JSON").grid(
-                    row=rown, column=coln,padx=(5,5))
-            coln += 1
-            
-            pickle_cmd = lambda db_str=db_str: self.ux_export_db_pickle(db_str)
-            ttk.Button(targ_frame,command=pickle_cmd, text="DF-Pickle").grid(
-                    row=rown, column=coln,padx=(5,5))
-            coln += 1
-                        
-            
+
             self.db_status_labels.append([db_str,status_var])
             rown += 1
         
@@ -323,6 +367,43 @@ class DBManager(AppWidget):
         ttk.Label(targ_frame, textvariable=self.save_dbs_status).grid(
                 row=rown, column=1, sticky="e",padx=(0,10),pady=10)     
         rown += 1
+        
+    def build_dbs_export_frame(self,targ_frame):
+        rown = 0
+        tk.Label(targ_frame,text="Database:").grid(
+                row=rown, column=0,sticky="w",padx=(10,0),pady=(10,5))
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_export_db,width=20)
+        dropdown.grid(row=rown, column=1, columnspan=2, padx=(10,5),pady=(0,0),sticky="w")   
+        dropdown["values"] = [db_cfg["proper_title"] for db_str,db_cfg in self.get_cfg_val("dbs_cfg").items()]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0)  
+        rown += 1
+        
+        
+        tk.Label(targ_frame,text="Dates (If Applicable):").grid(
+                row=rown, column=0,sticky="w",padx=(10,0),pady=(0,5))
+        tk.Button(targ_frame,command=lambda: self._ux_open_order_cal("start"), 
+                  textvariable=self.export_start_date_button_var).grid(
+    			row=rown, column=1,columnspan=1, padx=(10,5),pady=(8,5),sticky="w")   
+        
+        tk.Button(targ_frame,command=lambda: self._ux_open_order_cal("end"),
+                  textvariable=self.export_end_date_button_var).grid(
+    			row=rown, column=2,columnspan=1, padx=(0,10),pady=(8,5),sticky="w") 
+        rown += 1  
+
+        tk.Label(targ_frame,text="Export File Type:").grid(
+                row=rown, column=0,sticky="w",padx=(10,0),pady=(0,5))
+        dropdown = ttk.Combobox(targ_frame, textvariable=self.current_export_type,width=20)
+        dropdown.grid(row=rown, column=1, columnspan=2,padx=(10,5),pady=(0,0),sticky="w")   
+        dropdown["values"] = ["Excel","SQLite","JSON","Pickle"]
+        dropdown["state"] = "readonly" 
+        dropdown.current(0)  
+        rown += 1
+        
+        coln = 0
+        ttk.Button(targ_frame,command=self.ux_export_db_handler,text="Export").grid(
+                row=rown, column=coln,sticky="w",padx=(10,5),pady=(15,10))
+
         
     def _update_statuses(self):
 
@@ -373,6 +454,15 @@ class DBManagerEngine():
         self.log = logging.getLogger(__name__).info
         self.log("Init.")
         self.bug = logging.getLogger(__name__).debug  
+        
+    def apply_time_mask(self,db,start,end):
+        try:
+            mask = (db['date'] >= start) & (
+                db['date'] <= end)
+        except KeyError:
+            self.bug("Requested DB has no date columns to mask on. Returning orig db")
+            return db
+        return db.loc[mask]          
         
     def gen_bare_dbvar(self,cfg):
         return { key: None for key in cfg}

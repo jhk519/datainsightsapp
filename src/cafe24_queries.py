@@ -53,8 +53,8 @@ def main(call_key,token,kwarg_dict):
     LOG("Requesting data...")
     response = call_func(token,**kwarg_dict)
     LOG("Received data response.")
-#    print(type(response.status_code))
-#    print(response.status_code)
+#    if response.headers["X-Api-Call-Limit"][0:2] == "29":
+#        time.sleep(1)
     if not response.status_code == "200" and not response.status_code == 200:
         
         if response.status_code == 404:
@@ -115,7 +115,7 @@ def get_count_of_orders_in_range(access_token,start_date="2018-07-15",end_date="
     temp_parameters = {"start_date":start_date,
                        "end_date":end_date,
                        "date_type":"order_date",
-                       "order_status":"N10,N20,N21,N22,N30,N40",
+#                       "order_status":"N00,N10,N20,N21,N22,N30,N40",
                        }  
     url = __generate_request_url('https://chuukr.cafe24api.com/api/v2/admin/orders/count?',
                                              temp_parameters)
@@ -128,8 +128,9 @@ def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_
                        "end_date":end_date,
                        "limit": 500,
                        "date_type":"order_date",
-                       "order_status":"N10,N20,N21,N22,N30,N40",
+#                       "order_status":"N00,N10,N20,N21,N22,N30,N40",
                        "offset":offset,
+                       "embed":"items",
                        }    
     if not order_ids is None:
         if type(order_ids) is str: 

@@ -337,7 +337,7 @@ class ProductViewerEngine():
 #            final_dict["product_info"]["vendor_code"] = sku_dict["vendor_code"]
 #            final_dict["product_info"]["vendor_price"] = sku_dict["vendor_price"]
 #            final_dict["product_info"]["main_image_url"] = sku_dict["main_image_url"]
-            final_dict["product_info"]["category"] = sku_dict["category"]
+#            final_dict["product_info"]["category"] = sku_dict["category"]
             
             sku_full_options_text_split = sku_dict["option_text"].split(",")
             sku_color = sku_full_options_text_split[0]

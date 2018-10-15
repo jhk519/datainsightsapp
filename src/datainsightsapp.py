@@ -20,6 +20,7 @@ import os
 import logging   
 import datetime
 from pprint import pprint as PRETTYPRINT
+import requests
 #import matplotlib
 
 # Project Mpdules
@@ -37,12 +38,14 @@ class DataInsightsApp(tk.Tk):
         self.log = logging.getLogger(__name__).info
         self.bug = logging.getLogger(__name__).debug
         
+      
+        
         logging.info("DataInsightsApp init started.")        
         super().__init__()
         self.log("Super init completed.")
         self.account = account
         self.log("Account id = {}".format(self.account))
-            
+        
 #       APP-VARS
         self.init_cfg = init_config
         self.analysispages = []
@@ -153,11 +156,16 @@ if __name__ == "__main__":
     config = config2.backend_settings    
     logging.info("Collected config2.backend_settings")
     
-    app = DataInsightsApp("admin",config,ver=ver,showlog=False)
-    logging.info("App Initialized...")
-    
-    app.state("zoomed")
-    app.title("Data Insights App - {}".format(ver))
-    app.mainloop()
-    logging.info("app.mainloop() terminated.")
+    logging.info("Checking uplink...")
+    response = requests.get("https://furyoo.pythonanywhere.com/app")
+    if not response.json()["uplink"] == "OK":
+        logging.debug("App Uplink Failed: {}".format(response.text))
+    else:
+        app = DataInsightsApp("admin",config,ver=ver,showlog=False)
+        logging.info("App Initialized...")
+        
+        app.state("zoomed")
+        app.title("Data Insights App - {}".format(ver))
+        app.mainloop()
+        logging.info("app.mainloop() terminated.")
     

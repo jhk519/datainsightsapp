@@ -43,7 +43,7 @@ class Cafe24Manager(AppWidget):
         
         
         # TOKEN VARS
-        self.token_doc_name = "DO_NOT_TOUCH_TOKEN_ENCRYPTION.txt"
+        self.token_doc_name = "tokens.txt"
         self.salt = b"\x97\xa1\x8dU\xe8\xad\xd6\x85\xa9\xc0\x7f\xd2+t\x9e\xfa"
         self.pass_var = tk.StringVar()
         self.last_update_var = tk.StringVar()
@@ -98,45 +98,53 @@ class Cafe24Manager(AppWidget):
         
     def get_order_id(self,string):
         return string.rsplit("-",1)[0]
-    
-#    def ux_get_orders_full(self,gen_excel=True):
-#        orders_df = self.ux_get_orders(gen_excel=False)
-#        if "order_id" in orders_df.columns:
-#            col_series = orders_df["order_id"]
-#        else:
-#            self.bug("order_id not found in order_df.")
-#            return
-#        order_items_df = self.ux_get_order_items(set(col_series),gen_excel=False)
-##        order_items_df['order_id'] = np.vectorize(self.fx)(order_items_df["order_item_code"])
-#        order_items_df['order_id'] = order_items_df["order_item_code"].apply(self.get_order_id)      
-#        merged = pd.merge(order_items_df, orders_df, 
-#                          on="order_id", right_index=False,
-#                          how='left', sort=False)    
-#        self.__gen_df_excel(merged)
-        
+            
     def ux_get_orders_full(self,gen_excel=True):
-        pathstr = tk.filedialog.askopenfilename()
-        orders_df = pd.read_excel(pathstr, 0)        
-#        orders_df = self.ux_get_orders(gen_excel=False)
-#        if "order_id" in orders_df.columns:
-#            col_series = orders_df["order_id"]
-#        else:
-#            self.bug("order_id not found in order_df.")
-#            return
-#        order_items_df = self.ux_get_order_items(set(col_series),gen_excel=False)
-        pathstr = tk.filedialog.askopenfilename()
-        order_items_df = pd.read_excel(pathstr, 0)           
-#        order_items_df['order_id'] = np.vectorize(self.fx)(order_items_df["order_item_code"])
-        order_items_df['order_id'] = order_items_df["order_item_code"].apply(self.get_order_id)      
-        merged = pd.merge(order_items_df, orders_df, 
+        self.log("Get Orders Items FULL Called.")
+        failed_x_pages = []
+        count_kwargs = {"start_date":self.order_start_date_button_var.get(),
+                        "end_date":self.order_end_date_button_var.get()}
+        
+        total_count = cafe24_queries.main("get_order_count",self.tokens["access_token"],count_kwargs)
+        self.log("Total orders: {}".format(total_count))
+        
+        req_pages = (total_count // 500) + 1
+        if req_pages > 16:
+            self.bug("CANNOT CALL MORE THAN 16 PAGES!")
+            return
+        self.log("Required pages: {}".format(req_pages))
+
+        order_kwargs = {"start_date":self.order_start_date_button_var.get(),
+                        "end_date":self.order_end_date_button_var.get()}
+        curr_orders_df = pd.DataFrame()
+        order_items_dict_list = []
+        
+        for x in range(0,req_pages):
+            self.log("Getting page: {} of {}...".format(x+1,req_pages))
+            order_kwargs["offset"] = 500 * x
+            orders_json = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
+            for order_dict in orders_json:
+                order_items_dict_list += order_dict["items"]
+                order_dict.pop("items")
+            append_df = pd.DataFrame(orders_json)
+            curr_orders_df = pd.concat([curr_orders_df, append_df], axis=0, 
+                                        ignore_index = True, join = "outer")          
+        curr_order_items_df = pd.DataFrame(order_items_dict_list)
+        
+        curr_order_items_df['order_id'] = curr_order_items_df["order_item_code"].apply(self.get_order_id)      
+        merged = pd.merge(curr_order_items_df, curr_orders_df, 
                           on="order_id", right_index=False,
-                          how='left', sort=False)   
+                          how='left', sort=False)    
+        
+        
         
         if self.use_insights_headers.get():
             merged = self.get_translated_and_dropped_df(merged,self.get_cfg_val("header_reference"))
             merged = self.convert_all_date_columns(merged)
-        
-        self.__gen_df_excel(merged)    
+            
+        merged = merged.loc[merged['date_payment'] != ""]
+            
+        self.__gen_df_excel(merged)
         
     def ux_get_orders(self,gen_excel=True):
         self.log("Get Orders Called.")
@@ -161,7 +169,8 @@ class Cafe24Manager(AppWidget):
             orders_json = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
             append_df = pd.DataFrame(orders_json)
             curr_df = pd.concat([curr_df, append_df], axis=0, 
-                                 ignore_index = True, join = "outer")  
+                                 ignore_index = True, join = "outer")
+            
         self.log("Compiling all pages...")
         self.bug(failed_x_pages)
         cols = list(curr_df.columns.values) #Make a list of all of the columns in the df
@@ -233,8 +242,8 @@ class Cafe24Manager(AppWidget):
                                               {"product_code":pcode })
         product_nom = response[0]["product_no"]
         sales_volume_kwargs = {"start_date":self.order_start_date_button_var.get(),
-                        "end_date":self.order_end_date_button_var.get(),
-                        "product_no":product_nom}
+                               "end_date":self.order_end_date_button_var.get(),
+                               "product_no":product_nom}
         response_sales = cafe24_queries.main("get_sales_volume",self.tokens["access_token"],
                                              sales_volume_kwargs)
 #        print(response_sales)
@@ -262,6 +271,7 @@ class Cafe24Manager(AppWidget):
 #        self.set_new_encrytion_suite()
         self.rewrite_tokens_doc()
         self._open_tokens_doc()
+        self.refresh_tokens_statuses(True)
         
     def _ux_open_order_cal(self,which_cal):
         self.log("Getting new cal date")
@@ -287,12 +297,12 @@ class Cafe24Manager(AppWidget):
         if type(response) is str:
             self.bug(response)
             if "Call limit" in response:
-                self.bug("Sleeping 30 seconds.")
-                time.sleep(30)
+                self.bug("Sleeping 25 seconds.")
+                time.sleep(25)
                 
                 return "try_again"
             elif "404" in response:
-                time.sleep(2)
+                time.sleep(15)
                 return "error"
             else:
                 return "error"
@@ -331,6 +341,7 @@ class Cafe24Manager(AppWidget):
             return string[0:10]
     
     def convert_cancel_date_to_cancel_status(self,cancel_date):
+#        self.bug(cancel_date)
         if cancel_date == 0:
             return "취소안함"
         else:
@@ -406,6 +417,12 @@ class Cafe24Manager(AppWidget):
             join_list = ["DATE:"+time_str,"EXPIRE_DATE:"+exp,"ACCESS_TOKEN:"+acc,"REFRESH_TOKEN:"+ref]
             byte_seq = self.fernetter.encrypt("$$%%".join(join_list).encode())
             the_file.write(byte_seq)     
+            
+#        with open("tokens.txt", 'wb') as the_file:
+#            time_str = datetime.datetime.now().strftime("%Y-%B-%d %H-%M-%S")
+#            join_list = ["DATE:"+time_str,"EXPIRE_DATE:"+exp,"ACCESS_TOKEN:"+acc,"REFRESH_TOKEN:"+ref]
+#            byte_seq = self.fernetter.encrypt("$$%%".join(join_list).encode())
+#            the_file.write(byte_seq)              
     
 #    def str_to_enc_bytes(self,left_str,str_data):
 #        access_tokenized = self.fernetter.encrypt(left_str.encode() + str_data.encode())
@@ -476,17 +493,15 @@ class Cafe24Manager(AppWidget):
         
     def build_functions_frame(self,targ_frame):
         rown = 0
-   
+
         
         tk.Button(targ_frame,text="Refresh Access-Token",command=self.ux_refresh_access_token).grid(
                   row=rown,column=0,columnspan=2,sticky="w",padx=(10,0),pady=(8,5))
         rown += 1
-        
 
-        
-        tk.Button(targ_frame,text="Get Orders",command=self.ux_get_orders).grid(
-                row=rown,column=0,sticky="w",padx=(10,0),pady=(8,5))
-        
+
+        tk.Label(targ_frame,text="Dates (Orders & Sales Volume):").grid(
+                row=rown,column=0,sticky="w",padx=(8,5))           
         tk.Button(targ_frame,command=lambda: self._ux_open_order_cal("start"), 
                   textvariable=self.order_start_date_button_var).grid(
     			row=rown, column=1,columnspan=1, padx=(0,5),pady=(8,5),sticky="w")   
@@ -494,6 +509,10 @@ class Cafe24Manager(AppWidget):
         tk.Button(targ_frame,command=lambda: self._ux_open_order_cal("end"),
                   textvariable=self.order_end_date_button_var).grid(
     			row=rown, column=2,columnspan=1, padx=(0,10),pady=(8,5),sticky="w") 
+        rown += 1        
+        
+        tk.Button(targ_frame,text="Get Orders",command=self.ux_get_orders).grid(
+                row=rown,column=0,sticky="w",padx=(10,0),pady=(8,5))
         rown += 1
         
         tk.Button(targ_frame,text="Get Order Items FULL",command=self.ux_get_orders_full).grid(
@@ -502,27 +521,27 @@ class Cafe24Manager(AppWidget):
         ttk.Checkbutton(targ_frame, text="Convert to Insights Headers", variable=self.use_insights_headers,
                 onvalue=True,offvalue=False).grid(row=rown, column=1,columnspan=2, sticky="w",padx=(8,0))
         rown += 1
-
+        
+        tk.Entry(targ_frame,textvariable=self.sales_volume_code,width=30).grid(
+                row=rown,column=0, columnspan=1,sticky="w",padx=(10,5),pady=(8,5))
+        tk.Button(targ_frame,text="<- Get Sales Volume",command=self.ux_get_sales_volume).grid(
+            row=rown,column=1,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
+        rown += 1     
+        
         tk.Entry(targ_frame,textvariable=self.order_id_var,width=30).grid(
-                row=rown,column=0, columnspan=2,sticky="w",padx=(10,5),pady=(8,5))
+                row=rown,column=0, columnspan=1,sticky="w",padx=(10,5),pady=(8,5))
         tk.Button(targ_frame,text="<- Get Order Items",command=self.ux_get_order_items).grid(
-            row=rown,column=2,sticky="w",padx=(0,5),pady=(8,5))     
+            row=rown,column=1,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
         rown += 1
         
         tk.Button(targ_frame,text="Get Order Items By Excel",command=self.ux_get_order_items_use_excel).grid(
             row=rown,column=0,columnspan=2,sticky="w",padx=(10,5),pady=(8,5))        
-        rown += 1
-        
-        tk.Entry(targ_frame,textvariable=self.sales_volume_code,width=30).grid(
-                row=rown,column=0, columnspan=2,sticky="w",padx=(10,5),pady=(8,5))
-        tk.Button(targ_frame,text="<- Get Sales Volume",command=self.ux_get_sales_volume).grid(
-            row=rown,column=2,sticky="w",padx=(0,5),pady=(8,5))     
         rown += 1        
         
         targ_frame.columnconfigure(0,weight=0)
         targ_frame.columnconfigure(1,weight=0)
         targ_frame.columnconfigure(2,weight=1)  
-        targ_frame.columnconfigure(3,weight=0)  
+        targ_frame.columnconfigure(3,weight=1)  
         targ_frame.columnconfigure(4,weight=0)  
         targ_frame.columnconfigure(5,weight=0)  
         
@@ -543,7 +562,7 @@ if __name__ == "__main__":
     logging.info("-------------------------------------------------------------")
     logging.info("PPBCafe24App module initialized...")
     
-    app = PPBCafe24App("Admin")
+    app = Cafe24Manager("Admin")
     logging.info("App Initialized...")
     
 #    app.state("zoomed")

@@ -19,6 +19,7 @@ import pickle
 import logging
 import datetime
 from os import system
+import pandas as pd
 
 # Project Modules
 from appwidget import AppWidget

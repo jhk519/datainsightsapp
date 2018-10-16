@@ -40,11 +40,13 @@ def main(call_key,token,kwarg_dict):
         "new_refresh": (refresh_access,""),
         "get_orders": (get_orders,"orders"),
         "get_order_items": (get_order_items,"items"),
-        "get_product": (get_product,"products"),
+        "get_products": (get_products,"products"),
+        "get_products_by_category": (get_products_by_category,"products"),
         "get_sales_volume": (get_sales_volume,"salesvolume"),
         "get_customer": (getcustomer,"customers"),
         "get_categories": (getcategories,"categories"),
-        "get_order_count": (get_count_of_orders_in_range,"count")
+        "get_order_count": (get_count_of_orders_in_range,"count"),
+        "get_product_count": (get_count_of_products_in_range,"count")
     }        
     
     call_func = call_ref[call_key][0]
@@ -63,6 +65,8 @@ def main(call_key,token,kwarg_dict):
         elif response.status_code == "429" or response.status_code == 429:
             error_msg = "Call limit reached! {}".format(response.headers["X-Api-Call-Limit"])
 #            print(response.headers["X-Api-Call-Limit"][0:2])
+        elif response.status_code == 401:
+            error_msg = "ERROR! Invalid Access Token. Require Refresh or Admin."
         else:    
             error = response.json()["error"]["message"]
             if "주문번호" in error:
@@ -122,7 +126,7 @@ def get_count_of_orders_in_range(access_token,start_date="2018-07-15",end_date="
     return requests.get(url,headers={"Content-Type":"application/json",
                                      "Authorization": "Bearer {}".format(access_token)})
     
-def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_date="2018-08-01"):
+def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_date="2018-08-01",embed=None):
     
     temp_parameters = {"start_date":start_date,
                        "end_date":end_date,
@@ -130,7 +134,6 @@ def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_
                        "date_type":"order_date",
 #                       "order_status":"N00,N10,N20,N21,N22,N30,N40",
                        "offset":offset,
-                       "embed":"items",
                        }    
     if not order_ids is None:
         if type(order_ids) is str: 
@@ -139,6 +142,10 @@ def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_
             temp_parameters["order_id"] = ",".join(order_ids)
         else: 
             return "Invalid order_ids"
+        
+    if not embed is None:
+        temp_parameters["embed"] = embed
+   
         
     url = __generate_request_url('https://chuukr.cafe24api.com/api/v2/admin/orders?',
                                  temp_parameters)
@@ -149,14 +156,38 @@ def get_orders(access_token,order_ids=None,offset=0,start_date="2018-08-01",end_
 def get_order_items(access_token,order_id="20180716-0000141"):
     url = "https://chuukr.cafe24api.com/api/v2/admin/orders/{}/items".format(order_id)
     return requests.get(url, headers={"Content-Type":"application/json",
-                                      "Authorization": "Bearer {}".format(access_token)})    
+                                      "Authorization": "Bearer {}".format(access_token)})   
         
-def get_product(access_token,product_code="P000BFFF"):
+def get_count_of_products_in_range(access_token,**kwargs):
+    temp_parameters = {}
+    for key,value in kwargs.items():
+        temp_parameters[key] = value
+    url = __generate_request_url('https://chuukr.cafe24api.com/api/v2/admin/products/count?',
+                                             temp_parameters)
+    return requests.get(url,headers={"Content-Type":"application/json",
+                                     "Authorization": "Bearer {}".format(access_token)})        
+        
+def get_products_by_category(access_token,**kwargs):
+    temp_parameters = {"limit":100}
+    for key,value in kwargs.items():
+        temp_parameters[key] = value
+    url = __generate_request_url("https://chuukr.cafe24api.com/api/v2/admin/products?",
+                                             temp_parameters)
+    return requests.get(url, headers={"Content-Type":"application/json",
+                                      "Authorization": "Bearer {}".format(access_token)})           
+        
+def get_products(access_token,product_code="P000BFFF"):
     temp_parameters = {"product_code":product_code}
     url = __generate_request_url("https://chuukr.cafe24api.com/api/v2/admin/products?",
                                              temp_parameters)
     return requests.get(url, headers={"Content-Type":"application/json",
-                                      "Authorization": "Bearer {}".format(access_token)})    
+                                      "Authorization": "Bearer {}".format(access_token)})  
+        
+def get_product_details(access_token,product_nom=0):
+#    temp_parameters = {"product_code":product_code}
+    url = "https://chuukr.cafe24api.com/api/v2/admin/products/{}".format(product_nom)
+    return requests.get(url, headers={"Content-Type":"application/json",
+                                      "Authorization": "Bearer {}".format(access_token)})         
     
 def get_sales_volume(access_token,product_no="21092",start_date="2018-08-01",end_date="2018-08-01"):
     temp_parameters = {"product_no":str(product_no),

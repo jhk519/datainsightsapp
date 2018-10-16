@@ -337,10 +337,10 @@ class AnalysisPageEngine():
         else:
             self.bug("Received aggregation_type: {} which is not compatible.".format(agg_type))
             
-    def get_chunks(self,l, n):
+    def get_chunks(self,list_obj, n_size):
         """Yield successive n-sized chunks from l."""
-        for i in range(0, len(l), n):
-            yield l[i:i + n]
+        for i in range(0, len(list_obj), n_size):
+            yield list_obj[i:i + n_size]
             
     def get_export_excel_pack(self,table_pack):
         line_labels = table_pack["line_labels"]

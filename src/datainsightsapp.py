@@ -39,8 +39,6 @@ class DataInsightsApp(tk.Tk):
         self.log = logging.getLogger(__name__).info
         self.bug = logging.getLogger(__name__).debug
         
-      
-        
         logging.info("DataInsightsApp init started.")        
         super().__init__()
         self.log("Super init completed.")
@@ -77,8 +75,6 @@ class DataInsightsApp(tk.Tk):
         self.notebook.add(self.settingsmanager,text="Settings",sticky="nesw")
         
         curr_config = self.settingsmanager.get_latest_config(needcopy=True)
-        
-#        PRETTYPRINT(curr_config["dbmanager"])
         
 #        DATA MANAGER PAGE INIT 
         self.dbmanager = DBManager(self.notebook, self, curr_config)
@@ -139,7 +135,7 @@ class DataInsightsApp(tk.Tk):
         return self.settingsmanager.get_latest_config()["multigrapher"]
         
 if __name__ == "__main__":
-    
+    user = "admin"
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
     ver = "v0.4.2- 2018/10/15"
     if not os.path.exists(r"debug\\"):
@@ -153,17 +149,20 @@ if __name__ == "__main__":
     logging.info("VERSION: {}".format(ver))
     logging.info("AUTHOR:{}".format("Justin H Kim"))
     logging.info("-------------------------------------------------------------")
-    logging.info("datainsightsapp module initialized...")
+    
     config = config2.backend_settings    
     logging.info("Collected config2.backend_settings")
     
     logging.info("Checking uplink...")
-    response = requests.get("https://furyoo.pythonanywhere.com/app")
-    
+    if user == "admin":
+        response = requests.get("https://furyoo.pythonanywhere.com/app_admin")
+    else:
+        response = requests.get("https://furyoo.pythonanywhere.com/app")
+        
     if not response.json()["uplink"] == "OK":
         logging.debug("App Uplink Failed: {}".format(response.text))
     else:
-        app = DataInsightsApp("normal",config,ver=ver,showlog=False)
+        app = DataInsightsApp(user,config,ver=ver,showlog=False)
         logging.info("App Initialized...")
         
         app.state("zoomed")

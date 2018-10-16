@@ -24,6 +24,7 @@ from pprint import pprint as PRETTYPRINT
 import pandas as pd
 import time
 import numpy as np
+import requests
 
 # Non-Standard Modules
 import cryptography.fernet as fernet
@@ -42,7 +43,6 @@ class Cafe24Manager(AppWidget):
         self.user = user
         super().__init__(parent,controller,config,dbvar)     
         
-        
         # TOKEN VARS
         self.token_doc_name = r"settings/tokens.txt"
         self.salt = b"\x97\xa1\x8dU\xe8\xad\xd6\x85\xa9\xc0\x7f\xd2+t\x9e\xfa"
@@ -55,7 +55,6 @@ class Cafe24Manager(AppWidget):
         self.access_token_var.set("NONE")
         self.refresh_token_var = tk.StringVar()
         self.refresh_token_var.set("NONE")
-        
         
         # FUNCTION VARS
         
@@ -75,14 +74,14 @@ class Cafe24Manager(AppWidget):
         self.order_id_var = tk.StringVar()
         self.order_id_var.set("ORDER_ID,ORDER_ID,etc...")
         
-        self.sales_volume_code = tk.StringVar()
-        self.sales_volume_code.set("PRODUCT_CAFE24_CODE")
+        self.product_codes_var = tk.StringVar()
+        self.product_codes_var.set("PRODUCT_CAFE24_CODE,PRODUCT_CAFE24_CODE")
     
         self.tokens = {
             "last_update":"",
             "password":"",
-            "access_token":"UkMxNaTfRSoEJuRb6HFhKB",
-            "refresh_token":"LtGVwa0KO1zqUBrRr4SPpC",
+            "access_token":"",
+            "refresh_token":"",
             "auth_code":"",
             "expire_date":"",
         }
@@ -102,43 +101,69 @@ class Cafe24Manager(AppWidget):
             
     def ux_get_orders_full(self,gen_excel=True):
         self.log("Get Orders Items FULL Called.")
-        failed_x_pages = []
+        
         count_kwargs = {"start_date":self.order_start_date_button_var.get(),
                         "end_date":self.order_end_date_button_var.get()}
         
-        total_count = cafe24_queries.main("get_order_count",self.tokens["access_token"],count_kwargs)
-        self.log("Total orders: {}".format(total_count))
+        total_count = self.get_count("get_order_count",count_kwargs)
+        if not total_count:
+            return
         
         req_pages = (total_count // 500) + 1
         if req_pages > 16:
             self.bug("CANNOT CALL MORE THAN 16 PAGES!")
             self.bug("Currently need {} pages for {} orders.".format(req_pages,total_count))
+            self.too_many_pages(total_count,req_pages)
             return
+        
         self.log("Required pages: {}".format(req_pages))
 
+        failed_x_pages = []
         order_kwargs = {"start_date":self.order_start_date_button_var.get(),
-                        "end_date":self.order_end_date_button_var.get()}
+                        "end_date":self.order_end_date_button_var.get(),
+                        "embed":"items"}
+        
         curr_orders_df = pd.DataFrame()
         order_items_dict_list = []
         
         for x in range(0,req_pages):
             self.log("Getting page: {} of {}...".format(x+1,req_pages))
             order_kwargs["offset"] = 500 * x
-            orders_json = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
-            for order_dict in orders_json:
-                order_items_dict_list += order_dict["items"]
-                order_dict.pop("items")
-            append_df = pd.DataFrame(orders_json)
-            curr_orders_df = pd.concat([curr_orders_df, append_df], axis=0, 
-                                        ignore_index = True, join = "outer")          
+
+            response = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
+            handled = self.response_handler(response)
+            
+            if type(handled) == list: 
+                for order_dict in handled:
+                    order_items_dict_list += order_dict["items"]
+                    order_dict.pop("items")    
+                append_df = pd.DataFrame(handled)
+                curr_orders_df = pd.concat([curr_orders_df, append_df], axis=0, 
+                                            ignore_index = True, join = "outer")                      
+                
+            elif type(handled) is str:
+                if handled == "try_again":
+                    response_again = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
+                    handled_again = self.response_handler(response_again)
+                    
+                    if type(handled_again) is str:
+                        failed_x_pages.append(x)
+                    elif type(handled_again) is list:
+                        for order_dict in handled_again:
+                            order_items_dict_list += order_dict["items"]
+                            order_dict.pop("items")    
+                        append_df = pd.DataFrame(handled_again)
+                        curr_orders_df = pd.concat([curr_orders_df, append_df], axis=0, 
+                                                    ignore_index = True, join = "outer")  
+                elif handled == "error":
+                    failed_x_pages.append(x)                 
+
         curr_order_items_df = pd.DataFrame(order_items_dict_list)
         
         curr_order_items_df['order_id'] = curr_order_items_df["order_item_code"].apply(self.get_order_id)      
         merged = pd.merge(curr_order_items_df, curr_orders_df, 
                           on="order_id", right_index=False,
                           how='left', sort=False)    
-        
-        
         
         if self.use_insights_headers.get():
             merged = self.get_translated_and_dropped_df(merged,self.get_cfg_val("header_reference"))
@@ -150,28 +175,50 @@ class Cafe24Manager(AppWidget):
         
     def ux_get_orders(self,gen_excel=True):
         self.log("Get Orders Called.")
-        failed_x_pages = []
+        
         count_kwargs = {"start_date":self.order_start_date_button_var.get(),
                         "end_date":self.order_end_date_button_var.get()}
-        total_count = cafe24_queries.main("get_order_count",self.tokens["access_token"],count_kwargs)
-        self.log("Total orders: {}".format(total_count))
+        total_count = self.get_count("get_order_count",count_kwargs)
+        if not total_count:
+            return
+        
         req_pages = (total_count // 500) + 1
         if req_pages > 16:
             self.bug("CANNOT CALL MORE THAN 16 PAGES!")
+            self.bug("Currently need {} pages for {} orders.".format(req_pages,total_count))
+            self.too_many_pages(total_count,req_pages)
             return
+        
         self.log("Required pages: {}".format(req_pages))
 
         order_kwargs = {"start_date":self.order_start_date_button_var.get(),
                         "end_date":self.order_end_date_button_var.get()}
-        
+        failed_x_pages = []
         curr_df = pd.DataFrame()
+        
         for x in range(0,req_pages):
             self.log("Getting page: {} of {}...".format(x+1,req_pages))
             order_kwargs["offset"] = 500 * x
-            orders_json = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
-            append_df = pd.DataFrame(orders_json)
-            curr_df = pd.concat([curr_df, append_df], axis=0, 
-                                 ignore_index = True, join = "outer")
+
+            response = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
+            
+            handled = self.response_handler(response)
+            
+            if type(handled) == list:
+                curr_df = pd.concat([curr_df, pd.DataFrame(handled)], axis=0, 
+                                     ignore_index=True,join="outer")             
+            elif type(handled) is str:
+                if handled == "try_again":
+                    response_again = cafe24_queries.main("get_orders",self.tokens["access_token"],order_kwargs)
+                    handled_again = self.response_handler(response_again)
+                    
+                    if type(handled_again) is str:
+                        failed_x_pages.append(x)
+                    elif type(handled_again) is list:
+                        curr_df = pd.concat([curr_df, pd.DataFrame(handled_again)], axis=0, 
+                                             ignore_index = True, join = "outer")  
+                elif handled == "error":
+                    failed_x_pages.append(x)            
             
         self.log("Compiling all pages...")
         self.bug(failed_x_pages)
@@ -182,7 +229,7 @@ class Cafe24Manager(AppWidget):
             self.__gen_df_excel(curr_df)   
         else:
             return curr_df
-        
+
     def ux_get_order_items_use_excel(self):
         pathstr = tk.filedialog.askopenfilename()
         init_df = pd.read_excel(pathstr, 0)
@@ -202,29 +249,36 @@ class Cafe24Manager(AppWidget):
             ids_set = order_ids
             
         curr_df = pd.DataFrame()
+        
         for index,order_id in enumerate(ids_set):
             self.log("Getting order_items for id: {}, {} out of {}".format(order_id,index,len(ids_set)))
+            
             if len(failed_requests) > 10:
                 self.bug("Too many failed requests, stopping.")
                 break
+            
             response = cafe24_queries.main("get_order_items",self.tokens["access_token"],
                                               {"order_id":order_id })
-            handled = self.response_handler(response,curr_df)
             
-            if type(handled) is str:
+            handled = self.response_handler(response)
+            
+            if type(handled) == list:
+                curr_df = pd.concat([curr_df, pd.DataFrame(handled)], axis=0, 
+                                     ignore_index=True,join="outer")             
+            elif type(handled) is str:
                 if handled == "try_again":
                     response_again = cafe24_queries.main("get_order_items",self.tokens["access_token"],
-                                              {"order_id":order_id })
-                    handled_again = self.response_handler(response_again,curr_df)
+                                                         {"order_id":order_id })
+                    handled_again = self.response_handler(response_again)
+                    
                     if type(handled_again) is str:
                         failed_requests.append(order_id)
-                    elif type(handled_again) is pd.DataFrame:
-                        curr_df = handled_again
+                    elif type(handled_again) is list:
+                        curr_df = pd.concat([curr_df, pd.DataFrame(handled_again)], axis=0, 
+                                             ignore_index = True, join = "outer")  
                 elif handled == "error":
                     failed_requests.append(order_id)
-            elif type(handled) == pd.DataFrame:
-                curr_df = handled
-                
+
         self.bug("\n".join(failed_requests))
         cols = list(curr_df.columns.values) #Make a list of all of the columns in the df
         cols.pop(cols.index("order_item_code")) #Remove b from list
@@ -236,44 +290,193 @@ class Cafe24Manager(AppWidget):
             else:
                 self.__gen_df_excel(curr_df,transpose=True)
         else:
-            return curr_df
+            return curr_df        
+
+    def ux_get_products_by_excel(self):
+        pathstr = tk.filedialog.askopenfilename()
+        init_df = pd.read_excel(pathstr, 0)
+        if "product_cafe24_code" in init_df.columns:
+            col_series = init_df["product_cafe24_code"]
+        else:
+            col_series = init_df.iloc[:,0]
+        self.ux_get_products(product_ids=set(col_series))      
+        
+    def ux_get_products(self,product_ids=None,gen_excel=True):
+        self.log("Get Products Called")
+        failed_requests = []
+        if product_ids is None:
+            clean_entry = self.product_codes_var.get().strip().replace(" ", "").replace("\n", "")
+            ids_set = set(clean_entry.split(","))
+        else:
+            ids_set = product_ids        
+
+        curr_df = pd.DataFrame()
+        CHUNK_SIZE = 50
+
+        for index,product_code_chunk in enumerate(self.get_chunks(ids_set,CHUNK_SIZE)):
+            self.log("Getting data for chunk #{}".format(index))
+                     
+            if len(failed_requests) > 10:
+                self.bug("Too many failed requests, stopping.")
+                self.create_popup("Aborting Request","Too Many Failed API Requests!")               
+                break
             
+            stringed = ",".join(product_code_chunk)
+            response = cafe24_queries.main("get_products",self.tokens["access_token"],
+                                           {"product_code":stringed })
+            handled = self.response_handler(response)
+            
+            if type(handled) == list:
+                curr_df = pd.concat([curr_df, pd.DataFrame(handled)], axis=0, 
+                                     ignore_index=True,join="outer")             
+            elif type(handled) is str:
+                if handled == "try_again":
+                    response_again = cafe24_queries.main("get_products",self.tokens["access_token"],
+                                                         {"product_code":stringed })
+                    handled_again = self.response_handler(response_again)
+                    
+                    if type(handled_again) is str:
+                        failed_requests.append(product_code_chunk)
+                    elif type(handled_again) is list:
+                        curr_df = pd.concat([curr_df, pd.DataFrame(handled_again)], axis=0, 
+                                             ignore_index = True, join = "outer")  
+                elif handled == "error":
+                    failed_requests.append(product_code_chunk)           
+                
+        self.bug("\n".join(failed_requests))
+        cols = list(curr_df.columns.values) #Make a list of all of the columns in the df
+        cols.pop(cols.index("product_code")) #Remove b from list
+        curr_df = curr_df[["product_code"] + cols]                
+    
+        if gen_excel:
+            if curr_df.shape[0] > 10:
+                self.__gen_df_excel(curr_df,transpose=False)
+            else:
+                self.__gen_df_excel(curr_df,transpose=True)
+        else:
+            return curr_df
+        
+    def ux_get_products_by_category_nom(self,gen_excel=True):
+        pathstr = tk.filedialog.askopenfilename()
+        init_df = pd.read_excel(pathstr, 0)
+        if "category_no" in init_df.columns:
+            categories = init_df["category_no"]
+        else:
+            categories = init_df.iloc[:,0]
+
+        start_date_timezone = self.order_start_datetime.isoformat()
+        end_date_timezone = self.order_end_datetime.isoformat()
+            
+        failed_requests = []
+        master_df = pd.DataFrame()
+        cat_set = set(categories)
+#        print(cat_set)
+        
+        for index,category_no in enumerate(list(cat_set)):
+#            print(category_no)
+            self.log("Getting data for category: {}, #{} of {}".format(category_no,index,len(cat_set)))
+            category_df = pd.DataFrame()
+            product_kwargs = {"category":category_no,
+                              "created_start_date": start_date_timezone,
+                              "created_end_date": end_date_timezone}
+            
+            total_count = self.get_count("get_product_count",product_kwargs)
+            if total_count is False:
+                return
+            
+            req_pages = (total_count // 100) + 1
+            if req_pages > 50:
+                self.bug("CANNOT CALL MORE THAN 50 PAGES!")
+                self.bug("Currently need {} pages for {} orders.".format(req_pages,total_count))
+                self.too_many_pages(total_count,req_pages)
+                return            
+
+            for page_n in range(0,req_pages):
+                if len(failed_requests) > 10:
+                    self.bug("Too many failed requests, stopping.")
+                    self.create_popup("Aborting Request","Too Many Failed API Requests!")               
+                    break                
+                product_kwargs["offset"] = 100 * page_n
+            
+                response = cafe24_queries.main("get_products_by_category",self.tokens["access_token"],
+                                               product_kwargs)
+                handled = self.response_handler(response)
+#                print(handled)
+                if type(handled) == list:
+                    category_df = pd.concat([category_df, pd.DataFrame(handled)], axis=0, 
+                                         ignore_index=True,join="outer")             
+                elif type(handled) is str:
+                    if handled == "try_again":
+                        response_again = cafe24_queries.main("get_products_by_category",self.tokens["access_token"],
+                                               product_kwargs)
+                        handled_again = self.response_handler(response_again)
+                        
+                        if type(handled_again) is str:
+                            failed_requests.append(category_no)
+                        elif type(handled_again) is list:
+                            category_df = pd.concat([category_df, pd.DataFrame(handled_again)], axis=0, 
+                                                 ignore_index = True, join = "outer")  
+                    elif handled == "error":
+                        failed_requests.append(category_no)  
+                        
+            category_df["category"] = category_no
+            converted_df = self.convert_category_to_text(category_df)
+            master_df = pd.concat([master_df, converted_df], axis=0, 
+                                 ignore_index = True, join = "outer")  
+            master_df.drop_duplicates(subset="product_code",inplace=True)                
+        self.bug("\n".join(failed_requests))
+        cols = list(master_df.columns.values) #Make a list of all of the columns in the df
+        cols.pop(cols.index("product_code")) #Remove b from list
+        master_df = master_df[["product_code"] + cols]                
+    
+        if gen_excel:
+            if master_df.shape[0] > 10:
+                self.__gen_df_excel(master_df,transpose=False)
+            else:
+                self.__gen_df_excel(master_df,transpose=True)
+        else:
+            return master_df        
+           
     def ux_get_sales_volume(self):
-        pcode = self.sales_volume_code.get()
-        response = cafe24_queries.main("get_product",self.tokens["access_token"],
-                                              {"product_code":pcode })
+        pcode = self.product_codes_var.get()
+        response = cafe24_queries.main("get_products",self.tokens["access_token"],
+                                       {"product_code":pcode })
         product_nom = response[0]["product_no"]
         sales_volume_kwargs = {"start_date":self.order_start_date_button_var.get(),
                                "end_date":self.order_end_date_button_var.get(),
                                "product_no":product_nom}
-        response_sales = cafe24_queries.main("get_sales_volume",self.tokens["access_token"],
-                                             sales_volume_kwargs)
-#        print(response_sales)
-        handled = self.response_handler(response_sales,pd.DataFrame())
-        self.__gen_df_excel(handled)
+
+        response = cafe24_queries.main("get_sales_volume",self.tokens["access_token"],
+                                       sales_volume_kwargs)
+        handled = self.response_handler(response)
         
-     
+        if type(handled) == list:
+            out_df = pd.DataFrame(handled)             
+        elif type(handled) is str:
+            if handled == "try_again":
+                response_again = cafe24_queries.main("get_sales_volume",self.tokens["access_token"],
+                                                     sales_volume_kwargs)
+                handled_again = self.response_handler(response_again)
+                
+                if type(handled_again) is str:
+                    return
+                elif type(handled_again) is list:
+                    out_df = pd.DataFrame(handled) 
+            elif handled == "error":
+                return        
+
+        self.__gen_df_excel(out_df)
         
     def ux_apply_password(self):
         self.set_new_encrytion_suite()
                 
-        if self._open_tokens_doc():
+        if self.get_tokens_from_server():
             self.refresh_tokens_statuses(True)
             self.toggle_functions_buttons(True)
         else:
            self.refresh_tokens_statuses(False) 
            self.toggle_functions_buttons(False)
-           
-    def ux_refresh_access_token(self):
-        response_json = cafe24_queries.main("new_refresh",self.tokens["refresh_token"],{})
-        PRETTYPRINT(response_json)
-        self.tokens["access_token"] = response_json["access_token"]
-        self.tokens["refresh_token"] = response_json["refresh_token"]
-        self.tokens["expire_date"] = response_json["expires_at"].replace("T"," ").replace(":","-")
-#        self.set_new_encrytion_suite()
-        self.rewrite_tokens_doc()
-        self._open_tokens_doc()
-        self.refresh_tokens_statuses(True)
+          
         
     def _ux_open_order_cal(self,which_cal):
         self.log("Getting new cal date")
@@ -294,29 +497,59 @@ class Cafe24Manager(AppWidget):
                 self.order_start_datetime = the_datetime
             else:
                 self.order_end_datetime = the_datetime            
-            the_date_var.set(str(the_datetime))           
+            the_date_var.set(str(the_datetime))      
+            
+    def too_many_pages(self,count,pages):
+        title = "Too Many Orders Requested!"
+        text = "Please Reduce Range of Orders Download. Maximum Order Count is 8000."
+        text2 = "Your last request requires {} orders ({} pages).".format(count,pages)
+        self.create_popup(title, "{}\n{}".format(text,text2))
         
+    def abort_request_popup(self):
+        self.create_popup("Aborting Request","Too Many Failed API Requests!")  
         
     # INTERNAL FUNCTIONS 
     
-    def response_handler(self,response,curr_df):
+    def get_count(self,query_str,count_kwarg_dict):
+        
+        response = cafe24_queries.main(query_str,self.tokens["access_token"],count_kwarg_dict)
+        handled = self.response_handler(response)
+        if type(handled) is int:
+            self.log("Count:{}".format(handled))
+            return handled     
+        elif type(handled) is str:
+            if handled == "try_again":
+                response_again = cafe24_queries.main(query_str,self.tokens["access_token"],count_kwarg_dict)
+                handled_again = self.response_handler(response_again)
+                if type(handled_again) is int:
+                    self.log("Count:{}".format(handled))
+                    return handled_again  
+                elif type(handled_again) is str:
+                    self.abort_request_popup()
+                    return False
+            elif handled == "error":
+                self.abort_request_popup()  
+                return False
+    
+    def response_handler(self,response):
         if type(response) is str:
             self.bug(response)
             if "Call limit" in response:
                 self.bug("Sleeping 25 seconds.")
                 time.sleep(25)
-                
                 return "try_again"
             elif "404" in response:
-                time.sleep(15)
+                time.sleep(5)
                 return "error"
+            elif "Refresh" in response:
+                self.bug("Refreshing tokens...")
+                self.ux_apply_password()
+                time.sleep(10)
+                return "try_again"
             else:
                 return "error"
         else:
-            order_items_df = pd.DataFrame(response) 
-            curr_df = pd.concat([curr_df, order_items_df], axis=0, 
-                                 ignore_index = True, join = "outer")
-            return curr_df             
+            return response            
 
     def get_translated_and_dropped_df(self,init_df,header_ref):
         init_df.rename(
@@ -334,11 +567,26 @@ class Cafe24Manager(AppWidget):
         curr_df = curr_df.fillna(0)
         for column_name in curr_df.columns:
             if "date" in column_name:
-#                print(column_name)
                 curr_df[column_name] = curr_df[column_name].apply(lambda x: self.convert_to_date(x))
             elif column_name == "cancel_status":
                 curr_df[column_name] = curr_df[column_name].apply(lambda x: self.convert_cancel_date_to_cancel_status(x))
         return curr_df
+    
+    def convert_category_to_text(self,curr_df):
+        curr_df = curr_df.fillna(0)
+        nom_dict = {
+            27:"top",
+            28:"dress",
+            29:"bottom",
+            1534:"skirt",
+            26:"outer",
+            32:"acc",
+            1136:"shoes_and_bag",
+            34:"jewelry",
+            33:"lingerie"}   
+        curr_df["category"] = curr_df["category"].map(nom_dict)
+        return curr_df
+    
     
     def convert_to_date(self,string):
         if string == 0:
@@ -349,7 +597,6 @@ class Cafe24Manager(AppWidget):
             return datetime_obj
     
     def convert_cancel_date_to_cancel_status(self,cancel_date):
-#        self.bug(cancel_date)
         if cancel_date == 0:
             return "취소안함"
         else:
@@ -380,6 +627,30 @@ class Cafe24Manager(AppWidget):
                          backend=default_backend())         
         self.fernetter = fernet.Fernet(base64.urlsafe_b64encode(self.kdf.derive(byte_pw)))        
            
+    def get_tokens_from_server(self):
+        response = requests.get("https://furyoo.pythonanywhere.com/tokens")
+        encrypted_str = response.json()["encrypted_tokens"]
+        encrypted_bytes = encrypted_str.encode()
+
+        plaintext = ""
+        try:
+            plaintext = self.fernetter.decrypt(encrypted_bytes).decode()
+        except fernet.InvalidToken:
+            self.bug("error line: {}".format(encrypted_bytes.decode()))
+            return False
+        for string in plaintext.split("$$%%"):
+            clean_tuple = string.split(":")
+            if clean_tuple[0] == "ACCESS_TOKEN":
+                self.tokens["access_token"] = clean_tuple[1]
+            elif clean_tuple[0] == "REFRESH_TOKEN":
+                self.tokens["refresh_token"] = clean_tuple[1] 
+            elif clean_tuple[0] == "DATE":
+                self.tokens["last_update"] = clean_tuple[1]
+            elif clean_tuple[0] == "EXPIRE_DATE":
+                self.tokens["expire_date"] = clean_tuple[1]
+            print("{}:{}".format(clean_tuple[0],clean_tuple[1]))             
+        return True
+    
     def refresh_tokens_statuses(self,open_file_ok):
         if open_file_ok:
             self.last_update_var.set(self.tokens["last_update"])
@@ -391,61 +662,19 @@ class Cafe24Manager(AppWidget):
             self.expire_date_var.set("ERROR - Likely Invalid Password or Corrupted Encryptions")
             self.access_token_var.set("ERROR - Likely Invalid Password or Corrupted Encryptions") 
             self.refresh_token_var.set("ERROR - Likely Invalid Password or Corrupted Encryptions")          
-            
-    def _open_tokens_doc(self):
-        print("---")
-        fin = open(self.token_doc_name,"rb")
-        gen = (line for line in fin)
-        
-        for line in gen:
-            plaintext = ""
-            try:
-                plaintext = self.fernetter.decrypt(line).decode()
-            except fernet.InvalidToken:
-                print("error line: {}".format(line.decode()))
-                return False
-            for string in plaintext.split("$$%%"):
-                clean_tuple = string.split(":")
-                if clean_tuple[0] == "ACCESS_TOKEN":
-                    self.tokens["access_token"] = clean_tuple[1]
-                elif clean_tuple[0] == "REFRESH_TOKEN":
-                    self.tokens["refresh_token"] = clean_tuple[1] 
-                elif clean_tuple[0] == "DATE":
-                    self.tokens["last_update"] = clean_tuple[1]
-                elif clean_tuple[0] == "EXPIRE_DATE":
-                    self.tokens["expire_date"] = clean_tuple[1]
-                print("{}:{}".format(clean_tuple[0],clean_tuple[1]))
-        print("---")                
-        return True
-        
-    def rewrite_tokens_doc(self,acc="",ref=""):
-        if acc == "" and ref == "":
-            acc = self.tokens["access_token"]
-            ref = self.tokens["refresh_token"]
-            exp = self.tokens["expire_date"].replace("T"," ")
-            
-        self.set_new_encrytion_suite()         
-        
-        with open(self.token_doc_name, 'wb') as the_file:
-            time_str = datetime.datetime.now().strftime("%Y-%B-%d %H-%M-%S")
-            join_list = ["DATE:"+time_str,"EXPIRE_DATE:"+exp,"ACCESS_TOKEN:"+acc,"REFRESH_TOKEN:"+ref]
-            byte_seq = self.fernetter.encrypt("$$%%".join(join_list).encode())
-            the_file.write(byte_seq)     
-            
-#        with open("tokens.txt", 'wb') as the_file:
-#            time_str = datetime.datetime.now().strftime("%Y-%B-%d %H-%M-%S")
-#            join_list = ["DATE:"+time_str,"EXPIRE_DATE:"+exp,"ACCESS_TOKEN:"+acc,"REFRESH_TOKEN:"+ref]
-#            byte_seq = self.fernetter.encrypt("$$%%".join(join_list).encode())
-#            the_file.write(byte_seq)              
-    
-#    def str_to_enc_bytes(self,left_str,str_data):
-#        access_tokenized = self.fernetter.encrypt(left_str.encode() + str_data.encode())
-#        return access_tokenized   
+                
+
+    def get_chunks(self,list_obj, n_size):
+        if type(list_obj) is set:
+            list_obj = list(list_obj)
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(list_obj), n_size):
+            yield list_obj[i:i + n_size]            
     
     def toggle_functions_buttons(self,toggle):
         for child in self.functions_frame.winfo_children():
             if type(child) == tk.Button:
-                if "ADMIN" in child["text"] and self.user == "normal":
+                if "ADMIN" in child["text"] and not self.user == "admin":
                     child["state"] = "disabled"
                     continue
                 if toggle:
@@ -457,13 +686,8 @@ class Cafe24Manager(AppWidget):
                     child["state"] = "normal"
                 else:
                     child["state"] = "disabled"     
-                    
-#    def clean_cafe24_date(self,date_str):
-#        tpl = date_str.split("T")
-#        date = tpl[0]
-#        time = tpl[1]
-                    
-    # BUILD FUNCTIONS
+
+     
     
     def build_tokens_frame(self,targ_frame):
         rown=0
@@ -501,26 +725,51 @@ class Cafe24Manager(AppWidget):
         rown += 1
          
 
-        rewrite_button = tk.Button(targ_frame,text="Rewrite Token Encryption File\nADMIN ONLY!",
-                            command=self.rewrite_tokens_doc)
-        rewrite_button.grid(row=rown,column=0,sticky="w",padx=(10,5),pady=(8,5))
-        if self.user == "normal":
-            rewrite_button["state"] = "disabled"
-        else:
-            rewrite_button["state"] = "active"
-            
-        rown += 1             
+#        rewrite_button = tk.Button(targ_frame,text="Rewrite Token Encryption File\nADMIN ONLY!",
+#                            command=self.rewrite_tokens_doc)
+#        rewrite_button.grid(row=rown,column=0,sticky="w",padx=(10,5),pady=(8,5))
+#        if self.user == "admin":
+#            rewrite_button["state"] = "active"            
+#        else:
+#            rewrite_button["state"] = "disabled"
+#        rown += 1   
+
+#    def ux_refresh_access_token(self):
+#        response_json = cafe24_queries.main("new_refresh",self.tokens["refresh_token"],{})
+#        PRETTYPRINT(response_json)
+#        self.tokens["access_token"] = response_json["access_token"]
+#        self.tokens["refresh_token"] = response_json["refresh_token"]
+#        self.tokens["expire_date"] = response_json["expires_at"].replace("T"," ").replace(":","-")
+##        self.set_new_encrytion_suite()
+#        self.rewrite_tokens_doc()
+#        self._open_tokens_doc()
+#        self.refresh_tokens_statuses(True)
+           
+#    def rewrite_tokens_doc(self,acc="",ref=""):
+#        if acc == "" and ref == "":
+#            acc = self.tokens["access_token"]
+#            ref = self.tokens["refresh_token"]
+#            exp = self.tokens["expire_date"].replace("T"," ")
+#            
+#        self.set_new_encrytion_suite()         
+#        
+#        with open(self.token_doc_name, 'wb') as the_file:
+#            time_str = datetime.datetime.now().strftime("%Y-%B-%d %H-%M-%S")
+#            join_list = ["DATE:"+time_str,"EXPIRE_DATE:"+exp,"ACCESS_TOKEN:"+acc,"REFRESH_TOKEN:"+ref]
+#            byte_seq = self.fernetter.encrypt("$$%%".join(join_list).encode())
+#            the_file.write(byte_seq)           
         
     def build_functions_frame(self,targ_frame):
         rown = 0
-
         
-        tk.Button(targ_frame,text="Refresh Access-Token - ADMIN ONLY",command=self.ux_refresh_access_token).grid(
-                  row=rown,column=0,columnspan=2,sticky="w",padx=(10,0),pady=(8,5))
-        rown += 1
-
-
-        tk.Label(targ_frame,text="Dates (Orders & Sales Volume):").grid(
+#        tk.Button(targ_frame,text="Refresh Access-Token - ADMIN ONLY",command=self.ux_refresh_access_token).grid(
+#                  row=rown,column=0,columnspan=2,sticky="w",padx=(10,0),pady=(8,5))
+#        rown += 1
+#
+#        ttk.Separator(targ_frame).grid(row=rown,column=0,columnspan=3,sticky="ew",pady=(10),padx=10)  
+#        rown += 1
+        
+        tk.Label(targ_frame,text="Dates (also applies to sales volume):").grid(
                 row=rown,column=0,sticky="w",padx=(8,5))           
         tk.Button(targ_frame,command=lambda: self._ux_open_order_cal("start"), 
                   textvariable=self.order_start_date_button_var).grid(
@@ -531,32 +780,46 @@ class Cafe24Manager(AppWidget):
     			row=rown, column=2,columnspan=1, padx=(0,10),pady=(8,5),sticky="w") 
         rown += 1        
         
-        tk.Button(targ_frame,text="Get Orders",command=self.ux_get_orders).grid(
+        tk.Button(targ_frame,text="Get Orders By Date",command=self.ux_get_orders).grid(
                 row=rown,column=0,sticky="w",padx=(10,0),pady=(8,5))
         rown += 1
         
-        tk.Button(targ_frame,text="Get Order Items FULL",command=self.ux_get_orders_full).grid(
+        tk.Button(targ_frame,text="Get Order Items FULL By Date",command=self.ux_get_orders_full).grid(
                 row=rown,column=0,sticky="w",padx=(10,0),pady=(8,5))
 
         ttk.Checkbutton(targ_frame, text="Convert to Insights Headers", variable=self.use_insights_headers,
                 onvalue=True,offvalue=False).grid(row=rown, column=1,columnspan=2, sticky="w",padx=(8,0))
         rown += 1
         
-        tk.Entry(targ_frame,textvariable=self.sales_volume_code,width=30).grid(
-                row=rown,column=0, columnspan=1,sticky="w",padx=(10,5),pady=(8,5))
+        ttk.Separator(targ_frame).grid(row=rown,column=0,columnspan=3,sticky="ew",pady=(10),padx=10)   
+        rown += 1
+        
+        tk.Entry(targ_frame,textvariable=self.product_codes_var,width=40).grid(
+                row=rown,column=0, columnspan=2,sticky="w",padx=(10,5),pady=(8,5))
         tk.Button(targ_frame,text="<- Get Sales Volume",command=self.ux_get_sales_volume).grid(
-            row=rown,column=1,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
+            row=rown,column=2,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
         rown += 1     
         
-        tk.Entry(targ_frame,textvariable=self.order_id_var,width=30).grid(
-                row=rown,column=0, columnspan=1,sticky="w",padx=(10,5),pady=(8,5))
+        tk.Entry(targ_frame,textvariable=self.order_id_var,width=40).grid(
+                row=rown,column=0, columnspan=2,sticky="w",padx=(10,5),pady=(8,5))
         tk.Button(targ_frame,text="<- Get Order Items",command=self.ux_get_order_items).grid(
-            row=rown,column=1,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
+            row=rown,column=2,columnspan=2,sticky="w",padx=(0,5),pady=(8,5))     
         rown += 1
+        
+        ttk.Separator(targ_frame).grid(row=rown,column=0,columnspan=3,sticky="ew",pady=(10),padx=10)  
+        rown += 1        
         
         tk.Button(targ_frame,text="Get Order Items By Excel",command=self.ux_get_order_items_use_excel).grid(
             row=rown,column=0,columnspan=2,sticky="w",padx=(10,5),pady=(8,5))        
-        rown += 1        
+        rown += 1      
+        
+        tk.Button(targ_frame,text="Get Products By Excel",command=self.ux_get_products_by_excel).grid(
+            row=rown,column=0,columnspan=2,sticky="w",padx=(10,5),pady=(8,5))        
+        rown += 1         
+        
+        tk.Button(targ_frame,text="Get Products In Category By Excel",command=self.ux_get_products_by_category_nom).grid(
+            row=rown,column=0,columnspan=2,sticky="w",padx=(10,5),pady=(8,5))        
+        rown += 1             
         
         targ_frame.columnconfigure(0,weight=0)
         targ_frame.columnconfigure(1,weight=0)

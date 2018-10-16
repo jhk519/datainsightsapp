@@ -55,10 +55,10 @@ class DBManager(AppWidget):
         
         # BUILD
         self.dbs_overview_frame = tk.LabelFrame(self,text="Overview")
-        self.dbs_overview_frame.grid(row=0,rowspan=2,column=0,sticky="new")
+        self.dbs_overview_frame.grid(row=0,rowspan=1,column=0,columnspan=2,sticky="new",padx=(15,15))
         
         self.dbs_controls_frame = tk.LabelFrame(self,text="Misc. Controls")
-        self.dbs_controls_frame.grid(row=0,column=1,sticky="new",padx=(15,15))
+        self.dbs_controls_frame.grid(row=1,column=0,sticky="new",padx=(15,15),pady=(10,1))
         
         self.dbs_export_frame = tk.LabelFrame(self,text="Export Databases")
         self.dbs_export_frame.grid(row=1,column=1,sticky="new",padx=(15,15),pady=(10,1))
@@ -90,8 +90,10 @@ class DBManager(AppWidget):
         for index, path in enumerate(pathstr_tuple):
             if index == 0:
                 new_df = self.engine.gen_dataframe_from_excel(path, db_cfg)
+#                new_df.set_index(db_cfg["match_on_key"],inplace=True)
             else:
                 add_row_df = self.engine.gen_dataframe_from_excel(path, db_cfg)   
+#                add_row_df.set_index(db_cfg["match_on_key"],inplace=True)
                 new_df = self.engine.add_rows_to_dataframe_from_excel(new_df,add_row_df,db_cfg["match_on_key"])
                 
             if type(new_df) is str:
@@ -319,28 +321,28 @@ class DBManager(AppWidget):
         for db_str,db_cfg in self.get_cfg_val("dbs_cfg").items():
             coln = 0
             ttk.Label(targ_frame, text=db_cfg["proper_title"]).grid(
-                row=rown, column=0, sticky="w",padx=(10,10),pady=10)
+                row=rown, column=0, sticky="nw",padx=(10,10),pady=(0,10))
             coln += 1
             
             status_var = tk.StringVar()
             status_var.set("Default Status for {}".format(db_str))
             tk.Label(targ_frame,textvariable=status_var).grid(
-                    row=rown,column=coln,padx=(10,10))
+                    row=rown,column=coln,padx=(10,10),pady=(0,10),sticky="nw")
             coln += 1
             
             regen_cmd = lambda db_str=db_str: self.ux_regenerate(db_str)
             ttk.Button(targ_frame,command=regen_cmd,text="Regenerate").grid(
-                    row=rown, column=coln,padx=(5,5))
+                    row=rown, column=coln,padx=(5,5),pady=(0,10),sticky="nw")
             coln += 1
             
             add_rows_cmd = lambda db_str=db_str: self.ux_add_rows(db_str)
             ttk.Button(targ_frame,command=add_rows_cmd,text="Add Rows").grid(
-                    row=rown, column=coln,padx=(5,5)) 
+                    row=rown, column=coln,padx=(5,5),pady=(0,10),sticky="nw") 
             coln += 1
             
             update_columns_cmd = lambda db_str=db_str: self.ux_update_columns(db_str)
-            ttk.Button(targ_frame,command=update_columns_cmd,text="Update Columns").grid(
-                    row=rown, column=coln,padx=(5,5))     
+            ttk.Button(targ_frame,command=update_columns_cmd,text="Update Shipping or Cancel Status").grid(
+                    row=rown, column=coln,padx=(5,5),pady=(0,10),sticky="nw")
             coln += 1
 
             self.db_status_labels.append([db_str,status_var])
@@ -498,8 +500,9 @@ class DBManagerEngine():
         conn.close()
         self.log("Export to Sqlite Completed")  
         
-    def gen_dataframe_from_excel(self,excel_path,db_cfg):       
-        self.log("Converting Excel at: {}".format(excel_path))
+    def gen_dataframe_from_excel(self,excel_path,db_cfg):    
+        excel_path_str = u"{}".format(excel_path).encode("utf8")
+        self.log("Converting Excel at: {}".format(excel_path_str))
         if os.path.isfile(excel_path):    
             header_ref = db_cfg["header_translations"]
             
@@ -524,8 +527,10 @@ class DBManagerEngine():
     
 
     def add_rows_to_dataframe_from_excel(self,curr_df,append_df,drop_on):
+#        print(drop_on)
         new_df = pd.concat([curr_df, append_df], axis=0, ignore_index = True,
-                           join = "outer").drop_duplicates(subset=drop_on)
+                           join = "outer")
+        new_df = new_df.drop_duplicates(subset=drop_on,keep="last")
         return self.sanitize_df(new_df)    
 
     def update_columns(self,orig_odb, excel_path, db_cfg):
@@ -548,6 +553,9 @@ class DBManagerEngine():
             return "NO EXCEL EXISTS AT ".format(excel_path)
         
         update_excel =  self.sanitize_df(update_excel)  
+        update_excel.set_index(req_header,inplace=True)
+        orig_odb.set_index(req_header,inplace=True)
+        update_excel.to_excel("ggg.xlsx")
         orig_odb.update(update_excel,join="left",overwrite=True)
         
         return orig_odb

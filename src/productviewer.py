@@ -20,6 +20,7 @@ import datetime
 import logging
 from os import system
 import webbrowser
+import io
 
 # Non-standard Modules
 import PIL
@@ -339,12 +340,15 @@ class ProductViewerEngine():
 #            final_dict["product_info"]["main_image_url"] = sku_dict["main_image_url"]
 #            final_dict["product_info"]["category"] = sku_dict["category"]
             
-            sku_full_options_text_split = sku_dict["option_text"].split(",")
+            sku_full_options_text_split = sku_dict["sku_option_text"].split(",")
             sku_color = sku_full_options_text_split[0]
-            sku_size = sku_full_options_text_split[1]
+            try:
+                sku_size = sku_full_options_text_split[1]
+            except IndexError:
+                sku_size = ""
             
             final_dict["sku_list"].append(
-                (sku_dict["sku_code"],sku_color,sku_size, sku_dict["sku_image_url"])   
+                (sku_dict["sku_sellmate_code"],sku_color,sku_size, sku_dict["product_img_url"])   
             )
         return final_dict
             

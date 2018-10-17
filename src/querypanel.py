@@ -36,9 +36,10 @@ class QueryPanel(AppWidget):
         self.current_x_axis_type = tk.StringVar()
         self.categories_list = []
         
-        # DATA FILTERS
-        self.start_datetime = datetime.date(2018, 5, 1)
-        self.end_datetime = datetime.date(2018, 5, 15)
+        # DATA FILTERS        
+#        today
+        self.end_datetime = datetime.datetime.today().date() - datetime.timedelta(self.get_cfg_val("auto_set_day"))  
+        self.start_datetime = self.end_datetime - datetime.timedelta(self.get_cfg_val("setdates_gap"))        
         
         self.start_date_button_var = tk.StringVar()
         self.start_date_button_var.set(str(self.start_datetime))
@@ -94,10 +95,10 @@ class QueryPanel(AppWidget):
         self.build_graph_options_menu(self.graph_options_labelframe)
         self.build_send_to_axis_menu(self.send_to_axis_buttons_labelframe)
         
-        if config:
-            if self.get_cfg_val("setdates_on_load"):
-                self._set_dates(self.get_cfg_val("setdates_gap"),
-                                self.get_cfg_val("setdates_from_date"))         
+#        if config:
+#            if self.get_cfg_val("setdates_on_load"):
+#                self._set_dates(self.get_cfg_val("setdates_gap"),
+#                                self.get_cfg_val("setdates_from_date"))         
         
     # UX EVENTS
     def _ux_category_changed(self,event=None):

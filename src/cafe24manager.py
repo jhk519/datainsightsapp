@@ -62,9 +62,9 @@ class Cafe24Manager(AppWidget):
         self.use_insights_headers = tk.BooleanVar()
         self.use_insights_headers.set(True)
         
-        self.order_start_datetime = datetime.date(2018, 8, 1)
-        self.order_end_datetime = datetime.date(2018, 8, 1)
-        
+        self.order_end_datetime = datetime.datetime.today().date()
+        self.order_start_datetime = self.order_end_datetime - datetime.timedelta(7)
+
         self.order_start_date_button_var = tk.StringVar()
         self.order_start_date_button_var.set(str(self.order_start_datetime))
         
@@ -597,6 +597,7 @@ class Cafe24Manager(AppWidget):
             return datetime_obj
     
     def convert_cancel_date_to_cancel_status(self,cancel_date):
+#        print(type(cancel_date))
         if cancel_date == 0:
             return "취소안함"
         else:

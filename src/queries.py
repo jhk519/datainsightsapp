@@ -349,10 +349,10 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):
         date_index =  date_list.index(row_tuple.date)
         
         if beforedisc: 
-            val_to_add = row_tuple.total_original_price
+            val_to_add = int(row_tuple.total_original_price)
         
         else: 
-            val_to_add = row_tuple.total_net_price   
+            val_to_add = int(row_tuple.total_net_price)
         
         if breakdown == "None":
             result_dict_key = "All"        
@@ -538,8 +538,15 @@ def gen_result_dict(result_dict_keys,date_list):
     return result_dict
 
 def update_result_dict(result_dict,result_dict_key, date_index,val_to_add):
+#    print(result_dict["total"]["data"][date_index])
+#    print(type(result_dict["total"]["data"][date_index]))
+    
+#    print(val_to_add)
+#    print(type(val_to_add))
+#    print("--")
     result_dict["total"]["count"][date_index] += 1
     result_dict["total"]["data"][date_index] += val_to_add
+    
 
     try: 
         result_dict["lines"][result_dict_key]

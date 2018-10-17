@@ -359,7 +359,7 @@ class SettingsManager(AppWidget):
                 empty_widget_list.append(date_widget)
                 
             elif set_type == "int":
-                days_widget = tk.Spinbox(frm, from_=1.0, to=30.0, wrap=True, width=4, 
+                days_widget = tk.Spinbox(frm, from_=0.0, to=30.0, wrap=True, width=4, 
                                          validate="key", state="readonly",
                                          textvariable = stvar, command=def_lambda)  
                 days_widget.grid(row=rown,column=1,sticky="w",columnspan=15) 
@@ -386,7 +386,7 @@ class SettingsManagerEngine():
         
     def load_full_config(self):
         try:
-            with open(r'settings/user_config.pickle',"rb") as user_config:
+            with open(r'imports/user_config.pickle',"rb") as user_config:
                 self.log("user_config pickle file found.")
                 return pickle.load(user_config) 
         except FileNotFoundError:
@@ -394,7 +394,7 @@ class SettingsManagerEngine():
             return False
         
     def save_full_config(self,new_config):
-        with open('settings/user_config.pickle', 'wb') as dbfile:
+        with open(r'imports/user_config.pickle', 'wb') as dbfile:
             pickle.dump(new_config, dbfile) 
         
     def _get_clean_val(self,setting_val,setting_type):

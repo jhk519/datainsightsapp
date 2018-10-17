@@ -47,7 +47,7 @@ class DataInsightsApp(tk.Tk):
         
 #       APP-VARS
         self.init_cfg = init_config
-        self.analysispages = []
+#        self.analysispages = []
         
 #        APP DETAILS
         self.app_version_text = ver
@@ -87,7 +87,6 @@ class DataInsightsApp(tk.Tk):
         
 #       ANALYSIS PAGE INIT
         self.ap = AnalysisPage(self.notebook, self, curr_config, dbvar = self.dbmanager.get_dbvar())
-#        self.analysispages.append(ap)
         self.notebook.add(self.ap, text="Analysis",sticky="nsew")
 
 #       MULTIGRAPHER INIT
@@ -138,9 +137,9 @@ if __name__ == "__main__":
     user = "admin"
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))
     ver = "v0.4.2- 2018/10/15"
-    if not os.path.exists(r"debug\\"):
-        os.mkdir(r"debug\\")
-    logging.basicConfig(filename=r"debug\\{}".format(logname),
+    if not os.path.exists(r"imports/debugs"):
+        os.mkdir(r"imports/debugs")
+    logging.basicConfig(filename=r"imports/debugs/{}".format(logname),
         level=logging.DEBUG, 
         format="%(asctime)s %(name)s:%(lineno)s - %(funcName)s() %(levelname)s || %(message)s",
         datefmt='%H:%M:%S')

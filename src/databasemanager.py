@@ -37,7 +37,7 @@ class DBManager(AppWidget):
 #       WIDGET SPECIFIC        
         self.set_dbvar(self.engine.gen_bare_dbvar(self.get_cfg_val("dbs_cfg")))
         
-        self.online_loaded = tk.IntVar(value=0)
+        self.online_loaded_var = tk.IntVar(value=0)
         self.db_status_labels = []
         
         # EXPORT VARS
@@ -271,18 +271,68 @@ class DBManager(AppWidget):
         self.create_popup(title,text,firstb=onlineb,secondb=offlineb)  
         
     def ux_save_dbs(self):
-        with open('databases//DH_DBS.pickle', 'wb') as dbfile:
+        with open(r'imports/DH_DBS.pickle', 'wb') as dbfile:
             pickle.dump(self.get_dbvar(), dbfile)           
         self.save_dbs_status.set("Saved DBs at " + self.get_time_str())
         self._update_statuses()
+        
+    def ux_update_one_week(self):
+        self.load_progress_bar = ttk.Progressbar(self.dbs_controls_frame,maximum=14,
+                                                    mode="determinate",variable=self.online_loaded_var)        
+        end = datetime.datetime.today().date()
+        start = end - datetime.timedelta(7)
+
+        date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1)]
+        
+#        curr_df = pd.DataFrame()
+        db_cfg = self.get_cfg_val("dbs_cfg")["odb"]
+        
+        for date in date_generated:
+            file_str = "{}.pkl".format(str(date))
+            
+            self.online_loaded_var.set(0)
+
+            self.load_progress_bar.grid(row=0, column=2, sticky="e", padx=15) 
+            url = "{}{}".format(self.get_cfg_val("URL for Online DB Download"),file_str)
+            self.log("Getting file at {}".format(url))
+            first_response = requests.get(url)     
+            with open(file_str, 'wb') as fd:
+                for chunk in first_response.iter_content(chunk_size=500):
+                    fd.write(chunk)
+                    self.online_loaded_var.set(self.online_loaded_var.get()+1)
+                    self.load_progress_bar.update()
+                    
+            with open(file_str, "rb") as dbfile:
+                new_df = pickle.load(dbfile)
+                
+            add_row_df_merged = self.engine.merge_odb_with_pdb(
+                    odb = new_df,
+                    pdb = self.get_dbvar()["pdb"])
+            
+            return_df = self.engine.add_rows_to_dataframe_from_excel(
+                    self.get_dbvar()["odb"],
+                    add_row_df_merged,
+                    db_cfg["match_on_key"])
+        
+            if type(return_df) is str:
+                self.bug(return_df)
+                self.create_popup("DB Generation Error" , "For excel @ {},\n {}".format(path,return_df))   
+                return 
+            else:
+                self.get_dbvar()["odb"] = return_df
+  
+        self.get_dbvar()["odb"] = self.engine.get_and_add_order_counts(self.get_dbvar()["odb"])              
+
+        self._update_statuses()
+
+        
+        self.log("Loaded DBs.")        
         
 # ================================================================
 # ================================================================
 #       FUNCTIONS
 # ================================================================
 # ================================================================     
-    def load_online_dbs(self):
-        print("Cant load online dbs, dummy!")
         
     def load_offline_dbs(self,file_loc=None):
         try:
@@ -315,7 +365,7 @@ class DBManager(AppWidget):
         
         ttk.Label(targ_frame, text="Name").grid(row=rown, column=0)
         ttk.Label(targ_frame, text="Info").grid(row=rown, column=1)
-        ttk.Label(targ_frame, text="Update").grid(row=rown, column=2,columnspan=3)       
+        ttk.Label(targ_frame, text="Manual Update").grid(row=rown, column=2,columnspan=3)       
         rown += 1
         
         for db_str,db_cfg in self.get_cfg_val("dbs_cfg").items():
@@ -352,7 +402,7 @@ class DBManager(AppWidget):
         rown = 0      
         
         # LOAD DBS
-        ttk.Button(targ_frame, command=self.ux_load_dbs,text="Load Databases").grid(
+        ttk.Button(targ_frame, command=self.load_offline_dbs,text="Load Databases").grid(
                 row=rown, column=0,sticky="w", padx=(10,10))
         self.load_dbs_status = tk.StringVar()
         self.load_dbs_status.set("Load DBs Default Status")
@@ -368,6 +418,10 @@ class DBManager(AppWidget):
         ttk.Label(targ_frame, textvariable=self.save_dbs_status).grid(
                 row=rown, column=1, sticky="e",padx=(0,10),pady=10)     
         rown += 1
+        
+        ttk.Button(targ_frame, command=self.ux_update_one_week,text="Add Last One Week Orders").grid(
+                row=rown, column=0, sticky="w", padx=(10,10))     
+        rown += 1        
         
     def build_dbs_export_frame(self,targ_frame):
         rown = 0
@@ -607,24 +661,7 @@ class DBManagerEngine():
                           right_index=False, on="order_id", how='left', sort=False)  
 
         return merged            
-        
-"""                
-    def load_online_dbs(self,counter=None,ticker=None):
-        url = self.get_cfg_val("URL for Online DB Download")
-        first_response = requests.get(url,stream=True)
-#        x=0
-        with open('databases//DH_DBS.pickle', 'wb') as dbfile:
-            for chunk in first_response.iter_content(chunk_size=1000000):
-                if counter:
-                    counter.set(counter.get()+1)
-                    ticker.update()
-                dbfile.write(chunk)
-#                x += 1
-                
-        with open('databases//DH_DBS.pickle', "rb") as dbfile:
-            return dbfile                
 
-"""
         
 if __name__ == "__main__":
     logname = "debug-{}.log".format(datetime.datetime.now().strftime("%y%m%d"))

@@ -82,19 +82,14 @@ backend_settings = {
                 "settings":{
                     "setdates_gap":  {
                         "proper_title": "Number of Days for Auto-Setting of Dates",
-                        "description": "If Set Dates on Start-up is ON, will set this many days between Start and End Dates.",
+                        "description": "Will set this many days between Start and End Dates.",
                         "type": "int",
                     },
-                    "setdates_from_date": {
-                        "proper_title": "End Date for Dates Auto-Setting",
-                        "description":  "If Sets Dates on Start-up is ON, will use this date as the END date.",
-                        "type": "date",
-                    },
-                    "setdates_on_load": {
-                        "proper_title": "Set Dates on Start-up",
-                        "description":  "If ON, will set dates automatically on app start-up. If OFF, date will be Yesterday.",
-                        "type": "bool",
-                    },
+                    "auto_set_day":  {
+                        "proper_title": "Auto-Set End-Date",
+                        "description": "Choose how many days from 'today' to set the 'End Date' automatically. E.g. If you want to set it to yesterday, increase this to 1",
+                        "type": "int",
+                    },                            
                 }
             },
             "productviewer": {
@@ -110,11 +105,11 @@ backend_settings = {
     },
             
     "dbmanager":{
-        "URL for Online DB Download":"https://furyoo.pythonanywhere.com/static/DH_DBS.pickle",
+        "URL for Online DB Download":r"https://furyoo.pythonanywhere.com/static/",
         "automatic db export": True,        
-        "automatic export location":".//exports//databases",
+        "automatic export location":r"exports/databases",
         "loaddb_on_load": True, 
-        "loaddb_loc": "databases//DH_DBS.pickle",
+        "loaddb_loc": r"imports/DH_DBS.pickle",
         
         "dbs_cfg": {
             "odb": {
@@ -164,19 +159,10 @@ backend_settings = {
             
                     "총PC방문자수": "pc_visitors_count",
                     "모바일웹방문자수": "mobile_visitors_count",
-                    "앱방문자수": "app_visitors_count",
-            
-                    "페이지뷰": "total_pageviews",
-            
-                    "쿠딩매출": "kooding_revenue",
-                    "PC매출(쿠딩제외)": "pc_revenue",
-                    "모바일웹매출": "mobile_revenue",
-                    "지그재그매출": "zigzag_revenue",
-                    "앱매출": "app_revenue",
-            
-                    "PC주문건수": "pc_orders_count",
-                    "모바일웹주문건수": "mobile_orders_count",
-                    "앱주문건수": "app_orders_count",
+#                    "앱방문자수": "app_visitors_count",
+                    
+                    "some_korean": "pc_pageviews",
+                    "some_other_korea":"mobile_pageviews",
                 },
             },
             "pdb": {
@@ -198,21 +184,20 @@ backend_settings = {
     },        
             
     "productviewer":{
-        "automatic export location":".//exports//product_customer_lists"
+        "automatic export location":r"exports/product_customer_lists"
     },
             
     "analysispage":{     
         "automatic search export": True,
-        "automatic export location": "exports\search_results", 
+        "automatic export location": r"exports/search_results", 
         "automatically open excel exports": True,
         "event_list":"04/29 Sale,20180429,20180429%%05/01-05/06 Event,20180501,20180506%%05/01-05/06 Event,20180517,20180520",
         "breakdown colors": "#008080-#004993-#fc5f7a-#00ff40-#d7d700-#888888-#8000ff-#f5010a-#fee0e6-#180105-#ff8040-#3c9dff",
         "ignore_numbers": "010-0000-0000%%000-0000-0000%%010-000-0000%%010-1111-1111%%010-111-1111%%010-0000-0000%%nan%%0",
     },
     "querypanel":{
-        "setdates_on_load": True,
-        "setdates_gap":"14",
-        "setdates_from_date":"20180401",                 
+        "setdates_gap":14,   
+        "auto_set_day": 1,            
         "queries":{
             "order_data-date_series": {
                 "proper_title": "Order Data-Date Series",

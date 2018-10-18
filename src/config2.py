@@ -299,6 +299,7 @@ backend_settings = {
             "product_code":"product_cafe24_code",
             "option_value":"product_option",
             "product_price":"product_price",
+            "product_name":"product_kr_name",
             "quantity":"product_quantity",
             "additional_discount_price":"product_standard_discount",
             "inflow_name":"shopping_platform",

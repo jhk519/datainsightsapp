@@ -132,7 +132,7 @@ backend_settings = {
 #                    "쿠폰할인금액": "total_coupon_discount",
 
                     "매출경로": "shopping_platform",
-                    "주문경로(PC/모바일)": "pc_or_mobile_platform",
+#                    "주문경로(PC/모바일)": "pc_or_mobile_platform",
                     
                     
                     "주문자휴대전화": "customer_phone_number",
@@ -202,19 +202,19 @@ backend_settings = {
             "order_data-date_series": {
                 "proper_title": "Order Data-Date Series",
                 "x_axis_type":"date_series",
-                "data_filters": ["start_end_dates","platform","category_or_product","phone_numbers"],
+                "data_filters": ["start_end_dates","category_or_product","phone_numbers"],
                 "metrics": {
                     "count_of_items": {
                         "proper_title": "Count Of Items",
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Percentage"],
-                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
+                        "breakdown_types": ["None", "Top Products", "Top Categories","Spec. Platform"]
                     },
                     "revenue_by_item":{
                         "proper_title": "Revenue By Item",
                         "metric_types": ["Original Price", "Net Price"],
                         "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None", "Top Products", "Top Categories", "Gen. Platform","Spec. Platform"]
+                        "breakdown_types": ["None", "Top Products", "Top Categories","Spec. Platform"]
                     },
                     "count_of_orders":{
                         "proper_title": "Count Of Orders",
@@ -229,19 +229,19 @@ backend_settings = {
                                          "Orig. Price, Excl. Cncld Orders",
                                          "Net. Price, Excl. Cncld Orders"],
                         "data_types": ["Sum","Percentage","Average"],
-                        "breakdown_types": ["None","Gen. Platform","Spec. Platform","Customer's Nth Order"]                     
+                        "breakdown_types": ["None","Spec. Platform","Customer's Nth Order"]                     
                     },
                     "order_size":{
                         "proper_title": "Order Size",
                         "metric_types": ["Include Cancelled Items", "Exclude Cancelled Items"],
                         "data_types": ["Sum","Average"],
-                        "breakdown_types": ["None","Gen. Platform","Spec. Platform","Customer's Nth Order"]                        
+                        "breakdown_types": ["None","Spec. Platform","Customer's Nth Order"]                        
                     },
                     "count_of_cancels_by_item":{
                         "proper_title": "Count of Cancels By Item",
                         "metric_types": ["Include Full Order Cancels", "Exclude Full Order Cancels"],
                         "data_types": ["Sum","Percentage","% of Total Sales (BETA)"],
-                        "breakdown_types": ["None","Top Products","Top Categories","Gen. Platform","Spec.Platform"]
+                        "breakdown_types": ["None","Top Products","Top Categories","Spec.Platform"]
                     }
                 }
             },
@@ -254,7 +254,7 @@ backend_settings = {
                         "proper_title": "Count Of Pageviews",
                         "metric_types": ["None"],
                         "data_types": ["Sum"],
-                        "breakdown_types": ["None"]
+                        "breakdown_types": ["None","Device"]
                     },
                     "count_of_visitors": {
                         "proper_title": "Count Of Visitors",

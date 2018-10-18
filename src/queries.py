@@ -207,7 +207,8 @@ def revenue_by_item(odb, date_list, mcfg,breakdown_keys,**args):
         
     result_dict = gen_result_dict(top_counts,date_list)
             
-    LOG("Iterating Over Rows")           
+    LOG("Iterating Over Rows")       
+
     for row_tuple in odb.itertuples():
         date_index =  date_list.index(row_tuple.date)
         if beforedisc:
@@ -342,7 +343,7 @@ def revenue_by_order(odb, date_list, mcfg,breakdown_keys,**args):
     if top_counts == []:
         BUG("Breakdown type: {} is not compatible with Metric {}".format(breakdown,metric))
         
-    result_dict = gen_result_dict(top_counts,date_list)
+    result_dict = gen_result_dict(top_counts,date_list)  
         
     LOG("Iterating Over Rows")           
     for row_tuple in odb.itertuples():
@@ -456,16 +457,36 @@ def count_of_pageviews(tdb, date_list, mcfg, breakdown_keys,**args):
     breakdown = mcfg["breakdown"]
     n_breakdown = mcfg["number_of_rankings"] 
     
-    top_counts = ["All"]
+    top_counts,bkdwn_column_str,tdb = get_top_counts_and_bkdwn_column_str(tdb,
+                                                                          breakdown,
+                                                                          n_breakdown,
+                                                                          breakdown_keys,
+                                                                          topby="pageviews")   
+#    print(top_counts)
+    
+#    top_counts = ["All"]
     result_dict = gen_result_dict(top_counts,date_list)
     
     LOG("Iterating Over Rows")           
     for row_tuple in tdb.itertuples():
         date_index =  date_list.index(row_tuple.date)
-        val_to_add = getattr(row_tuple, "total_pageviews")
-        result_dict_key = "All"            
         
-        result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+        
+        if breakdown == "None":
+            result_dict_key = "All"    
+            val_to_add = getattr(row_tuple, "pc_pageviews") + getattr(row_tuple, "mobile_pageviews")
+            result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
+            
+        elif breakdown == "Device":
+            for top_str in top_counts:
+                result_dict_key = top_str
+                if result_dict_key == "PC":
+                    val_to_add = getattr(row_tuple, "pc_pageviews")
+#                    print("{}: {} {}".format(result_dict_key,date_index,val_to_add))
+                elif result_dict_key == "Mobile":
+                    val_to_add = getattr(row_tuple, "mobile_pageviews")
+#                    print("{}: {} {}".format(result_dict_key,date_index,val_to_add))
+                result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
             
     if datatype == "Percentage":
         return convert_to_percentages(date_list,result_dict)
@@ -494,7 +515,6 @@ def count_of_visitors(tdb, date_list, mcfg, breakdown_keys,**args):
             result_dict_key = "All"    
             val_to_add = getattr(row_tuple, "new_visitors_count") + getattr(row_tuple, "returning_visitors_count")
             result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
-            
         elif breakdown == "Device":
             for top_str in top_counts:
                 result_dict_key = top_str
@@ -502,8 +522,6 @@ def count_of_visitors(tdb, date_list, mcfg, breakdown_keys,**args):
                     val_to_add = getattr(row_tuple, "pc_visitors_count")
                 elif result_dict_key == "Mobile":
                     val_to_add = getattr(row_tuple, "mobile_visitors_count")
-                elif result_dict_key == "App":
-                    val_to_add = getattr(row_tuple, "app_visitors_count")
                 result_dict = update_result_dict(result_dict,result_dict_key,date_index,val_to_add)
                     
         elif breakdown == "New/Returning":
@@ -587,7 +605,7 @@ def get_top_counts_and_bkdwn_column_str(db_prime,breakdown,n_breakdown,force_top
         if breakdown == "None":
             top_counts = ["All"]    
         elif breakdown == "Device":
-            top_counts = ["PC","Mobile","App"]
+            top_counts = ["PC","Mobile"]
         elif breakdown == "New/Returning":
             top_counts = ["New","Returning"] 
         elif breakdown == "Customer's Nth Order":

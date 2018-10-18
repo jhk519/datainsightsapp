@@ -40,6 +40,8 @@ class DBManager(AppWidget):
         self.online_loaded_var = tk.IntVar(value=0)
         self.db_status_labels = []
         
+        self.server_days_back_var = tk.IntVar(value=7)
+        
         # EXPORT VARS
         self.current_export_db = tk.StringVar()
         self.current_export_type = tk.StringVar()
@@ -277,16 +279,17 @@ class DBManager(AppWidget):
         self._update_statuses()
         
     def ux_update_one_week(self):
+        days_back = self.server_days_back_var.get()
         self.load_progress_bar = ttk.Progressbar(self.dbs_controls_frame,maximum=14,
                                                     mode="determinate",variable=self.online_loaded_var)        
         end = datetime.datetime.today().date()
-        start = end - datetime.timedelta(7)
+        start = end - datetime.timedelta(days_back)
 
-        date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1)]
-        
+        date_generated = [start + datetime.timedelta(days=x + 1) for x in range(0, (end-start).days)]
+                
 #        curr_df = pd.DataFrame()
         db_cfg = self.get_cfg_val("dbs_cfg")["odb"]
-        
+#        date_generated = [datetime.date(2018,10,17)]
         for date in date_generated:
             file_str = "{}.pkl".format(str(date))
             
@@ -419,8 +422,14 @@ class DBManager(AppWidget):
                 row=rown, column=1, sticky="e",padx=(0,10),pady=10)     
         rown += 1
         
-        ttk.Button(targ_frame, command=self.ux_update_one_week,text="Add Last One Week Orders").grid(
+        ttk.Button(targ_frame, command=self.ux_update_one_week,text="Add Orders From Server (1 = Today Only)").grid(
                 row=rown, column=0, sticky="w", padx=(10,10))     
+        ttk.Label(targ_frame, text="How Many Days Back (Including Today)").grid(
+                row=rown, column=1, sticky="e",padx=(0,10),pady=10)         
+        days_widget = tk.Spinbox(targ_frame, from_=1.0, to=7.0, wrap=True, width=4, 
+                                 validate="key", state="readonly",
+                                 textvariable = self.server_days_back_var)  
+        days_widget.grid(row=rown,column=2,sticky="w",columnspan=1,padx=(5,15))        
         rown += 1        
         
     def build_dbs_export_frame(self,targ_frame):

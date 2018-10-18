@@ -169,7 +169,7 @@ class Cafe24Manager(AppWidget):
             merged = self.get_translated_and_dropped_df(merged,self.get_cfg_val("header_reference"))
             merged = self.convert_all_date_columns(merged)
             
-        merged = merged.loc[merged['date_payment'] != ""]
+            merged = merged.loc[merged['date_payment'] != ""]
             
         self.__gen_df_excel(merged)
         
